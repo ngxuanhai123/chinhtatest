@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>HiHi - Luyện Chính Tả Thông Minh (Modern Edition + AI)</title>
+  <title>HiHi - Luyện Chính Tả Thông Minh (Fixed Edition)</title>
   <meta name="description" content="Luyện gõ chuẩn, nghe rõ, đọc to – nhận diện giọng nói, karaoke. Tích hợp AI Gemini.">
   <meta name="theme-color" content="#8b5cf6">
   <link href="https://googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&family=Mountains+of+Christmas:wght@700&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
   
   <style>
     :root {
-      /* --- MÀU SẮC HIỆN ĐẠI (DEFAULT) --- */
+      /* --- MÀU SẮC HIỆN ĐẠI --- */
       --bg-gradient: radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
                      radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
                      radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
@@ -24,7 +24,6 @@
       --text: #1e293b; 
       --text-dim: #64748b;
       
-      /* Gradient chủ đạo: Violet -> Pink */
       --primary-gradient: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
       --primary-shadow: rgba(139, 92, 246, 0.4);
       --primary: #8b5cf6;
@@ -49,7 +48,7 @@
     /* DARK MODE */
     [data-theme="dark"] {
       --bg-color: #020617;
-      --glass-surface: rgba(15, 23, 42, 0.65); /* Tối màu và trong suốt */
+      --glass-surface: rgba(15, 23, 42, 0.65);
       --glass-border: rgba(255, 255, 255, 0.08);
       --text: #f8fafc;
       --text-dim: #94a3b8;
@@ -58,7 +57,7 @@
 
     /* HOLIDAY MODE */
     [data-theme*="holiday"] {
-      --primary-gradient: linear-gradient(135deg, #dc2626 0%, #16a34a 100%); /* Đỏ - Xanh */
+      --primary-gradient: linear-gradient(135deg, #dc2626 0%, #16a34a 100%);
       --primary-shadow: rgba(220, 38, 38, 0.4);
       --primary: #dc2626;
       --bg-color: #0f2b1d;
@@ -88,7 +87,7 @@
       transition: background-color 0.5s ease, color 0.3s ease;
     }
 
-    /* BACKGROUND ANIMATION (AURORA) */
+    /* BACKGROUND ANIMATION */
     .aurora-bg {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       z-index: -1; overflow: hidden; pointer-events: none;
@@ -110,7 +109,6 @@
       100% { transform: translate(20px, 40px) scale(1.1); }
     }
 
-    /* SNOWFLAKES */
     .snowflake {
       position: fixed; top: -10px; z-index: 999; color: #fff; 
       text-shadow: 0 0 5px rgba(255,255,255,0.8); pointer-events: none;
@@ -119,7 +117,6 @@
     [data-theme*="holiday"] .snowflake { display: block; }
     @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
 
-    /* LAYOUT CONTAINER */
     .container {
       max-width: 1100px; margin: 0 auto;
       display: flex; flex-direction: column; gap: 32px;
@@ -127,7 +124,6 @@
       padding-top: 40px;
     }
 
-    /* GLASS CARD STYLE */
     .glass-card {
       background: var(--glass-surface);
       backdrop-filter: blur(var(--glass-blur));
@@ -138,7 +134,6 @@
       transition: transform 0.3s ease, box-shadow 0.3s ease;
     }
 
-    /* HEADER */
     header {
       padding: 40px 30px;
       text-align: center;
@@ -155,7 +150,6 @@
       margin-bottom: 8px;
     }
     .logo svg { width: 50px; height: 50px; fill: url(#grad1); animation: floatLogo 6s ease-in-out infinite; }
-    /* SVG Gradient def in HTML */
     
     .logo h1 {
       font-family: var(--font-display);
@@ -164,13 +158,10 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent;
       line-height: 1.1;
     }
-    .tagline {
-      color: var(--text-dim); font-size: 1.1rem; font-weight: 500;
-    }
+    .tagline { color: var(--text-dim); font-size: 1.1rem; font-weight: 500; }
     
     @keyframes floatLogo { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px) rotate(2deg)} }
 
-    /* BUTTONS & CONTROLS */
     .theme-toggle-wrapper {
       position: absolute; top: 20px; right: 20px; display: flex; gap: 12px;
     }
@@ -189,7 +180,6 @@
     #holidayBtn { color: #16a34a; }
     [data-theme*="holiday"] #holidayBtn { background: #dc2626; color: #fff; border-color: #fbbf24; }
 
-    /* TABS */
     .tabs {
       display: inline-flex; background: var(--glass-surface);
       padding: 6px; border-radius: 20px; border: 1px solid var(--glass-border);
@@ -207,7 +197,6 @@
       box-shadow: 0 4px 12px var(--primary-shadow);
     }
 
-    /* INPUT NAME */
     .name-box { text-align: center; margin-bottom: 10px; }
     .name-box input {
       background: transparent; border: none; border-bottom: 2px solid var(--glass-border);
@@ -216,7 +205,6 @@
     }
     .name-box input:focus { outline: none; border-color: var(--primary); }
 
-    /* SETUP GRID */
     .setup-grid {
       padding: 40px;
       display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px;
@@ -234,7 +222,7 @@
     select, textarea, input[type="text"] {
       width: 100%; padding: 14px 16px;
       border: 2px solid var(--glass-border); border-radius: var(--input-radius);
-      background: rgba(255,255,255,0.5); color: #0f172a; /* Luôn tối để dễ đọc trên nền kính */
+      background: rgba(255,255,255,0.5); color: #0f172a;
       font-family: var(--font-main); font-size: 1rem; transition: 0.3s;
     }
     [data-theme="dark"] select, [data-theme="dark"] textarea, [data-theme="dark"] input[type="text"] {
@@ -246,7 +234,6 @@
       box-shadow: 0 0 0 4px var(--primary-shadow);
     }
     
-    /* AI Loading Animation */
     @keyframes shimmer {
       0% { background-position: -1000px 0; }
       100% { background-position: 1000px 0; }
@@ -258,7 +245,6 @@
       opacity: 0.7; pointer-events: none;
     }
 
-    /* RADIO CUSTOM */
     .radio-group { display: flex; flex-direction: column; gap: 10px; }
     .radio-label {
       display: flex; align-items: center; gap: 12px; padding: 12px;
@@ -271,7 +257,6 @@
     }
     input[type="radio"] { accent-color: var(--primary); width: 18px; height: 18px; }
 
-    /* MAIN BUTTON */
     .start-btn {
       grid-column: 1/-1;
       margin-top: 10px; padding: 20px;
@@ -286,7 +271,6 @@
     .start-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 15px 30px var(--primary-shadow); }
     .start-btn:active { transform: translateY(-1px); }
 
-    /* PRACTICE AREA */
     #practiceArea, #rankPanel { padding: 40px; }
     
     .mode-switcher { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
@@ -352,7 +336,6 @@
     .correct { color: var(--success); font-weight: 700; }
     .wrong { color: var(--danger); text-decoration: line-through; opacity: 0.7; }
 
-    /* ACTION BUTTONS */
     .action-row { display: flex; justify-content: center; gap: 16px; flex-wrap: wrap; }
     .action-btn {
       padding: 16px 32px; border-radius: 16px; border: none;
@@ -367,7 +350,6 @@
     .btn-next { background: var(--success); }
     .btn-reset { background: var(--glass-surface); color: var(--text); border: 1px solid var(--glass-border); }
     
-    /* STATS */
     .stats-row {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 40px;
     }
@@ -378,7 +360,6 @@
     .stat-item h4 { font-size: 0.85rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
     .stat-item .val { font-size: 1.8rem; font-weight: 800; color: var(--primary); font-family: var(--font-display); }
 
-    /* BADGE & MODAL */
     .level-badge {
       display: inline-block; padding: 8px 24px; border-radius: 30px;
       background: var(--primary-gradient); color: white; font-weight: 700;
@@ -386,8 +367,8 @@
     }
 
     .modal {
-      position: fixed; top:0; left:0; width:100%; height:100%; z-index: 2000;
-      background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
+      position: fixed; top:0; left:0; width:100%; height:100%; z-index: 9999; /* Fixed z-index to be on top */
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
       display: flex; align-items: center; justify-content: center;
       opacity: 0; visibility: hidden; transition: 0.3s;
     }
@@ -399,7 +380,6 @@
     }
     .modal h3 { font-family: var(--font-display); font-size: 1.8rem; margin-bottom: 24px; color: var(--primary); }
 
-    /* RESPONSIVE */
     @media (max-width: 768px) {
       .logo h1 { font-size: 2.5rem; }
       .stats-row { grid-template-columns: 1fr 1fr; }
@@ -407,7 +387,6 @@
       #userInput { font-size: 1.2rem; }
     }
 
-    /* UTILS */
     .hidden { display: none !important; }
     .mic-btn {
       width: 70px; height: 70px; border-radius: 50%; background: var(--danger); color: white;
@@ -417,7 +396,6 @@
     .mic-btn.listening { background: var(--success); animation: pulseMic 1.5s infinite; }
     @keyframes pulseMic { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.7); } 70% { box-shadow: 0 0 0 20px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
 
-    /* SVG Gradients Defs (Hidden visually but used) */
     .svg-defs { width: 0; height: 0; position: absolute; }
   </style>
 </head>
@@ -439,11 +417,6 @@
       </linearGradient>
     </defs>
   </svg>
-
-  <div id="browserWarning" style="display:none; background:#fef3c7; color:#92400e; padding:10px; text-align:center; font-weight:600;">
-    ⚠️ Web chạy tốt nhất trên Chrome/Edge PC
-    <span class="close-warn" onclick="this.parentElement.style.display='none'" style="cursor:pointer; margin-left:10px;">&times;</span>
-  </div>
 
   <div class="container">
     <header class="glass-card">
@@ -515,9 +488,12 @@
         <div class="setup-item" style="grid-column: 1/-1;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
              <h3>✍️ Dữ liệu đầu vào</h3>
-             <button id="aiGenerateBtn" class="icon-btn" style="width:auto; padding:0 15px; font-size:0.9rem; border-radius:12px; background:var(--primary-gradient); color:white; border:none; font-weight:600;">
-               ✨ AI Viết Bài
-             </button>
+             <div style="display:flex; gap:10px;">
+                 <button id="aiKeyResetBtn" class="icon-btn" title="Xóa API Key" style="width:36px; height:36px; font-size:0.9rem; border-radius:8px;">🔑</button>
+                 <button id="aiGenerateBtn" class="icon-btn" style="width:auto; padding:0 15px; font-size:0.9rem; border-radius:12px; background:var(--primary-gradient); color:white; border:none; font-weight:600;">
+                   ✨ AI Viết Bài
+                 </button>
+             </div>
           </div>
           <textarea id="sampleText" rows="4" placeholder="Dán đoạn văn bạn muốn luyện vào đây..."></textarea>
         </div>
@@ -536,7 +512,7 @@
           <div class="stat-item"><h4>WPM Max</h4><div class="val" id="personalWPM">0</div></div>
           <div class="stat-item"><h4>Chính xác</h4><div class="val" id="personalAcc">0%</div></div>
           <div class="stat-item"><h4>Số câu</h4><div class="val" id="personalSentences">0</div></div> 
-          <div class="stat-item"><h4>Điểm cao</h4><div class="val"id="personalScore">0</div></div>
+          <div class="stat-item"><h4>Điểm cao</h4><div class="val" id="personalScore">0</div></div>
         </div>
         <div style="text-align:center; margin-top:20px;"><span class="level-badge" id="personalBadge">Hạng: Tân binh</span></div>
         <div style="margin-top: 40px; padding:20px; background:rgba(255,255,255,0.5); border-radius:20px;">
@@ -618,7 +594,7 @@
       "Chiến Binh Bàn Phím", "Vua Gõ Chữ", "Thần Tốc", "HiHi Pro", "Ninja Luyện Gõ",
       "Siêu Anh Hùng Gõ", "Chuyên Gia Chính Tả", "Người Bạn Của Chữ", "Đôi Tay Vàng"
     ];
-    const wordCache = {}; // Cache để lưu từ đã dịch
+    const wordCache = {}; 
 
     // === 2. BIẾN TOÀN CỤC ===
     let typedWords = 0;
@@ -694,7 +670,8 @@
       skipLoginBtn: document.getElementById('skipLoginBtn'),
       logoutBtn: document.getElementById('logoutBtn'),
       logoutBtnWrapper: document.getElementById('logoutBtnWrapper'),
-      aiBtn: document.getElementById('aiGenerateBtn') // Added AI Button
+      aiBtn: document.getElementById('aiGenerateBtn'),
+      aiResetBtn: document.getElementById('aiKeyResetBtn')
     };
 
     // === 4. ĐỊNH NGHĨA HÀM ===
@@ -705,7 +682,6 @@
       playerName = name;
       localStorage.setItem('hihiUser', JSON.stringify({ name: playerName }));
       els.playerName.value = playerName;
-      els.playerName.readOnly = true;
       els.loginModal.classList.remove('show');
       els.logoutBtnWrapper.classList.remove('hidden');
     }
@@ -714,16 +690,27 @@
       localStorage.removeItem('hihiUser');
       playerName = '';
       els.playerName.value = '';
-      els.playerName.readOnly = true;
       els.logoutBtnWrapper.classList.add('hidden');
       els.loginModal.classList.add('show');
       els.usernameInput.value = '';
     }
 
     function checkLogin() {
-      const user = localStorage.getItem('hihiUser');
-      if (user) handleLogin(JSON.parse(user).name);
-      else els.loginModal.classList.add('show');
+      try {
+          const user = localStorage.getItem('hihiUser');
+          if (user) {
+              const parsed = JSON.parse(user);
+              if (parsed && parsed.name) {
+                  handleLogin(parsed.name);
+                  return;
+              }
+          }
+      } catch (e) {
+          console.error("Lỗi đọc user:", e);
+          localStorage.removeItem('hihiUser');
+      }
+      // Nếu không có user hợp lệ
+      els.loginModal.classList.add('show');
     }
     
     // === CHỦ ĐỀ & GIÁNG SINH ===
@@ -745,16 +732,10 @@
 
     function isHolidaySeason() {
         const now = new Date();
-        const month = now.getMonth(); // 0 = Jan, 11 = Dec
+        const month = now.getMonth(); 
         const date = now.getDate();
-        const year = now.getFullYear();
-        
-        // Bắt đầu chính xác từ ngày 10 tháng 12
         if (month === 11 && date >= 10) return true;
-        
-        // (Tùy chọn) Kéo dài đến đầu tháng 1 năm sau
         if (month === 0 && date <= 5) return true;
-        
         return false;
     }
 
@@ -779,7 +760,6 @@
         const current = localStorage.getItem('baseTheme') === 'dark' ? 'dark' : 'light';
         const next = current === 'dark' ? 'light' : 'dark';
         localStorage.setItem('baseTheme', next);
-        
         const isHolidayOn = localStorage.getItem('isHoliday') === 'true';
         applyTheme(isHolidayOn ? 'holiday' : next);
     }
@@ -788,41 +768,37 @@
         const isCurrentlyOn = localStorage.getItem('isHoliday') === 'true';
         const nextState = !isCurrentlyOn;
         localStorage.setItem('isHoliday', nextState);
-        
         const base = localStorage.getItem('baseTheme') || 'light';
         applyTheme(nextState ? 'holiday' : base);
     }
 
     function initTheme() {
         if (!localStorage.getItem('baseTheme')) localStorage.setItem('baseTheme', 'light');
-
-        // Chỉ tự động bật nếu đúng mùa (sau 10/12) và chưa thiết lập
         if (isHolidaySeason()) {
             if (localStorage.getItem('autoHolidaySet') !== 'true') {
                 localStorage.setItem('isHoliday', 'true');
                 localStorage.setItem('autoHolidaySet', 'true');
             }
         }
-        
         const isHoliday = localStorage.getItem('isHoliday') === 'true';
         const base = localStorage.getItem('baseTheme');
         applyTheme(isHoliday ? 'holiday' : base);
     }
 
-    // === GEMINI AI INTEGRATION ===
+    // === GEMINI AI INTEGRATION (FIXED) ===
     async function handleAIGeneration() {
         let apiKey = localStorage.getItem('geminiKey');
         
         if (!apiKey) {
-            apiKey = prompt("Vui lòng nhập Gemini API Key của bạn (Lưu ý: Key sẽ được lưu trên trình duyệt của bạn):");
+            apiKey = prompt("Vui lòng nhập Google Gemini API Key của bạn:");
             if (apiKey) {
-                localStorage.setItem('geminiKey', apiKey);
+                localStorage.setItem('geminiKey', apiKey.trim());
             } else {
-                return; // Người dùng hủy
+                return; 
             }
         }
 
-        const topic = prompt("Bạn muốn AI viết về chủ đề gì? (Ví dụ: Truyện cười, Bài học cuộc sống, Đoạn văn tiếng Anh B1...):", "Câu chuyện ngắn ý nghĩa");
+        const topic = prompt("Bạn muốn AI viết về chủ đề gì? (Ví dụ: Truyện cười, Bài học cuộc sống...):", "Câu chuyện ngắn ý nghĩa");
         if (!topic) return;
 
         const btn = els.aiBtn;
@@ -833,9 +809,10 @@
 
         try {
             const langInstruction = globalLang === 'vi-VN' ? 'bằng Tiếng Việt' : (globalLang === 'en-US' ? 'in English' : 'in Indonesian');
-            const promptText = `Hãy viết một đoạn văn ngắn (khoảng 3-5 câu) về chủ đề: "${topic}" ${langInstruction}. Chỉ trả về nội dung văn bản thuần túy, không có markdown, không có tiêu đề.`;
+            const promptText = `Hãy viết một đoạn văn ngắn (khoảng 3-5 câu) về chủ đề: "${topic}" ${langInstruction}. Chỉ trả về nội dung văn bản thuần túy, không dùng Markdown, không tiêu đề.`;
 
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            // Sử dụng model flash mới hơn
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -843,17 +820,24 @@
                 })
             });
 
+            if (!response.ok) {
+                if (response.status === 400 || response.status === 403) {
+                    localStorage.removeItem('geminiKey');
+                    throw new Error("API Key không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.");
+                }
+                throw new Error("Lỗi kết nối API: " + response.status);
+            }
+
             const data = await response.json();
             if (data.candidates && data.candidates.length > 0) {
                 const generatedText = data.candidates[0].content.parts[0].text;
                 els.text.value = generatedText;
             } else {
-                alert("Không thể tạo nội dung. Vui lòng kiểm tra lại API Key hoặc thử lại sau.");
-                localStorage.removeItem('geminiKey'); // Xóa key nếu lỗi để nhập lại
+                throw new Error("AI không trả về nội dung.");
             }
         } catch (error) {
             console.error(error);
-            alert("Lỗi kết nối đến Gemini AI!");
+            alert("Lỗi: " + error.message);
         } finally {
             btn.innerHTML = originalText;
             btn.disabled = false;
@@ -869,7 +853,6 @@
                 tabButtons.forEach(t => t.classList.remove('active'));
                 btn.classList.add('active');
                 tabContents.forEach(c => c.classList.toggle('hidden', c.id !== targetId));
-                
                 if (btn.dataset.tab === 'rankPanel') renderPersonalStats();
             });
         });
@@ -903,11 +886,24 @@
 
     // === GIỌNG ĐỌC ===
     function loadVoices() {
-      voices = speechSynthesis.getVoices().filter(v => v.lang.startsWith(globalLang.split('-')[0]));
-      els.voiceSelect.innerHTML = voices.length ? voices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('') : '<option>Không tìm thấy giọng phù hợp</option>';
-      const saved = localStorage.getItem('voice');
-      selectedVoice = voices.find(v => v.name === saved) || voices[0];
-      if (selectedVoice) els.voiceSelect.value = selectedVoice.name;
+      voices = speechSynthesis.getVoices();
+      // Lọc giọng dựa trên ngôn ngữ
+      const filteredVoices = voices.filter(v => v.lang.startsWith(globalLang.split('-')[0]));
+      
+      if (filteredVoices.length > 0) {
+          els.voiceSelect.innerHTML = filteredVoices.map(v => `<option value="${v.name}">${v.name} (${v.lang})</option>`).join('');
+          const saved = localStorage.getItem('voice');
+          selectedVoice = filteredVoices.find(v => v.name === saved) || filteredVoices[0];
+          els.voiceSelect.value = selectedVoice.name;
+      } else {
+          // Fallback nếu chưa load kịp hoặc không có
+          if(voices.length === 0) {
+              els.voiceSelect.innerHTML = '<option>Đang tải giọng...</option>';
+              setTimeout(loadVoices, 1000); // Retry
+          } else {
+             els.voiceSelect.innerHTML = '<option>Không tìm thấy giọng phù hợp</option>';
+          }
+      }
     }
 
     function speak(text, onWord) {
@@ -949,6 +945,7 @@
             const src = globalLang.split('-')[0];
             targetElement.textContent = "..."; 
             const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(cleanWord)}&langpair=${src}|vi`);
+            if(!res.ok) throw new Error("Limit");
             const data = await res.json();
             const result = data.responseData.translatedText;
             
@@ -1114,11 +1111,16 @@
       
       renderPersonalStats();
       alert(`Hoàn thành!\nTốc độ: ${wpm} WPM\nĐiểm: ${score}\nCấp: ${badge}`);
+      // Reset về màn hình chính
+      location.reload();
     }
 
     function initSpeechRecognition() {
       if (recognition) { recognition.onend = null; recognition.stop(); }
-      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) return false;
+      if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+          alert("Trình duyệt này không hỗ trợ nhận diện giọng nói. Vui lòng dùng Chrome.");
+          return false;
+      }
       
       const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
       recognition = new SpeechRecognition();
@@ -1146,8 +1148,9 @@
         if(isMatch) els.feedback.innerHTML += "<br><em>(Tuyệt vời! Nhấn 'Tiếp theo')</em>";
       };
       
-      recognition.onerror = () => {
-        els.feedback.innerHTML = `<em>Lỗi mic. Nhấn lại.</em>`;
+      recognition.onerror = (e) => {
+        console.error(e);
+        els.feedback.innerHTML = `<em>Lỗi mic/Không nghe rõ. Nhấn lại.</em>`;
         els.micBtn.classList.remove('listening');
         isListening = false;
       };
@@ -1174,7 +1177,11 @@
         if (selectedVoice) localStorage.setItem('voice', selectedVoice.name);
     });
     els.previewVoice.addEventListener('click', () => speak(globalLang === 'vi-VN' ? 'Xin chào, đây là giọng đọc thử.' : 'Hello, this is a voice preview.'));
-    speechSynthesis.onvoiceschanged = loadVoices;
+    
+    // Đảm bảo voices load được trên Chrome
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
 
     els.lang.addEventListener('change', () => {
       globalLang = els.lang.value;
@@ -1182,12 +1189,18 @@
       location.reload();
     });
     
-    // AI BUTTON EVENT
+    // AI BUTTON EVENTS
     els.aiBtn.addEventListener('click', handleAIGeneration);
+    els.aiResetBtn.addEventListener('click', () => {
+        if(confirm("Bạn có chắc muốn xóa API Key đã lưu để nhập lại?")) {
+            localStorage.removeItem('geminiKey');
+            alert("Đã xóa Key. Hãy nhấn nút 'AI Viết Bài' để nhập lại.");
+        }
+    });
 
     els.start.addEventListener('click', () => {
       const text = els.text.value.trim();
-      if (!text) return alert('Nhập đoạn văn!');
+      if (!text) return alert('Vui lòng nhập hoặc dùng AI tạo đoạn văn!');
       segments = text.split(/(?<=[.!?])\s+|\n+/).map(s => s.trim()).filter(s => s);
       if (!segments.length) return alert('Không có đoạn hợp lệ!');
       
@@ -1204,7 +1217,8 @@
       
       document.getElementById('setupPanel').classList.add('hidden');
       document.getElementById('practiceArea').classList.remove('hidden');
-      initSpeechRecognition();
+      
+      if(currentMode === 'read-only') initSpeechRecognition();
       showSegment();
     });
 
@@ -1244,7 +1258,6 @@
       renderPersonalStats();
       loadVoices();
     });
-    setTimeout(loadVoices, 300);
   </script>
 </body>
 </html>
