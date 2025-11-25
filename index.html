@@ -1242,7 +1242,7 @@
     els.lang.addEventListener('change', () => {
       globalLang = els.lang.value;
       localStorage.setItem('lang', globalLang);
-      // KHÔNG TỰ ĐỘNG ĐIỀN TEXT NỮA
+      setRandomText(); // FIX: Tự động điền dữ liệu khi đổi ngôn ngữ
       loadVoices();
     });
 
