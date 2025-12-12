@@ -1,844 +1,1982 @@
 
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Hihi Vocabulary - Ultimate</title>
-<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-<link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-<style>
-  :root {
-    --glass-bg: rgba(255, 255, 255, 0.15);
-    --glass-border: rgba(255, 255, 255, 0.3);
-    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    --accent-color: #00d2ff;
-    --success-color: #00e676;
-    --error-color: #ff5252;
-    --text-color: #ffffff;
-    --radius: 28px;
-    --font-main: 'Poppins', sans-serif;
-    --card-text-main: #1e293b;
-    --card-text-sub: #475569;
-  }
-
-  body.dark-mode {
-    --glass-bg: rgba(15, 23, 42, 0.75);
-    --glass-border: rgba(255, 255, 255, 0.1);
-    --card-text-main: #f1f5f9;
-    --card-text-sub: #cbd5e1;
-  }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
-  
-  /* Fix input selection issue caused by global user-select: none */
-  input, textarea { user-select: text !important; -webkit-user-select: text !important; }
-
-  /* Enforce pointer events on buttons */
-  button, .btn-primary, .lang-opt, .mode-btn, .stat-card { pointer-events: auto !important; cursor: pointer; }
-
-  body {
-    font-family: var(--font-main);
-    background: #0f172a;
-    color: var(--text-color);
-    min-height: 100vh;
-    display: flex; flex-direction: column; align-items: center;
-    padding-bottom: 110px;
-    overflow-x: hidden;
-    position: relative;
-  }
-
-  /* --- AURORA BACKGROUND --- */
-  .aurora-bg {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
-    background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
-    opacity: 0.8;
-    pointer-events: none; /* Prevent blocking clicks */
-  }
-  
-  body.dark-mode .aurora-bg {
-    background: linear-gradient(-45deg, #020024, #090979, #1a0b2e, #001f3f);
-    background-size: 400% 400%;
-  }
-
-  @keyframes gradientBG {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
-  }
-
-  /* PARTICLES CONTAINER */
-  #particles {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; pointer-events: none;
-  }
-
-  /* PARTICLES */
-  .particle {
-    position: absolute; border-radius: 50%; background: white;
-    opacity: 0.3; animation: floatUp linear infinite;
-    pointer-events: none; /* Prevent blocking clicks */
-  }
-  @keyframes floatUp {
-    0% { transform: translateY(100vh) scale(0); opacity: 0; }
-    50% { opacity: 0.5; }
-    100% { transform: translateY(-10vh) scale(1); opacity: 0; }
-  }
-  
-  /* SNOWFLAKES */
-  .snowflake {
-    position: fixed; top: -20px; z-index: 9999; color: #fff;
-    font-size: 1em; opacity: 0.8; pointer-events: none;
-    user-select: none; animation: fall linear forwards;
-    text-shadow: 0 0 5px rgba(255,255,255,0.8);
-  }
-  @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
-
-  /* --- GLASS COMPONENT --- */
-  .glass-panel {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-    border-radius: var(--radius);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
-    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  .btn-primary {
-    position: relative; overflow: hidden;
-    border: none;
-    background: linear-gradient(135deg, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 100%);
-    border: 1px solid rgba(255,255,255,0.5);
-    color: white; font-weight: 800;
-    padding: 18px 28px; border-radius: 20px;
-    cursor: pointer; width: 100%;
-    font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1.5px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
-    transition: all 0.2s;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-    z-index: 50; /* Ensure clickable */
-  }
-  .btn-primary:active { transform: scale(0.96); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-
-  .input-glass {
-    width: 100%; padding: 16px; border-radius: 16px;
-    border: 1px solid var(--glass-border);
-    background: rgba(0,0,0,0.3); color: white;
-    font-size: 1rem; margin-bottom: 15px; font-family: var(--font-main);
-  }
-  .input-glass:focus { background: rgba(0,0,0,0.5); border-color: #fff; }
-  .input-glass::placeholder { color: rgba(255,255,255,0.6); }
-
-  /* --- LAYOUT --- */
-  header { 
-      margin: 20px 0 10px 0; width: 100%; padding: 0 20px; position: relative;
-  }
-  /* Enable pointer events for children of header */
-  header * { pointer-events: auto; }
-
-  .header-content {
-      display: flex; justify-content: space-between; align-items: flex-start;
-      width: 100%;
-  }
-
-  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 2px; letter-spacing: -1px; 
-       color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(0, 210, 255, 0.5); line-height: 1.2; }
-
-  .view-container { width: 92%; max-width: 500px; z-index: 2; position: relative; padding-bottom: 20px; }
-  
-  /* --- DASHBOARD STATS --- */
-  .stats-grid { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; /* 2 cột */
-      gap: 12px; margin-top: 20px; 
-  }
-  .stat-card {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 15px 5px; border-radius: 20px; 
-    background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
-    cursor: pointer; transition: 0.2s;
-  }
-  .stat-card:active { transform: scale(0.95); background: rgba(255,255,255,0.25); }
-  .stat-card:hover { border-color: rgba(255,255,255,0.4); }
-
-  .stat-num { font-size: 1.6rem; font-weight: 800; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
-  .stat-label { font-size: 0.65rem; opacity: 0.9; margin-top: 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
-
-  .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
-  .mode-btn {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    padding: 20px; text-align: center; height: 110px;
-    background: rgba(255,255,255,0.1); border-radius: 24px;
-    border: 1px solid rgba(255,255,255,0.2); cursor: pointer; transition: 0.25s;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-  }
-  .mode-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.25); }
-  .mode-btn i { font-size: 2rem; margin-bottom: 12px; opacity: 1; color: #fff; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
-
-  /* --- LIST MODAL (NEW) --- */
-  #wordListOverlay {
-      position: fixed; inset: 0; z-index: 5000;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(10px);
-      display: none; flex-direction: column;
-      animation: fadeIn 0.3s;
-  }
-  .list-header {
-      padding: 20px; display: flex; justify-content: space-between; align-items: center;
-      background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);
-  }
-  .list-content {
-      flex: 1; overflow-y: auto; padding: 15px;
-      display: flex; flex-direction: column; gap: 10px;
-  }
-  .list-item {
-      display: flex; justify-content: space-between; align-items: center;
-      background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px;
-      border: 1px solid rgba(255,255,255,0.1);
-  }
-  .list-word-main { font-weight: 700; color: #fff; font-size: 1rem; }
-  .list-word-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
-
-  /* --- FLASHCARD 3D --- */
-  .scene { width: 100%; height: 500px; perspective: 1500px; margin: 20px 0; }
-  .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
-  .card.is-flipped { transform: rotateY(180deg); }
-  
-  .card__face {
-    position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
-    border-radius: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-    padding: 20px; text-align: center;
-    background: rgba(255, 255, 255, 0.95);
-    border: 2px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
-    color: var(--card-text-main);
-  }
-
-  .card-img {
-      width: 140px; height: 140px; object-fit: cover; border-radius: 20px;
-      margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);
-      background: rgba(0,0,0,0.05);
-      transition: transform 0.3s;
-  }
-  .card-img:hover { transform: scale(1.05); }
-  
-  body.dark-mode .card__face { 
-    background: rgba(30, 41, 59, 0.95); 
-    border-color: rgba(255,255,255,0.15); 
-    color: var(--card-text-main);
-  }
-
-  .card__face--back { transform: rotateY(180deg); }
-  
-  .word-en { 
-      font-size: 2.8rem; font-weight: 800; margin-bottom: 5px; line-height: 1.1; 
-      background: linear-gradient(45deg, #2563EB, #4F46E5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
-  }
-  body.dark-mode .word-en { 
-      background: linear-gradient(45deg, #60A5FA, #C084FC); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
-  }
-
-  .word-vn { font-size: 2.2rem; font-weight: 700; color: var(--card-text-main); margin-bottom: 15px; }
-  
-  .ipa { font-family: 'Times New Roman', serif; font-style: italic; color: var(--card-text-sub); font-size: 1.4rem; margin-bottom: 10px; }
-  
-  .example-box {
-      font-style: italic; opacity: 0.9; font-size: 1rem; padding: 10px;
-      color: var(--card-text-main);
-      background: rgba(0,0,0,0.05);
-      border-radius: 12px;
-      margin-top: 5px;
-      width: 100%;
-  }
-  body.dark-mode .example-box { background: rgba(255,255,255,0.08); }
-
-  /* --- GAME OVERLAY --- */
-  #gameOverlay {
-    position: fixed; inset: 0; background: var(--bg-gradient); z-index: 2000;
-    display: none; flex-direction: column; padding: 20px;
-    background: radial-gradient(circle at center, #2e1065 0%, #0f172a 100%);
-  }
-  
-  .progress-track {
-    flex-grow: 1; height: 12px; background: rgba(255,255,255,0.1); border-radius: 20px;
-    margin: 0 15px; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); position: relative;
-  }
-  .progress-bar { 
-    height: 100%; width: 0%; transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-    background: linear-gradient(90deg, #4ade80, #3b82f6);
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.6);
-  }
-
-  /* Control Buttons */
-  .control-row { display: flex; justify-content: center; gap: 15px; margin-top: auto; width: 100%; }
-  
-  .action-btn {
-    flex: 1; height: 70px; border-radius: 22px; border: none; font-size: 1.1rem; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; cursor: pointer; gap: 10px;
-    transition: all 0.2s; color: white;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    text-shadow: 0 1px 2px rgba(0,0,0,0.3);
-  }
-  
-  .btn-wrong { background: rgba(239, 68, 68, 0.9); border: 1px solid rgba(255,100,100,0.3); }
-  .btn-next { background: rgba(34, 197, 94, 0.9); border: 1px solid rgba(100,255,150,0.3); }
-  .btn-wrong:active, .btn-next:active { transform: scale(0.92); }
-  
-  .btn-speak-round {
-    width: 70px; height: 70px; border-radius: 50%;
-    background: rgba(255,255,255,0.2); border: 2px solid rgba(255,255,255,0.4);
-    color: white; font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
-    cursor: pointer; transition: 0.2s;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-  }
-  .btn-speak-round:active { transform: scale(0.85); background: rgba(255,255,255,0.3); }
-
-  /* Hint Button Style */
-  .btn-hint {
-    background: rgba(251, 191, 36, 0.2); border: 1px solid rgba(251, 191, 36, 0.4);
-    color: #fbbf24; border-radius: 12px; width: 50px; cursor: pointer;
-    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
-    transition: 0.2s;
-  }
-  .btn-hint:active { transform: scale(0.9); background: rgba(251, 191, 36, 0.4); }
-
-  /* Animations */
-  .slide-in-right { animation: slideInRight 0.4s forwards; }
-  .slide-out-left { animation: slideOutLeft 0.4s forwards; }
-  @keyframes slideInRight { from { opacity: 0; transform: translateX(50px) scale(0.9); } to { opacity: 1; transform: translateX(0) scale(1); } }
-  @keyframes slideOutLeft { from { opacity: 1; transform: translateX(0) scale(1); } to { opacity: 0; transform: translateX(-50px) scale(0.9); } }
-
-  /* Tab Bar */
-  .tab-bar {
-    position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%);
-    width: 95%; max-width: 450px; height: 70px;
-    background: rgba(15, 23, 42, 0.9);
-    backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-    border: 1px solid rgba(255,255,255,0.2); border-radius: 40px;
-    display: flex; justify-content: space-around; align-items: center; z-index: 1000;
-    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
-  }
-  .tab-item {
-    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
-    color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 600; transition: 0.3s;
-  }
-  .tab-item i { font-size: 1.5rem; margin-bottom: 5px; transition: 0.3s; }
-  .tab-item.active { color: #38bdf8; }
-  .tab-item.active i { transform: translateY(-5px); text-shadow: 0 0 10px rgba(56, 189, 248, 0.8); }
-
-  /* Matching Grid */
-  .matching-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; }
-  .match-card {
-    padding: 24px 10px; text-align: center; font-weight: 700; font-size: 0.95rem;
-    border-radius: 18px; cursor: pointer; transition: all 0.2s;
-    background: rgba(255,255,255,0.95); color: #0f172a;
-    box-shadow: 0 5px 0 rgba(0,0,0,0.1); position: relative; top: 0;
-  }
-  body.dark-mode .match-card { background: rgba(51, 65, 85, 0.95); color: white; }
-  .match-card:active { top: 3px; box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
-  .match-card.selected { background: #3b82f6; color: white; transform: scale(1.02); }
-  .match-card.wrong { background: #ef4444; color: white; animation: shake 0.4s; }
-  .match-card.correct { opacity: 0; visibility: hidden; transition: opacity 0.3s; }
-
-  /* Toast */
-  #toast {
-    position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-150%);
-    background: rgba(0,0,0,0.9); color: white; padding: 16px 30px; border-radius: 50px;
-    font-weight: 600; z-index: 3000; transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex; align-items: center; gap: 12px; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2);
-    white-space: nowrap; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  }
-  #toast.show { transform: translateX(-50%) translateY(20px); }
-
-  /* --- LEADERBOARD STYLES --- */
-  .podium-container {
-    display: flex; justify-content: center; align-items: flex-end;
-    padding: 30px 10px 40px 10px; gap: 10px;
-  }
-  
-  .podium-item {
-    display: flex; flex-direction: column; align-items: center;
-    position: relative;
-  }
-  
-  .podium-avatar {
-    width: 60px; height: 60px; border-radius: 50%; 
-    border: 3px solid #fff; object-fit: cover;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3); z-index: 2;
-    margin-bottom: -15px; transition: transform 0.3s;
-  }
-  .podium-item:nth-child(2) .podium-avatar { width: 80px; height: 80px; border-color: #ffd700; z-index: 3; }
-  
-  .podium-stage {
-    width: 80px; border-radius: 15px 15px 0 0;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    padding-top: 25px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.3);
-    position: relative;
-    backdrop-filter: blur(10px);
-  }
-  
-  .rank-1-stage { height: 140px; background: linear-gradient(to bottom, rgba(255, 215, 0, 0.6), rgba(255, 215, 0, 0.2)); border-top: 2px solid rgba(255, 215, 0, 0.8); order: 2; }
-  .rank-2-stage { height: 100px; background: linear-gradient(to bottom, rgba(192, 192, 192, 0.6), rgba(192, 192, 192, 0.2)); border-top: 2px solid rgba(192, 192, 192, 0.8); order: 1; }
-  .rank-3-stage { height: 80px; background: linear-gradient(to bottom, rgba(205, 127, 50, 0.6), rgba(205, 127, 50, 0.2)); border-top: 2px solid rgba(205, 127, 50, 0.8); order: 3; }
-
-  .podium-rank { font-size: 2rem; font-weight: 800; opacity: 0.8; line-height: 1; }
-  .podium-name { font-size: 0.7rem; font-weight: 700; margin-top: 5px; max-width: 75px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
-  .podium-score { font-size: 0.8rem; font-weight: 600; color: #fff; margin-top: 2px; background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 10px; }
-
-  .rank-badge {
-    display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 8px; border-radius: 8px; font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
-    margin-top: 4px; border: 1px solid rgba(255,255,255,0.3);
-  }
-
-  .leaderboard-row {
-    display: grid; 
-    grid-template-columns: 30px 45px 1fr auto; 
-    align-items: center; gap: 10px;
-    padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
-    transition: 0.2s;
-  }
-  .leaderboard-row:last-child { border-bottom: none; }
-  
-  .rank-num { font-size: 0.9rem; font-weight: 700; color: #94a3b8; text-align: center; }
-  .lb-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; border: 1px solid rgba(255,255,255,0.2); }
-  
-  .lb-info { display: flex; flex-direction: column; overflow: hidden; }
-  .lb-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: white; text-shadow: 0 1px 1px rgba(0,0,0,0.3); }
-  .lb-meta { display: flex; gap: 5px; margin-top: 2px; }
-
-  .lb-stats { text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
-  .lb-score { font-weight: 800; color: #34d399; font-size: 1rem; }
-  .lb-time { font-size: 0.7rem; color: #60a5fa; font-weight: 600; margin-top: 2px; }
-
-  /* Crown animation for top 1 */
-  .crown-icon { position: absolute; top: -25px; font-size: 1.5rem; color: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.8)); animation: floatCrown 2s ease-in-out infinite; }
-  @keyframes floatCrown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-
-  .user-badge {
-    display: flex; align-items: center; gap: 12px;
-    background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 30px;
-    border: 1px solid rgba(255,255,255,0.3); margin-bottom: 20px;
-    cursor: pointer; transition: 0.2s;
-  }
-  .user-badge:active { transform: scale(0.95); }
-  .user-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
-
-  /* --- SPELLING MODE STYLES --- */
-  .spelling-container {
-    display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 25px 0;
-    width: 100%; max-width: 95%;
-  }
-  .char-slot {
-    width: 36px; height: 48px; 
-    border-bottom: 3px solid rgba(255,255,255,0.3);
-    border-radius: 8px; display: flex; align-items: center; justify-content: center;
-    font-size: 1.6rem; font-weight: 800; text-transform: uppercase;
-    background: rgba(0,0,0,0.2); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    color: white; text-shadow: 0 2px 5px rgba(0,0,0,0.3);
-  }
-  .char-slot.active { 
-      border-color: #fbbf24; background: rgba(251, 191, 36, 0.1);
-      transform: translateY(-5px); 
-      box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-  }
-  .char-slot.correct { 
-      background: #22c55e; border-color: #22c55e; 
-      animation: bounceIn 0.4s;
-  }
-  .char-slot.space {
-      border: none; background: transparent; width: 15px;
-  }
-  @keyframes bounceIn {
-      0% { transform: scale(0.8); opacity: 0; }
-      60% { transform: scale(1.1); opacity: 1; }
-      100% { transform: scale(1); }
-  }
-
-  /* --- SENTENCE SCRAMBLE STYLES --- */
-  .sentence-area {
-    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; 
-    margin: 20px 0; min-height: 60px; width: 95%;
-    padding: 10px; border-radius: 16px; 
-    background: rgba(0,0,0,0.2); border: 1px dashed rgba(255,255,255,0.2);
-  }
-  .word-chip {
-    padding: 10px 18px; background: rgba(255,255,255,0.9); 
-    border-radius: 20px; cursor: pointer; color: #1e293b;
-    font-weight: 700; font-size: 1rem;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.1); transition: all 0.2s;
-    user-select: none;
-  }
-  body.dark-mode .word-chip { background: rgba(30, 41, 59, 0.95); color: white; box-shadow: 0 4px 0 rgba(0,0,0,0.4); }
-  
-  .word-chip:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
-  .word-chip.used { opacity: 0.3; transform: scale(0.9); pointer-events: none; box-shadow: none; background: rgba(100,100,100,0.3); color: transparent; }
-  
-  .answer-slot-container {
-    display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
-    margin-bottom: 20px; width: 95%; min-height: 50px;
-  }
-  .ans-chip {
-    padding: 10px 18px; background: #3b82f6; color: white;
-    border-radius: 20px; font-weight: 700; cursor: pointer;
-    box-shadow: 0 4px 10px rgba(59, 130, 246, 0.4);
-    animation: slideInUp 0.3s;
-  }
-  .ans-chip:hover { background: #ef4444; }
-
-  /* LANG SWITCHER UPDATED */
-  .lang-switcher {
-      display: flex; gap: 10px; justify-content: center; margin-bottom: 20px;
-      background: rgba(0,0,0,0.2); padding: 5px; border-radius: 40px;
-      width: fit-content; margin-left: auto; margin-right: auto;
-      border: 1px solid rgba(255,255,255,0.1);
-  }
-  .lang-opt {
-      width: auto; height: auto; 
-      padding: 10px 20px; border-radius: 30px;
-      background: transparent; border: none;
-      display: flex; align-items: center; gap: 8px;
-      font-size: 0.95rem; font-weight: 700;
-      cursor: pointer; transition: all 0.3s;
-      opacity: 0.7; box-shadow: none;
-      color: white;
-  }
-  .lang-opt.active {
-      transform: none; opacity: 1;
-      background: rgba(255,255,255,0.15);
-      color: #00d2ff;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-  }
-  .lang-opt:active { transform: scale(0.96); }
-  .lang-flag { font-size: 1.4rem; }
-
-  /* REPO TOGGLE IN LIBRARY */
-  .repo-toggle {
-      display: flex; margin-bottom: 20px;
-      background: rgba(0,0,0,0.2); border-radius: 15px; padding: 5px;
-      border: 1px solid rgba(255,255,255,0.1);
-  }
-  .repo-opt {
-      flex: 1; text-align: center; padding: 10px; border-radius: 10px;
-      font-weight: 600; cursor: pointer; font-size: 0.9rem; opacity: 0.7; transition: 0.2s;
-  }
-  .repo-opt.active {
-      background: rgba(255,255,255,0.15); color: #00d2ff; opacity: 1;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  }
-
-  /* THEME TOGGLE TOP */
-  .theme-toggle-top {
-      width: 45px; height: 45px; border-radius: 50%;
-      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer; color: white; transition: 0.3s;
-  }
-  .theme-toggle-top:active { transform: scale(0.9); }
-
-  /* FOOTER HEART */
-  .made-with-love {
-      margin-top: 30px; margin-bottom: 15px; width: 100%;
-      text-align: center; font-size: 0.85rem; opacity: 0.8;
-      display: flex; justify-content: center; align-items: center; gap: 8px;
-      font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-  }
-  .heart-beat {
-      color: #ff4081; animation: heartBeat 1.5s infinite;
-  }
-  @keyframes heartBeat {
-      0% { transform: scale(1); }
-      14% { transform: scale(1.3); }
-      28% { transform: scale(1); }
-      42% { transform: scale(1.3); }
-      70% { transform: scale(1); }
-  }
-
-  /* TOPIC PROGRESS */
-  .topic-progress-bg {
-      height: 4px; width: 100%; background: rgba(255,255,255,0.1);
-      border-radius: 2px; margin-top: 8px; overflow: hidden;
-  }
-  .topic-progress-fill {
-      height: 100%; background: #00e676; width: 0%;
-      transition: width 0.5s ease;
-  }
-
-</style>
-</head>
-<body onload="window.initApp()">
-
-<div class="aurora-bg"></div>
-<div id="particles"></div>
-
-<header>
-  <div class="header-content">
-      <div style="text-align:left;">
-          <h1>Hihi Vocabulary</h1>
-          <div id="status-msg" style="font-size:0.85rem; opacity:0.8; font-weight: 600; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Aurora Rank Master</div>
-      </div>
-      <div class="theme-toggle-top" onclick="window.toggleTheme()" id="themeBtn">
-          <i class="fas fa-moon"></i>
-      </div>
-  </div>
-</header>
-
-<div id="appContainer" style="width: 100%; display: flex; justify-content: center; position: relative; z-index: 10;">
-  
-  <div id="view-home" class="view-container animate__animated animate__fadeIn">
-    
-    <div id="userSection" style="display: flex; flex-direction: column; align-items: center; position: relative; z-index: 50;">
-        
-        <div class="lang-switcher">
-            <div class="lang-opt active" id="btn-lang-en" onclick="window.switchLanguageFamily('en')">
-                <span class="lang-flag">🇬🇧</span> <span>Tiếng Anh</span>
-            </div>
-            <div class="lang-opt" id="btn-lang-id" onclick="window.switchLanguageFamily('id')">
-                <span class="lang-flag">🇮🇩</span> <span>Indonesia</span>
-            </div>
-        </div>
-
-        <button id="btnLogin" class="btn-primary" style="margin-bottom: 20px; padding: 12px; font-size: 0.9rem; background: rgba(255,255,255,0.15);" onclick="window.loginGoogle()">
-            <i class="fab fa-google"></i> &nbsp; Đăng nhập & Đồng bộ
-        </button>
-        <div id="userProfile" class="user-badge" style="display: none;" onclick="window.logoutGoogle()">
-            <img id="userImg" src="" class="user-avatar" alt="Avt">
-            <div style="text-align: left;">
-                <div id="userName" style="font-weight: 700; font-size: 0.9rem; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Guest</div>
-                <div style="font-size: 0.7rem; opacity: 0.9;">Điểm tích lũy: <span id="userPointsDisplay" style="color:#fbbf24; font-weight:800;">0</span> XP</div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Login message hidden by default to allow guest use -->
-    <div id="requireLoginMsg" style="text-align:center; margin-top:50px; padding:20px; display:none;">
-        <i class="fas fa-lock" style="font-size:3rem; margin-bottom:15px; opacity:0.7;"></i>
-        <div style="font-weight:600;">Vui lòng đăng nhập để sử dụng.</div>
-    </div>
-
-    <!-- Dashboard visible by default -->
-    <div id="dashboardContent" style="display: block;">
-        <div class="glass-panel" style="padding: 24px; position: relative; overflow: hidden;">
-            <div style="position:absolute; top:-10px; right:-10px; width:80px; height:80px; background:white; opacity:0.1; border-radius:50%; filter:blur(20px);"></div>
-            
-            <div style="font-size:0.7rem; text-transform: uppercase; font-weight:700; opacity:0.9; letter-spacing:1.5px; margin-bottom:5px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Chủ đề học tập</div>
-            <div id="currentTopicName" style="font-size:1.5rem; font-weight:800; margin-bottom: 20px; line-height: 1.3; text-shadow: 0 2px 4px rgba(0,0,0,0.4);">(Đang tải...)</div>
-            
-            <div class="stats-grid">
-                <div class="stat-card" onclick="window.openWordList('new')">
-                    <span class="stat-num" id="statNew" style="color:#60A5FA">0</span>
-                    <span class="stat-label">Mới</span>
-                </div>
-                <div class="stat-card" onclick="window.openWordList('due')">
-                    <span class="stat-num" id="statDue" style="color:#FBBF24">0</span>
-                    <span class="stat-label">Cần ôn</span>
-                </div>
-                <div class="stat-card" onclick="window.openWordList('learned')">
-                    <span class="stat-num" id="statLearned" style="color:#A78BFA">0</span>
-                    <span class="stat-label">Đã học</span>
-                </div>
-                <div class="stat-card" onclick="window.openWordList('mastered')">
-                    <span class="stat-num" id="statMastered" style="color:#34D399">0</span>
-                    <span class="stat-label">Thuộc lòng</span>
-                </div>
-            </div>
-            
-            <div style="margin-top: 15px; text-align: center; font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 12px;">
-                <i class="fas fa-hourglass-half" style="color:#fb923c"></i> Thời gian học tích lũy: <strong id="dashTime" style="color:white;">0m</strong>
-            </div>
-        </div>
-        
-        <button class="btn-primary animate__animated animate__pulse animate__infinite" style="margin-top: 30px; animation-duration: 2s;" onclick="window.startSmartSession()">
-            <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
-        </button>
-        <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-            <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
-        </div>
-
-        <h3 style="margin-top: 35px; margin-bottom: 15px; font-size:1.2rem; padding-left:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Chế độ Luyện tập</h3>
-        <div class="mode-grid">
-            <div class="mode-btn" onclick="window.startGame('flashcard_all')">
-                <i class="fas fa-clone"></i>
-                <span>Flashcard</span>
-            </div>
-            <div class="mode-btn" onclick="window.startGame('fill')">
-                <i class="fas fa-keyboard"></i>
-                <span>Điền từ</span>
-            </div>
-            <div class="mode-btn" onclick="window.startGame('sentence')">
-                <i class="fas fa-sort-amount-down"></i>
-                <span>Sắp xếp câu</span>
-            </div>
-            <div class="mode-btn" onclick="window.startGame('matching')">
-                <i class="fas fa-puzzle-piece"></i>
-                <span>Ghép thẻ</span>
-            </div>
-            <div class="mode-btn" onclick="window.startGame('quiz')">
-                <i class="fas fa-question-circle"></i>
-                <span>Trắc nghiệm</span>
-            </div>
-            <div class="mode-btn" onclick="window.startGame('spelling')">
-                <i class="fas fa-font"></i>
-                <span>Chính tả</span>
-            </div>
-            <div class="mode-btn" onclick="window.navTo('view-topics')">
-                <i class="fas fa-layer-group"></i>
-                <span>Đổi chủ đề</span>
-            </div>
-        </div>
-    </div> 
-    
-    <div class="made-with-love">
-        Xuân Hải làm bằng cả trái tim <i class="fas fa-heart heart-beat"></i>
-    </div>
-  </div>
-
-  <div id="view-leaderboard" class="view-container animate__animated animate__fadeIn" style="display:none;">
-      <h2 style="margin-bottom: 5px; padding-left: 10px; text-align:center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"><i class="fas fa-crown" style="color:#fbbf24"></i> Đấu Trường Tri Thức</h2>
-      <div style="text-align:center; font-size:0.85rem; opacity:0.8; margin-bottom:10px;">Vinh danh những học giả xuất sắc nhất</div>
-      
-      <div id="podiumContainer" class="podium-container" style="display:none;">
-          </div>
-
-      <div class="glass-panel" style="padding: 0; overflow: hidden; min-height: 200px;">
-          <div style="display: grid; grid-template-columns: 30px 45px 1fr auto; padding: 12px 15px; background: rgba(0,0,0,0.2); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">
-             <div style="text-align:center">#</div>
-             <div></div>
-             <div>Học viên & Cấp bậc</div>
-             <div style="text-align:right">XP</div>
-          </div>
-          <div id="leaderboardList">
-              <div style="padding:40px; text-align:center; opacity: 0.7;"><i class="fas fa-spinner fa-spin"></i> Đang tải bảng vàng...</div>
-          </div>
-      </div>
-      <div style="text-align:center; margin-top:15px; font-size:0.75rem; opacity:0.6;"><i class="fas fa-bolt"></i> Cập nhật thời gian thực (Real-time)</div>
-  </div>
-
-  <div id="view-topics" class="view-container animate__animated animate__fadeIn" style="display:none;">
-    <h2 style="margin-bottom: 20px; padding-left: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Thư viện chủ đề</h2>
-    <div id="topicList"></div>
-  </div>
-  
-  <div id="view-settings" class="view-container animate__animated animate__fadeIn" style="display:none;">
-    <h2 style="margin-bottom: 20px; padding-left: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Cấu hình</h2>
-    <div class="glass-panel" style="padding: 24px;">
-        
-        <h4 style="margin-bottom:15px; color:#60A5FA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Kho dữ liệu (GitHub)</h4>
-        <input type="text" id="gh-user" class="input-glass" placeholder="Username" value="ngxuanhai123">
-        <input type="text" id="gh-repo" class="input-glass" placeholder="Repository" value="tuvung">
-        <button class="btn-primary" style="padding: 12px; font-size: 0.9rem; background: rgba(59, 130, 246, 0.5);" onclick="window.fetchTopics(true)">
-            <i class="fas fa-sync-alt"></i> Đồng bộ dữ liệu
-        </button>
-
-        <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
-        
-        <h4 style="margin-bottom:10px; color:#FBBF24; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Mục tiêu Học tập</h4>
-        
-        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-            <small>Mục tiêu từ mới mỗi ngày</small>
-            <strong id="dispLimitNew">5</strong>
-        </div>
-        <input type="range" id="cfgNewLimit" min="0" max="15" value="5" oninput="window.saveConfig()">
-        
-        <div style="display:flex; justify-content:space-between; margin-top:20px; margin-bottom:5px;">
-            <small>Giới hạn ôn tập</small>
-            <strong id="dispLimitReview">20</strong>
-        </div>
-        <input type="range" id="cfgReviewLimit" min="5" max="50" value="20" oninput="window.saveConfig()">
-        
-        <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
-
-        <button class="action-btn" style="width:100%; height:55px; background:rgba(239, 68, 68, 0.2); border:1px solid rgba(239, 68, 68, 0.5); color:#ef4444; font-size:0.9rem;" onclick="window.resetProgress()">
-            <i class="fas fa-trash-alt"></i> &nbsp; Xoá toàn bộ dữ liệu học
-        </button>
-
-        <div style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">
-            Sound FX Engine v2.1 &bull; Realtime DB
-        </div>
-    </div>
-  </div>
-
-</div>
-
-<div id="wordListOverlay">
-    <div class="list-header">
-        <h3 id="listTitle" style="color:white; margin:0;">Danh sách từ</h3>
-        <button onclick="window.closeWordList()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
-    </div>
-    <div id="wordListContent" class="list-content"></div>
-</div>
-
-<div id="gameOverlay">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
-    <button style="background:none; border:none; color:white; font-size:1.5rem; opacity:0.8;" onclick="window.closeGame()"><i class="fas fa-times"></i></button>
-    <div class="progress-track">
-        <div id="gameProgressBar" class="progress-bar"></div>
-        <div style="position:absolute; top:0; left:0; width:100%; height:100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shine 2s infinite;"></div>
-    </div>
-    <button style="background:none; border:none; color:white; font-size:1.3rem; opacity:0.8;" onclick="window.toggleMute()"><i id="muteIcon" class="fas fa-volume-up"></i></button>
-  </div>
-
-  <div id="gameContent" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; perspective: 1000px;">
-      </div>
-</div>
-
-<div class="tab-bar">
-  <div class="tab-item active" data-target="view-home" onclick="window.navTo('view-home')">
-    <i class="fas fa-home"></i> <span>Home</span>
-  </div>
-  <div class="tab-item" data-target="view-leaderboard" onclick="window.navTo('view-leaderboard')">
-    <i class="fas fa-trophy"></i> <span>Xếp hạng</span>
-  </div>
-  <div class="tab-item" data-target="view-topics" onclick="window.navTo('view-topics')">
-    <i class="fas fa-book-open"></i> <span>Library</span>
-  </div>
-  <div class="tab-item" data-target="view-settings" onclick="window.navTo('view-settings')">
-    <i class="fas fa-sliders-h"></i> <span>Config</span>
-  </div>
-</div>
-
-<div id="toast"><span id="toast-icon"></span> <span id="toast-msg">Message</span></div>
-
-<script type="module" src="./index.tsx"></script>
-
-<a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-    </svg>
-    <span>Trang chủ</span>
-</a>
-
-<style>
-    .floating-home-btn {
-        position: fixed; bottom: 120px; left: 20px; z-index: 1000;
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 20px;
-        background: rgba(255, 255, 255, 0.1);
-        backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        border-radius: 50px; color: white; text-decoration: none;
-        font-family: 'Poppins', sans-serif; font-weight: 600;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-        transition: all 0.3s ease; overflow: hidden;
+// --- FIREBASE SETUP ---
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+// FIX: Add declarations for window properties and global variables to satisfy TypeScript.
+declare global {
+    interface Window {
+        loginGoogle: () => void;
+        logoutGoogle: () => void;
+        initLeaderboardListener: () => void;
+        initApp: () => void;
+        fetchTopics: (manual?: boolean) => Promise<void>;
+        navTo: (viewId: string) => void;
+        switchLanguageFamily: (family: string) => void;
+        switchLanguage: (lang: string) => void;
+        startSmartSession: () => void;
+        processResult: (isCorrect: boolean) => void;
+        flipCard: () => void;
+        closeGame: () => void;
+        nextStep: () => void;
+        speakWord: (e?: Event) => void;
+        markMastered: () => void;
+        spellingTarget: string;
+        spellingIdx: number;
+        revealSpellingHint: () => void;
+        sentenceState: {
+            targetStr: string;
+            originalMode: string;
+        };
+        moveWord: (idx: number, word: string) => void;
+        checkSentence: (correctSentence: string) => void;
+        resetSentence: () => void;
+        speakText: (text: string) => void;
+        showHint: (ans: string) => void;
+        checkFill: (ans: string) => void;
+        matchClick: (idx: number, id: number) => void;
+        matchState: {
+            selected: { idx: number; id: number; el: HTMLElement } | null;
+            solved: number;
+            total: number;
+        };
+        handleQuiz: (el: HTMLElement, isCorrect: boolean) => void;
+        startGame: (mode: string) => void;
+        openWordList: (type: string) => void;
+        closeWordList: () => void;
+        toastTimeout?: number;
+        resetProgress: () => void;
+        toggleTheme: () => void;
+        toggleMute: () => void;
+        saveConfig: () => void;
+        webkitAudioContext: typeof AudioContext;
     }
-    .floating-home-btn:hover {
-        background: linear-gradient(90deg, #4facfe, #00f2fe);
-        transform: translateY(-2px); box-shadow: 0 0 20px rgba(79, 172, 254, 0.6);
-        border-color: transparent; color: #0f172a;
+}
+declare const confetti: (options?: any) => void;
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDtaVYb_72YvoGzvcERJZypUGS-u3skz2M",
+  authDomain: "tuvung-88e8d.firebaseapp.com",
+  databaseURL: "https://tuvung-88e8d-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tuvung-88e8d",
+  storageBucket: "tuvung-88e8d.firebasestorage.app",
+  messagingSenderId: "722559465686",
+  appId: "1:722559465686:web:bae1a77791205d372db177",
+  measurementId: "G-T785TQ3V32"
+};
+
+// Initialize Firebase
+let app, auth, db, provider;
+try {
+    app = initializeApp(firebaseConfig);
+    auth = getAuth(app);
+    db = getFirestore(app);
+    provider = new GoogleAuthProvider();
+} catch (e) {
+    console.error("Firebase init error", e);
+    // Continue running app in offline/limited mode if possible
+}
+
+/**
+ * Safely parses JSON from localStorage, preventing errors from empty or invalid data.
+ * @param {string} key The localStorage key to read.
+ * @param {any} defaultValue The default value to return if parsing fails.
+ * @returns {any} The parsed object or the default value.
+ */
+function safeJsonParse(key, defaultValue) {
+    const item = localStorage.getItem(key);
+    // Return default value if item is null, undefined, or an empty string
+    if (!item) {
+        return defaultValue;
     }
-    .floating-home-btn svg { width: 24px; height: 24px; transition: transform 0.3s ease; }
-    .floating-home-btn:hover svg { transform: scale(1.1); }
-    @media (max-width: 640px) {
-        .floating-home-btn span { display: none; }
-        .floating-home-btn { padding: 12px; border-radius: 50%; }
+    try {
+        return JSON.parse(item);
+    } catch (e) {
+        console.warn(`Could not parse JSON from localStorage for key "${key}". Using default.`, e);
+        return defaultValue;
     }
-</style>
-</body>
-</html>
+}
+
+
+let currentUser = null;
+let studyTimer = null;
+// FIX: Ensure the argument to parseInt is a string.
+let accumulatedTime = parseInt(localStorage.getItem('fp_aurora_time') || '0', 10);
+let unsubscribeLeaderboard = null; 
+
+// --- HELPER: FORMAT TIME ---
+function formatTime(seconds) {
+    if(seconds < 60) return seconds + 's';
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    if(h > 0) return `${h}h${m}`;
+    return `${m}m`;
+}
+
+// --- HELPER: RANK CALCULATION SYSTEM ---
+function getRankInfo(score) {
+    if (score >= 10000) return { title: 'HUYỀN THOẠI', color: '#ffd700', bg: 'rgba(255, 215, 0, 0.2)', icon: 'fas fa-dragon' };
+    if (score >= 5000) return { title: 'ĐẠI SƯ', color: '#f87171', bg: 'rgba(248, 113, 113, 0.2)', icon: 'fas fa-chess-king' };
+    if (score >= 2000) return { title: 'TINH ANH', color: '#c084fc', bg: 'rgba(192, 132, 252, 0.2)', icon: 'fas fa-gem' };
+    if (score >= 500) return { title: 'HỌC GIẢ', color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.2)', icon: 'fas fa-book-reader' };
+    return { title: 'TẬP SỰ', color: '#94a3b8', bg: 'rgba(148, 163, 184, 0.2)', icon: 'fas fa-seedling' };
+}
+
+// --- LANGUAGE/REPO CONFIG ---
+const LANG_CONFIG = {
+    en: { 
+        repo: 'tuvung',
+        user: 'ngxuanhai123',
+        label: 'Tiếng Anh (Cơ bản)', 
+        tts: 'en-US', 
+        transPair: 'en|vi',
+        flag: '🇺🇸'
+    },
+    en_adv: {
+        repo: '3000tv',
+        user: 'ngxuanhai123',
+        label: 'Tiếng Anh (Nâng cao)',
+        tts: 'en-US',
+        transPair: 'en|vi',
+        flag: '🇬🇧'
+    },
+    id: { 
+        repo: 'indo',
+        user: 'ngxuanhai123',
+        label: 'Indonesia', 
+        tts: 'id-ID', 
+        transPair: 'id|vi',
+        flag: '🇮🇩'
+    }
+};
+let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
+
+// --- DATA KEY HELPERS ---
+function getDataKey(prefix) {
+    return prefix + '_' + currentLang;
+}
+
+// --- FIREBASE FUNCTIONS ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.loginGoogle = () => {
+    if(!auth) { showToast("Lỗi kết nối máy chủ", "error"); return; }
+    signInWithPopup(auth, provider)
+    .then((result) => {
+        showToast("Đăng nhập thành công!", "success");
+    }).catch((error) => {
+        console.error("Login Error:", error);
+        showToast("Lỗi đăng nhập: " + error.message, "error");
+    });
+};
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.logoutGoogle = () => {
+    if(!auth) return;
+    if(confirm("Bạn muốn đăng xuất?")) {
+        signOut(auth).then(() => {
+            showToast("Đã đăng xuất");
+            accumulatedPoints = 0; 
+            updateUserPointsUI();
+            
+            // Still allow access after logout
+            document.getElementById('btnLogin').style.display = 'block';
+            document.getElementById('userProfile').style.display = 'none';
+        });
+    }
+};
+
+if(auth) {
+    onAuthStateChanged(auth, async (user) => {
+        currentUser = user;
+        const btn = document.getElementById('btnLogin');
+        const profile = document.getElementById('userProfile');
+        const dash = document.getElementById('dashboardContent');
+        const reqMsg = document.getElementById('requireLoginMsg');
+        
+        if (user) {
+            btn.style.display = 'none';
+            profile.style.display = 'flex';
+            
+            // FIX: Cast element to HTMLImageElement to access 'src' property.
+            (document.getElementById('userImg') as HTMLImageElement).src = user.photoURL;
+            document.getElementById('userName').innerText = user.displayName;
+            await syncDataFromServer();
+            saveProgressToCloud(); 
+        } else {
+            // GUEST MODE: Allow access
+            btn.style.display = 'block';
+            profile.style.display = 'none';
+            
+            // Ensure data is rendered from local storage
+            renderDashboard();
+        }
+        
+        // Always show dashboard, never block
+        reqMsg.style.display = 'none';
+        dash.style.display = 'block';
+    });
+}
+
+// --- LOGIC ĐỒNG BỘ TOÀN DIỆN (FULL SYNC) ---
+async function syncDataFromServer() {
+    if(!currentUser || !db) return;
+    try {
+        const docRef = doc(db, "leaderboard", currentUser.uid);
+        const docSnap = await getDoc(docRef);
+        
+        const currentMonthKey = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
+
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            
+            if (data.monthKey !== currentMonthKey) {
+                accumulatedPoints = 0;
+                // FIX: Ensure value passed to localStorage.setItem is a string.
+                localStorage.setItem('fp_aurora_points', '0');
+                showToast("Chào tháng mới! Điểm đã được reset.", "info");
+                await setDoc(docRef, { score: 0, monthKey: currentMonthKey }, { merge: true });
+            } else {
+                if (data.score > accumulatedPoints) accumulatedPoints = data.score;
+                if (data.studyTime > accumulatedTime) accumulatedTime = data.studyTime;
+            }
+            
+            // Sync Language Specific Data
+            const srsKey = `srsData_${currentLang}`;
+            const masterKey = `masteredWords_${currentLang}`;
+            const topicKey = `currentTopicKey_${currentLang}`;
+
+            if(data[srsKey]) {
+                srsData = JSON.parse(data[srsKey]);
+                localStorage.setItem(getDataKey('fp_aurora_srs'), data[srsKey]);
+            }
+            if(data[masterKey]) {
+                masteredWords = JSON.parse(data[masterKey]);
+                localStorage.setItem(getDataKey('fp_aurora_mastered'), data[masterKey]);
+            }
+            if(data[topicKey]) {
+                currentTopicKey = data[topicKey];
+                localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+            }
+
+            if(data.config) {
+                config = data.config;
+                // FIX: Ensure value passed to localStorage.setItem is a string.
+                localStorage.setItem('fp_aurora_dark', String(config.darkMode));
+                // FIX: Ensure value passed to localStorage.setItem is a string.
+                localStorage.setItem('fp_aurora_muted', String(config.muted));
+                // FIX: Ensure value passed to localStorage.setItem is a string.
+                localStorage.setItem('fp_aurora_cfg_new', String(config.newLimit));
+                // FIX: Ensure value passed to localStorage.setItem is a string.
+                localStorage.setItem('fp_aurora_cfg_review', String(config.reviewLimit));
+                applyTheme();
+                updateMuteIcon();
+                updateConfigUI();
+            }
+
+            // FIX: Ensure value passed to localStorage.setItem is a string.
+            localStorage.setItem('fp_aurora_points', String(accumulatedPoints));
+            // FIX: Ensure value passed to localStorage.setItem is a string.
+            localStorage.setItem('fp_aurora_time', String(accumulatedTime));
+            updateUserPointsUI();
+            renderDashboard();
+        }
+    } catch (e) {
+        console.error("Error syncing from server:", e);
+    }
+}
+
+async function saveProgressToCloud() {
+    if(!currentUser || !db) return;
+    const currentMonthKey = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
+    
+    // Dynamic keys based on language
+    const srsKey = `srsData_${currentLang}`;
+    const masterKey = `masteredWords_${currentLang}`;
+    const topicKey = `currentTopicKey_${currentLang}`;
+
+    try {
+        await setDoc(doc(db, "leaderboard", currentUser.uid), {
+            displayName: currentUser.displayName,
+            photoURL: currentUser.photoURL,
+            score: accumulatedPoints,
+            studyTime: accumulatedTime,
+            lastUpdated: Date.now(),
+            monthKey: currentMonthKey,
+            [srsKey]: JSON.stringify(srsData),
+            [masterKey]: JSON.stringify(masteredWords),
+            config: config,
+            [topicKey]: currentTopicKey
+        }, { merge: true });
+    } catch(e) {
+        console.error("Error saving progress to cloud", e);
+    }
+}
+
+// --- NEW LEADERBOARD LOGIC (REAL-TIME SNAPSHOT) ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.initLeaderboardListener = () => {
+    if (unsubscribeLeaderboard || !db) return;
+
+    const listDiv = document.getElementById('leaderboardList');
+    const podiumDiv = document.getElementById('podiumContainer');
+    listDiv.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.7;"><i class="fas fa-spinner fa-spin"></i> Đang kết nối máy chủ...</div>';
+
+    const q = query(collection(db, "leaderboard"), orderBy("score", "desc"), limit(20));
+    
+    unsubscribeLeaderboard = onSnapshot(q, (querySnapshot) => {
+        const users = [];
+        querySnapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
+
+        if (users.length === 0) {
+             listDiv.innerHTML = '<div style="text-align:center; padding:20px;">Chưa có dữ liệu. Hãy là người đầu tiên!</div>';
+             podiumDiv.style.display = 'none';
+             return;
+        }
+
+        let podiumHTML = '';
+        if(users.length > 0) {
+            podiumDiv.style.display = 'flex';
+            const order = [1, 0, 2];
+            order.forEach(idx => {
+                if(!users[idx]) return;
+                const u = users[idx];
+                const rank = idx + 1;
+                let avatarHTML = `<img src="${u.photoURL}" class="podium-avatar">`;
+                if(rank === 1) avatarHTML = `<i class="fas fa-crown crown-icon"></i>` + avatarHTML;
+                
+                podiumHTML += `
+                    <div class="podium-item rank-${rank}-stage animate__animated animate__fadeInUp">
+                        ${avatarHTML}
+                        <div class="podium-name">${u.displayName ? u.displayName.split(' ')[0] : 'User'}</div>
+                        <div class="podium-score">${u.score.toLocaleString()} XP</div>
+                        <div class="podium-rank">${rank}</div>
+                    </div>
+                `;
+            });
+            podiumDiv.innerHTML = podiumHTML;
+        }
+
+        let listHTML = '';
+        users.forEach((u, index) => {
+            const rank = index + 1;
+            if (rank <= 3) return;
+
+            const isMe = currentUser && u.id === currentUser.uid ? 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;' : '';
+            const rankObj = getRankInfo(u.score);
+
+            listHTML += `
+                <div class="leaderboard-row animate__animated animate__fadeIn" style="${isMe}">
+                    <div class="rank-num">${rank}</div>
+                    <img src="${u.photoURL}" class="lb-avatar">
+                    <div class="lb-info">
+                        <div class="lb-name">${u.displayName}</div>
+                        <div class="lb-meta">
+                            <span class="rank-badge" style="color:${rankObj.color}; background:${rankObj.bg}; border-color:${rankObj.color}">
+                                <i class="${rankObj.icon}"></i> ${rankObj.title}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="lb-stats">
+                        <div class="lb-score">${u.score.toLocaleString()}</div>
+                        <div class="lb-time">${formatTime(u.studyTime || 0)}</div>
+                    </div>
+                </div>
+            `;
+        });
+        listDiv.innerHTML = listHTML || '<div style="text-align:center; padding:20px; opacity:0.6; font-size:0.8rem;">Chưa có thêm người chơi khác</div>';
+    }, (error) => {
+        console.error("Realtime Error:", error);
+        listDiv.innerHTML = '<div style="text-align:center; color:#ff5252">Mất kết nối thời gian thực.</div>';
+    });
+};
+
+/* -------------------------------------------------------------------------
+   APP LOGIC & AUDIO ENGINE
+   ------------------------------------------------------------------------- */
+
+// FIX: Added window.webkitAudioContext to global declarations to handle vendor prefix.
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+let masterGain = null;
+
+function initAudio() {
+    if(!masterGain) {
+        masterGain = audioCtx.createGain();
+        masterGain.connect(audioCtx.destination);
+    }
+    if(audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+const SFX = { CORRECT: 'correct', WRONG: 'wrong', FLIP: 'flip', WIN: 'win', POP: 'pop' };
+
+function playTone(freq, type, duration, startTime, vol=0.1) {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startTime);
+    gain.gain.setValueAtTime(vol, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+    osc.connect(gain);
+    gain.connect(masterGain);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+}
+
+function playSound(sfx) {
+    if(config.muted) return;
+    initAudio();
+    const now = audioCtx.currentTime;
+
+    switch(sfx) {
+        case SFX.CORRECT:
+            playTone(523.25, 'sine', 0.4, now, 0.2);
+            playTone(659.25, 'sine', 0.4, now + 0.1, 0.2);
+            playTone(783.99, 'sine', 0.6, now + 0.2, 0.2);
+            break;
+        case SFX.WRONG:
+            playTone(150, 'sawtooth', 0.4, now, 0.15);
+            playTone(140, 'sawtooth', 0.4, now + 0.1, 0.15);
+            break;
+        case SFX.FLIP:
+            playTone(800, 'triangle', 0.1, now, 0.05);
+            break;
+        case SFX.WIN:
+            [523, 659, 783, 1046].forEach((f, i) => playTone(f, 'square', 0.6, now + i*0.1, 0.1));
+            break;
+        case SFX.POP:
+             playTone(600, 'sine', 0.1, now, 0.1);
+             break;
+    }
+}
+
+// --- GLOBAL STATE ---
+let allTopics = {};
+let currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
+
+let srsData = safeJsonParse(getDataKey('fp_aurora_srs'), {});
+let masteredWords = safeJsonParse(getDataKey('fp_aurora_mastered'), {});
+
+// FIX: Ensure the argument to parseInt is a string.
+let accumulatedPoints = parseInt(localStorage.getItem('fp_aurora_points') || '0', 10);
+
+let config = {
+    // FIX: Ensure the argument to parseInt is a string.
+    newLimit: parseInt(localStorage.getItem('fp_aurora_cfg_new') || '5', 10),
+    // FIX: Ensure the argument to parseInt is a string.
+    reviewLimit: parseInt(localStorage.getItem('fp_aurora_cfg_review') || '20', 10),
+    darkMode: localStorage.getItem('fp_aurora_dark') === 'true',
+    muted: localStorage.getItem('fp_aurora_muted') === 'true'
+};
+
+let sessionQueue = []; 
+let sessionIndex = 0;
+let currentMode = '';
+let isProcessing = false;
+let isFlipped = false;
+let selectedVoice = null;
+const translationCache = safeJsonParse('fp_aurora_trans_cache', {});
+
+async function getTranslation(text) {
+    if (!text) return "";
+    if (translationCache[text]) return translationCache[text];
+    const pair = LANG_CONFIG[currentLang].transPair;
+    try {
+        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${pair}`);
+        const data = await res.json();
+        if(data.responseStatus === 200) {
+            translationCache[text] = data.responseData.translatedText;
+            localStorage.setItem('fp_aurora_trans_cache', JSON.stringify(translationCache));
+            return data.responseData.translatedText;
+        }
+    } catch (e) { console.error("Translate error:", e); }
+    return "Không thể dịch tự động.";
+}
+
+// --- INITIALIZATION ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.initApp = function() {
+    createParticles();
+    startSnow();
+    applyTheme();
+    updateConfigUI();
+    updateLangUI();
+    // FIX: Function is assigned to window property, which is handled by the global declaration.
+    window.fetchTopics(); 
+    document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
+    updateUserPointsUI();
+    
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = setupVoice;
+    }
+    setTimeout(setupVoice, 1000);
+    // FIX: Function is assigned to window property, which is handled by the global declaration.
+    window.navTo('view-home');
+    updateMuteIcon();
+}
+
+function updateLangUI() {
+    document.querySelectorAll('.lang-opt').forEach(el => el.classList.remove('active'));
+    // If en OR en_adv, highlight English button
+    if(currentLang === 'en' || currentLang === 'en_adv') {
+        document.getElementById('btn-lang-en').classList.add('active');
+    } else {
+        document.getElementById('btn-lang-id').classList.add('active');
+    }
+    
+    // Update config inputs to reflect current language repo
+    const conf = LANG_CONFIG[currentLang];
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    (document.getElementById('gh-repo') as HTMLInputElement).value = conf.repo;
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    (document.getElementById('gh-user') as HTMLInputElement).value = conf.user;
+}
+
+// Logic mới cho Home screen: chỉ chọn hệ ngôn ngữ
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.switchLanguageFamily = function(family) {
+    if(family === 'en') {
+        // Nếu đang ở EN hoặc EN_ADV thì giữ nguyên, nếu không thì default về 'en'
+        if(currentLang !== 'en' && currentLang !== 'en_adv') {
+            // FIX: Function is assigned to window property, which is handled by the global declaration.
+            window.switchLanguage('en');
+        }
+    } else {
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.switchLanguage('id');
+    }
+    updateLangUI();
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.switchLanguage = function(lang) {
+    if(currentLang === lang) return;
+    
+    currentLang = lang;
+    localStorage.setItem('fp_aurora_lang', lang);
+    updateLangUI();
+    
+    // Reload Data for new language
+    currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
+    srsData = safeJsonParse(getDataKey('fp_aurora_srs'), {});
+    masteredWords = safeJsonParse(getDataKey('fp_aurora_mastered'), {});
+    
+    playSound(SFX.POP);
+    // FIX: Function is assigned to window property, which is handled by the global declaration.
+    window.fetchTopics(); 
+    
+    // Try to sync to ensure we have latest data for this language
+    syncDataFromServer();
+}
+
+function startSnow() {
+    const snowInterval = setInterval(() => {
+        const snowflake = document.createElement('div');
+        snowflake.innerHTML = '❄';
+        snowflake.classList.add('snowflake');
+        snowflake.style.left = Math.random() * 100 + 'vw';
+        const size = Math.random() * 10 + 10 + 'px'; 
+        snowflake.style.fontSize = size;
+        const duration = Math.random() * 5 + 5 + 's'; 
+        snowflake.style.animationDuration = duration;
+        snowflake.style.opacity = Math.random();
+        document.body.appendChild(snowflake);
+        setTimeout(() => { snowflake.remove(); }, parseFloat(duration) * 1000);
+    }, 400); 
+}
+
+function updateUserPointsUI() {
+    document.getElementById('userPointsDisplay').innerText = accumulatedPoints.toLocaleString();
+}
+
+function addPoints(amount) {
+    accumulatedPoints += amount;
+    // FIX: The value for localStorage.setItem must be a string, but 'accumulatedPoints' is a number.
+    localStorage.setItem('fp_aurora_points', String(accumulatedPoints));
+    updateUserPointsUI();
+    saveProgressToCloud(); 
+}
+
+function createParticles() {
+    const container = document.getElementById('particles');
+    for(let i=0; i<15; i++) {
+        const p = document.createElement('div');
+        p.className = 'particle';
+        p.style.left = Math.random() * 100 + '%';
+        p.style.width = Math.random() * 5 + 2 + 'px';
+        p.style.height = p.style.width;
+        p.style.animationDuration = Math.random() * 10 + 10 + 's';
+        p.style.animationDelay = Math.random() * 5 + 's';
+        container.appendChild(p);
+    }
+}
+
+// --- NAVIGATION ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.navTo = function(viewId) {
+    // FIX: Cast element to HTMLElement to access 'style' property.
+    document.querySelectorAll('.view-container').forEach(el => (el as HTMLElement).style.display = 'none');
+    const target = document.getElementById(viewId);
+    target.style.display = 'block';
+    target.classList.remove('animate__fadeIn');
+    void target.offsetWidth; 
+    target.classList.add('animate__fadeIn');
+    
+    document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.tab-item[data-target="${viewId}"]`)?.classList.add('active');
+
+    if(viewId === 'view-home') renderDashboard();
+    if(viewId === 'view-topics') renderTopicList();
+    // FIX: Function is assigned to window property, which is handled by the global declaration.
+    if(viewId === 'view-leaderboard') window.initLeaderboardListener(); 
+}
+
+// --- DATA & SYNC ---
+// FIX: Switched to jsDelivr CDN and added GitHub API fallback to improve reliability.
+window.fetchTopics = async function(manual = false) {
+    let user = (document.getElementById('gh-user') as HTMLInputElement).value;
+    let repo = (document.getElementById('gh-repo') as HTMLInputElement).value;
+
+    if (!manual) {
+        const conf = LANG_CONFIG[currentLang];
+        user = conf.user;
+        repo = conf.repo;
+        (document.getElementById('gh-user') as HTMLInputElement).value = user;
+        (document.getElementById('gh-repo') as HTMLInputElement).value = repo;
+    }
+
+    const status = document.getElementById('status-msg');
+    status.innerText = "Đang tải kho dữ liệu...";
+    if (manual) {
+        playSound(SFX.POP);
+    }
+
+    let fileList: { name: string }[] = [];
+    
+    // --- Attempt 1: Fetch file list from jsDelivr (fast, preferred) ---
+    try {
+        console.log("Attempting to fetch file list from jsDelivr...");
+        const api = `https://data.jsdelivr.com/v1/packages/gh/${user}/${repo}@latest`;
+        const res = await fetch(api);
+        if (!res.ok) throw new Error("Không thể liệt kê kho dữ liệu qua jsDelivr, thử phương án B.");
+        const listing = await res.json();
+        // jsDelivr paths start with '/', remove it
+        fileList = listing.files.filter(f => f.name.endsWith('.json')).map(f => ({ name: f.name.substring(1) }));
+        console.log("Successfully fetched list from jsDelivr:", fileList);
+    } catch (e) {
+        console.warn(e.message);
+        // --- Attempt 2: Fallback to GitHub API (slower, rate-limited) ---
+        try {
+            console.log("Fallback: Attempting to fetch file list from GitHub API...");
+            const api = `https://api.github.com/repos/${user}/${repo}/contents/`;
+            const res = await fetch(api);
+            if (!res.ok) throw new Error("Cả hai phương thức tải đều thất bại. Vui lòng kiểm tra lại mạng hoặc tên kho dữ liệu.");
+            const listing = await res.json();
+            if (!Array.isArray(listing)) throw new Error("Phản hồi từ GitHub API không hợp lệ.");
+            fileList = listing.filter(f => f.type === 'file' && f.name.endsWith('.json')).map(f => ({ name: f.name }));
+            console.log("Successfully fetched list from GitHub API:", fileList);
+        } catch (finalError) {
+            console.error("Lỗi tải dữ liệu:", finalError);
+            status.innerText = "Lỗi tải dữ liệu";
+            showToast(finalError.message || "Lỗi: Không tải được kho dữ liệu.", "error");
+            return; // Stop execution if both methods fail
+        }
+    }
+
+    if (fileList.length === 0) {
+        status.innerText = "Kho dữ liệu trống";
+        showToast("Không tìm thấy tệp chủ đề nào (.json).", "error");
+        allTopics = {}; // Clear existing topics
+        renderDashboard();
+        return;
+    }
+
+    // --- Process the obtained file list with robust parsing ---
+    try {
+        const fetchPromises = fileList.map(async (f): Promise<any | null> => {
+            const fileUrl = `https://cdn.jsdelivr.net/gh/${user}/${repo}@latest/${f.name}`;
+            try {
+                const raw = await fetch(fileUrl);
+                if (!raw.ok) {
+                    console.warn(`Could not fetch file: ${f.name}, status: ${raw.status}`);
+                    return null; // Skip this file
+                }
+                const text = await raw.text();
+                if (!text || !text.trim()) {
+                    console.warn(`File is empty: ${f.name}`);
+                    return null; // Skip empty file
+                }
+                const data = JSON.parse(text); // Parse the text
+                return {
+                    filename: f.name,
+                    data: Array.isArray(data) ? data : (data.words || []),
+                    name: (data.name || f.name.replace('.json', '')).replace(/_/g, ' ')
+                };
+            } catch (parseError) {
+                console.error(`Error processing file ${f.name}:`, parseError);
+                // Don't throw, just skip the problematic file
+                return null;
+            }
+        });
+
+        const results = (await Promise.all(fetchPromises)).filter(Boolean); // Filter out nulls from failed fetches/parses
+
+        if (results.length === 0 && fileList.length > 0) {
+            throw new Error("Tất cả các tệp chủ đề đều bị lỗi hoặc trống.");
+        }
+        
+        allTopics = {};
+        results.forEach(item => {
+            if (item && item.data.length > 0) {
+                allTopics[item.filename] = {
+                    name: item.name,
+                    words: item.data
+                };
+            }
+        });
+
+        status.innerText = "Aurora Rank Master • Ready";
+        if (!currentTopicKey || !allTopics[currentTopicKey]) {
+            currentTopicKey = Object.keys(allTopics)[0] || '';
+            localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+        }
+
+        if (manual) showToast("Đồng bộ thành công!", "success");
+        renderDashboard();
+    } catch (e) {
+        console.error("Lỗi xử lý tệp:", e);
+        status.innerText = "Lỗi xử lý tệp";
+        showToast(e.message || "Lỗi khi xử lý tệp dữ liệu.", "error");
+    }
+};
+
+
+function getWordKey(w) {
+    return (w.english + '_' + (w.vietnamese || '').substring(0,3)).toLowerCase().replace(/\s/g,'');
+}
+
+// --- IMAGE GENERATION / SEARCH HELPER ---
+function getImageUrl(word) {
+    // Using Pollinations.ai for dynamic generation without API Key.
+    // Adding keywords to make it simple vector/minimalist style suitable for flashcards.
+    const cleanWord = encodeURIComponent(word);
+    return `https://image.pollinations.ai/prompt/minimalist%20cute%20vector%20illustration%20of%20${cleanWord}?width=300&height=300&nologo=true`;
+}
+
+// --- IMAGE PRELOADING ---
+function preloadImages(startIdx, count) {
+     for(let i = startIdx; i < startIdx + count; i++) {
+         if(i < sessionQueue.length) {
+             const img = new Image();
+             // Preload the image
+             img.src = getImageUrl(sessionQueue[i].english);
+         }
+     }
+}
+
+// --- GAME LOGIC START ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.startSmartSession = function() {
+    if(!currentUser) return showToast("Vui lòng đăng nhập để học và đồng bộ kết quả!", "error");
+    if(!currentTopicKey || !allTopics[currentTopicKey]) return showToast("Chưa chọn chủ đề hoặc kho dữ liệu trống!", "error");
+    
+    // FIX: Ensure the argument to parseInt is a string.
+    config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || '5', 10);
+    // FIX: Ensure the argument to parseInt is a string.
+    config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || '20', 10);
+
+    const allWords = allTopics[currentTopicKey].words;
+    
+    let candidatesNew = allWords.filter(w => {
+        const k = getWordKey(w);
+        return !masteredWords[k] && !srsData[k];
+    });
+    const batchNew = candidatesNew.slice(0, config.newLimit);
+
+    let allLearning = allWords.filter(w => {
+        const k = getWordKey(w);
+        return !masteredWords[k] && srsData[k];
+    });
+
+    allLearning.sort((a,b) => srsData[getWordKey(a)].nextReview - srsData[getWordKey(b)].nextReview);
+    const batchReview = allLearning.slice(0, config.reviewLimit);
+    
+    if(batchNew.length === 0 && batchReview.length === 0) {
+        // FIX: Add declaration for confetti.
+        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        playSound(SFX.WIN);
+        showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
+        return;
+    }
+
+    showToast(`Bắt đầu: ${batchNew.length} từ mới + ${batchReview.length} ôn tập`, "info");
+    playSound(SFX.POP);
+    
+    let interleaved = [];
+    let r = [...batchReview];
+    let n = [...batchNew];
+    
+    while(n.length > 0 || r.length > 0) {
+        if(n.length > 0) interleaved.push(n.shift()); 
+        if(r.length > 0) interleaved.push(r.shift()); 
+        if(r.length > 0) interleaved.push(r.shift()); 
+    }
+    
+    sessionQueue = interleaved;
+    sessionIndex = 0;
+    currentMode = 'smart';
+    
+    // Start Preloading First 4 images
+    preloadImages(0, 4);
+
+    openGameOverlay();
+    decideSmartRender();
+}
+
+function decideSmartRender() {
+    const w = sessionQueue[sessionIndex];
+    const key = getWordKey(w);
+    const isNew = !srsData[key] && !masteredWords[key];
+    
+    if(isNew) {
+        renderFlashcard();
+    } else {
+        const modes = ['flashcard', 'quiz', 'fill', 'spelling', 'sentence'];
+        const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        
+        if(randomMode === 'flashcard') renderFlashcard();
+        else if(randomMode === 'quiz') setupQuiz();
+        else if(randomMode === 'fill') renderFill();
+        else if(randomMode === 'sentence') renderSentence();
+        else renderSpelling();
+    }
+}
+
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.processResult = function(isCorrect) {
+    if(isProcessing) return;
+    isProcessing = true;
+    
+    const w = sessionQueue[sessionIndex];
+    const key = getWordKey(w);
+    let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
+    
+    if(isCorrect) {
+        playSound(SFX.CORRECT);
+        // FIX: Add declaration for confetti.
+        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
+        addPoints(10); 
+        
+        // Reset count wrong
+        data.consecutiveWrongs = 0;
+
+        // Nếu từ này từng bị đánh dấu là "Hard" (isHard), tăng interval chậm hơn
+        let multiplier = data.isHard ? 1.5 : 2.5;
+
+        if(data.level === 0) data.interval = 1; 
+        else if(data.level === 1) data.interval = 3; 
+        else data.interval = Math.ceil(data.interval * multiplier);
+        
+        // Reset hard flag
+        if(data.isHard) data.isHard = false;
+
+        data.level++;
+        data.nextReview = Date.now() + (data.interval * 24 * 3600 * 1000);
+        
+        srsData[key] = data;
+        localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+        saveProgressToCloud(); 
+        setTimeout(() => { isProcessing = false; nextStep(); }, 600);
+        
+    } else {
+        playSound(SFX.WRONG);
+        data.level = 0;
+        data.interval = 0;
+        data.nextReview = Date.now(); 
+        
+        // --- LOGIC MỚI: Đếm số lần sai liên tiếp ---
+        data.consecutiveWrongs = (data.consecutiveWrongs || 0) + 1;
+        
+        if (data.consecutiveWrongs > 3) {
+            data.isHard = true; // Đánh dấu từ khó
+            showToast("Sai quá 3 lần! Từ này sẽ được ưu tiên ôn kỹ.", "error");
+            // Thêm vào hàng đợi 2 lần nữa để bắt buộc học ngay
+            sessionQueue.push(w);
+            sessionQueue.push(w);
+        }
+        // -------------------------------------------
+
+        srsData[key] = data;
+        localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+        saveProgressToCloud(); 
+
+        if(currentMode === 'smart') {
+            const reInsertIdx = sessionIndex + 3;
+            if(reInsertIdx < sessionQueue.length) {
+                sessionQueue.splice(reInsertIdx, 0, w);
+            } else {
+                sessionQueue.push(w);
+            }
+            if(data.consecutiveWrongs <= 3) showToast("Sẽ ôn lại từ này ngay!", "error");
+        }
+        
+        // Nếu đang ở Flashcard thì lật để xem đáp án
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        if(document.getElementById('flashcardObj') && !isFlipped) {
+            window.flipCard();
+        }
+        
+        setTimeout(() => { 
+            isProcessing = false; 
+            nextStep();
+        }, 2500);
+    }
+}
+
+// --- UI RENDERING & ANIMATIONS ---
+function openGameOverlay() {
+    document.getElementById('gameOverlay').style.display = 'flex';
+    document.getElementById('gameOverlay').classList.add('animate__animated', 'animate__fadeIn');
+    updateProgress();
+    startTimer(); 
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.closeGame = function() {
+    document.getElementById('gameOverlay').style.display = 'none';
+    window.speechSynthesis.cancel();
+    stopTimer(); 
+    saveProgressToCloud(); 
+    renderDashboard();
+}
+
+function startTimer() {
+    if(studyTimer) clearInterval(studyTimer);
+    studyTimer = setInterval(() => {
+        accumulatedTime++;
+        // FIX: Ensure value passed to localStorage.setItem is a string.
+        localStorage.setItem('fp_aurora_time', String(accumulatedTime));
+        if(accumulatedTime % 60 === 0) {
+            addPoints(5); 
+        }
+    }, 1000);
+}
+
+function stopTimer() {
+    if(studyTimer) clearInterval(studyTimer);
+    studyTimer = null;
+    // FIX: Ensure value passed to localStorage.setItem is a string.
+    localStorage.setItem('fp_aurora_time', String(accumulatedTime));
+}
+
+function updateProgress() {
+    const pct = ((sessionIndex) / sessionQueue.length) * 100;
+    document.getElementById('gameProgressBar').style.width = `${pct}%`;
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.nextStep = function() {
+    nextStep();
+}
+
+function nextStep() {
+    if(sessionIndex < sessionQueue.length - 1) {
+        const content = document.getElementById('gameContent');
+        content.classList.add('slide-out-left');
+        
+        // Preload next batch (keep 3 images ahead)
+        preloadImages(sessionIndex + 1, 3);
+
+        setTimeout(() => {
+            sessionIndex++;
+            updateProgress();
+            
+            content.classList.remove('slide-out-left');
+            content.style.opacity = 0;
+            
+            // LOGIC CHUYỂN BÀI MỚI
+            if(currentMode === 'smart') {
+                decideSmartRender();
+            } else {
+                if(currentMode === 'flashcard_all') renderFlashcard(); 
+                else if(currentMode === 'fill') renderFill();
+                else if(currentMode === 'quiz') setupQuiz();
+                else if(currentMode === 'spelling') renderSpelling();
+                else if(currentMode === 'sentence') renderSentence();
+            }
+            
+            content.classList.add('slide-in-right');
+            setTimeout(() => content.classList.remove('slide-in-right'), 400);
+            content.style.opacity = 1;
+        }, 350);
+    } else {
+        playSound(SFX.WIN);
+        // FIX: Add declaration for confetti.
+        confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
+        showToast("Buổi học hoàn tất! Xuất sắc!", "success");
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        setTimeout(window.closeGame, 2000);
+    }
+}
+
+// --- CARD RENDERERS ---
+function renderFlashcard() {
+    const w = sessionQueue[sessionIndex];
+    isFlipped = false;
+    isProcessing = false;
+    
+    const isRelearn = sessionQueue.filter(x => x === w).length > 1;
+    const badge = isRelearn ? '<div style="position:absolute; top:-10px; right:-10px; background:#f59e0b; color:white; padding:5px 10px; border-radius:10px; font-size:0.7rem; font-weight:bold; box-shadow:0 5px 10px rgba(0,0,0,0.2);">HỌC LẠI</div>' : '';
+
+    const exampleId = `ex-trans-${sessionIndex}`;
+    
+    const isReviewMode = (currentMode === 'smart');
+    const labelLang = LANG_CONFIG[currentLang].label;
+
+    const imageUrl = getImageUrl(w.english);
+
+    const html = `
+        <div class="scene">
+            <div class="card" id="flashcardObj" onclick="window.flipCard()">
+                <div class="card__face card__face--front">
+                    ${badge}
+                    <img src="${imageUrl}" class="card-img" alt="${w.english}" onerror="this.style.display='none'">
+                    
+                    <div style="font-size:0.8rem; opacity:0.6; margin-bottom:5px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">${labelLang}</div>
+                    <div class="word-en">${w.english}</div>
+                    <div class="ipa">${w.ipa || ''}</div>
+                    
+                    <div style="margin-top:auto; opacity:0.6; font-size:0.8rem;"><i class="fas fa-touch-app"></i> Chạm để lật</div>
+                </div>
+
+                <div class="card__face card__face--back">
+                    <div style="font-size:0.8rem; opacity:0.6; margin-bottom:15px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">Nghĩa Tiếng Việt</div>
+                    <div class="word-vn">${w.vietnamese}</div>
+                    
+                    <div style="width:100%; border-top:1px dashed rgba(0,0,0,0.1); margin: 20px 0;"></div>
+                    <div style="font-size:0.8rem; opacity:0.7; margin-bottom:5px;">Ví dụ mẫu:</div>
+                    <div class="example-box">"${w.example || ''}"</div>
+                    <div style="font-size:0.8rem; opacity:0.7; margin-top:5px;">Dịch ví dụ:</div>
+                    <div class="example-box" id="${exampleId}">
+                        <i class="fas fa-spinner fa-spin"></i> Đang dịch...
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-row">
+            ${isReviewMode ? `
+                <button class="action-btn btn-wrong" onclick="window.processResult(false)">
+                    <i class="fas fa-times"></i> &nbsp;Chưa thuộc
+                </button>
+                <button class="btn-speak-round animate__animated animate__bounceIn" onclick="window.speakWord(event)"><i class="fas fa-volume-up"></i></button>
+                <button class="action-btn btn-next" onclick="window.processResult(true)">
+                    Đã thuộc &nbsp;<i class="fas fa-check"></i>
+                </button>
+            ` : `
+                 <button class="btn-speak-round" onclick="window.speakWord(event)"><i class="fas fa-volume-up"></i></button>
+                 <button class="action-btn btn-next" onclick="window.nextStep()" style="background:#3b82f6; border-color:#60a5fa;">Tiếp theo <i class="fas fa-arrow-right"></i></button>
+            `}
+        </div>
+        
+        <div style="margin-top:15px; cursor:pointer; opacity:0.7; font-size:0.8rem; text-shadow:0 1px 2px rgba(0,0,0,0.5);" onclick="window.markMastered()">
+            <i class="fas fa-archive"></i> Đánh dấu đã thuộc lòng (Ẩn vĩnh viễn)
+        </div>
+    `;
+    document.getElementById('gameContent').innerHTML = html;
+    
+    if(w.example) {
+        getTranslation(w.example).then(trans => {
+            const el = document.getElementById(exampleId);
+            if(el) el.innerText = trans;
+        });
+    } else {
+        const el = document.getElementById(exampleId);
+        if(el) el.innerText = "(Không có ví dụ)";
+    }
+
+    setTimeout(window.speakWord, 500);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.flipCard = function() {
+    if(isProcessing && currentMode === 'smart') return;
+    const card = document.getElementById('flashcardObj');
+    if(!card) return;
+    isFlipped = !isFlipped;
+    card.classList.toggle('is-flipped');
+    playSound(SFX.FLIP);
+}
+
+// --- SPELLING MODE ---
+function renderSpelling() {
+    isProcessing = false;
+    const w = sessionQueue[sessionIndex];
+    const target = w.english.trim();
+    
+    let gridHTML = '';
+    for(let i=0; i<target.length; i++) {
+        const char = target[i];
+        if(char === ' ' || char === '-') {
+             gridHTML += `<div class="char-slot space" id="char-${i}"></div>`;
+        } else {
+             gridHTML += `<div class="char-slot" id="char-${i}"></div>`;
+        }
+    }
+
+    document.getElementById('gameContent').innerHTML = `
+        <div class="glass-panel animate__animated animate__fadeInDown" style="padding:20px; width:95%; text-align:center;">
+            <div style="font-size:1.8rem; font-weight:800; color:#fff; text-shadow:0 0 10px rgba(255,255,255,0.4); margin-bottom:5px;">
+                ${w.vietnamese}
+            </div>
+            <div style="opacity:0.8; font-size:0.9rem;">Gõ chính xác từng ký tự</div>
+        </div>
+
+        <div class="spelling-container" id="spellingGrid">
+            ${gridHTML}
+        </div>
+        
+        <input type="text" id="spellingInput" 
+               style="opacity:0; position:absolute; pointer-events:none; top:0; left:0; height:0;" 
+               autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+
+        <div style="display:flex; gap:15px; margin-top:20px; align-items:center;">
+             <button class="btn-speak-round" onclick="window.speakWord()"><i class="fas fa-volume-up"></i></button>
+             <button class="btn-hint" onclick="window.revealSpellingHint()" title="Gợi ý 1 ký tự"><i class="fas fa-lightbulb"></i></button>
+        </div>
+    `;
+    
+    // FIX: Properties are assigned to window, which is handled by the global declaration.
+    window.spellingTarget = target;
+    // FIX: Properties are assigned to window, which is handled by the global declaration.
+    window.spellingIdx = 0;
+    
+    const inp = document.getElementById('spellingInput');
+    
+    document.addEventListener('click', () => { if(document.getElementById('spellingInput')) document.getElementById('spellingInput').focus(); });
+    inp.focus();
+
+    checkSpellingChar(''); 
+
+    inp.addEventListener('input', (e) => {
+        if(isProcessing) return;
+        // FIX: Cast event target to HTMLInputElement to access 'value' property.
+        const val = (e.target as HTMLInputElement).value;
+        if(val.length > 0) {
+            const char = val[val.length - 1]; 
+            checkSpellingChar(char);
+            // FIX: Cast event target to HTMLInputElement to access 'value' property.
+            (e.target as HTMLInputElement).value = ''; 
+        }
+    });
+    
+    setTimeout(window.speakWord, 300);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.revealSpellingHint = function() {
+    if(isProcessing) return;
+    // FIX: Properties are assigned to window, which is handled by the global declaration.
+    const target = window.spellingTarget;
+    let idx = window.spellingIdx;
+    
+    if(idx < target.length) {
+        const correctChar = target[idx];
+        checkSpellingChar(correctChar);
+        document.getElementById('spellingInput').focus();
+    }
+}
+
+function checkSpellingChar(inputChar) {
+    // FIX: Properties are assigned to window, which is handled by the global declaration.
+    const target = window.spellingTarget;
+    let idx = window.spellingIdx;
+    
+    while(idx < target.length && (target[idx] === ' ' || target[idx] === '-')) {
+        idx++;
+    }
+    // FIX: Properties are assigned to window, which is handled by the global declaration.
+    window.spellingIdx = idx;
+
+    if(idx >= target.length) return; 
+
+    if(inputChar === '') {
+        highlightChar(idx);
+        return;
+    }
+
+    const correctChar = target[idx];
+    const slot = document.getElementById(`char-${idx}`);
+
+    if(inputChar.toLowerCase() === correctChar.toLowerCase()) {
+        slot.innerText = correctChar;
+        slot.classList.add('correct');
+        slot.classList.remove('active');
+        playSound(SFX.POP);
+        
+        // FIX: Properties are assigned to window, which is handled by the global declaration.
+        window.spellingIdx++;
+        
+        // FIX: Properties are assigned to window, which is handled by the global declaration.
+        while(window.spellingIdx < target.length && (target[window.spellingIdx] === ' ' || target[window.spellingIdx] === '-')) {
+            // FIX: Properties are assigned to window, which is handled by the global declaration.
+            window.spellingIdx++;
+        }
+        
+        // FIX: Properties are assigned to window, which is handled by the global declaration.
+        if(window.spellingIdx >= target.length) {
+            document.getElementById('spellingInput').blur();
+            showToast("Chính xác!", "success");
+            // FIX: Function is assigned to window property, which is handled by the global declaration.
+            window.processResult(true);
+        } else {
+            // FIX: Properties are assigned to window, which is handled by the global declaration.
+            highlightChar(window.spellingIdx);
+        }
+    } else {
+        playSound(SFX.WRONG);
+        slot.classList.add('animate__animated', 'animate__shakeX');
+        slot.style.borderColor = '#ef4444';
+        setTimeout(() => {
+            slot.classList.remove('animate__animated', 'animate__shakeX');
+            slot.style.borderColor = '';
+        }, 500);
+    }
+}
+
+function highlightChar(idx) {
+    document.querySelectorAll('.char-slot').forEach(el => el.classList.remove('active'));
+    const el = document.getElementById(`char-${idx}`);
+    if(el) el.classList.add('active');
+}
+
+// --- NEW FEATURE: SENTENCE SCRAMBLE MODE ---
+async function renderSentence() {
+    isProcessing = false;
+    const w = sessionQueue[sessionIndex];
+
+    // Show loading spinner
+    document.getElementById('gameContent').innerHTML = `
+        <div style="text-align:center; padding:50px; color:white; opacity:0.8;">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <div style="margin-top:15px; font-weight:600;">Đang chuẩn bị câu đố...</div>
+        </div>
+    `;
+
+    // Priority: Example > Word
+    const sourceEnglish = w.example || w.english;
+    let sourceVietnamese = "";
+
+    // Try to get translation for the example immediately
+    if (w.example) {
+        try {
+            sourceVietnamese = await getTranslation(w.example);
+        } catch (e) {
+            console.error(e);
+            sourceVietnamese = w.vietnamese; // Fallback
+        }
+    } else {
+        sourceVietnamese = w.vietnamese;
+    }
+
+    // Determine Mode: 0 = Arrange English, 1 = Arrange Vietnamese
+    const mode = Math.random() > 0.5 ? 'arrange_en' : 'arrange_vn';
+
+    let targetStr = "";
+    let promptStr = "";
+    let guideStr = "";
+    const labelLang = LANG_CONFIG[currentLang].label;
+
+    if (mode === 'arrange_en') {
+        targetStr = sourceEnglish;
+        promptStr = sourceVietnamese; // Prompt is the translation
+        guideStr = `Sắp xếp câu ${labelLang}`;
+    } else {
+        targetStr = sourceVietnamese;
+        promptStr = sourceEnglish; // Prompt is the English text
+        guideStr = "Sắp xếp bản dịch Tiếng Việt";
+    }
+
+    // Clean target string & Split
+    targetStr = targetStr.trim();
+    const words = targetStr.split(/\s+/);
+    
+    // Shuffle
+    const shuffled = [...words].sort(() => Math.random() - 0.5);
+
+    document.getElementById('gameContent').innerHTML = `
+        <div class="glass-panel animate__animated animate__zoomIn" style="padding:20px; width:95%; text-align:center; margin-bottom:15px;">
+             <div style="opacity:0.8; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:5px;">${guideStr}</div>
+             <div style="font-size:1.1rem; font-weight:700; color:#fff; line-height: 1.4;">${promptStr}</div>
+             <div style="font-size:0.9rem; opacity:0.6; margin-top:5px; font-style:italic;">(Hãy sắp xếp các từ bên dưới)</div>
+        </div>
+
+        <div id="answerArea" class="answer-slot-container"></div>
+
+        <div id="sourceArea" class="sentence-area">
+             ${shuffled.map((word, i) => `<div class="word-chip" id="chip-${i}" onclick="window.moveWord(${i}, '${word.replace(/'/g, "\\'")}')">${word}</div>`).join('')}
+        </div>
+
+        <div style="display:flex; gap:15px; margin-top:10px;">
+             <button class="btn-speak-round" onclick="window.speakText('${sourceEnglish.replace(/'/g, "\\'")}')"><i class="fas fa-volume-up"></i></button>
+             <button class="action-btn" style="width:50px; flex:none; background:rgba(255,255,255,0.1);" onclick="window.resetSentence()"><i class="fas fa-redo"></i></button>
+        </div>
+    `;
+    
+    // FIX: Property is assigned to window, which is handled by the global declaration.
+    window.sentenceState = {
+        targetStr: targetStr.replace(/\s+/g, ' '),
+        originalMode: mode
+    };
+
+    // Auto-read English prompt if we are arranging Vietnamese
+    if (mode === 'arrange_vn' && !config.muted) {
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        setTimeout(() => window.speakText(sourceEnglish), 500);
+    }
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.moveWord = function(idx, word) {
+    if(isProcessing) return;
+    const chip = document.getElementById(`chip-${idx}`);
+    if(chip.classList.contains('used')) return;
+    
+    chip.classList.add('used');
+    playSound(SFX.POP);
+    
+    const ansArea = document.getElementById('answerArea');
+    const ansChip = document.createElement('div');
+    ansChip.className = 'ans-chip';
+    ansChip.innerText = word;
+    // FIX: The value for a dataset property must be a string, but 'idx' is a number.
+    ansChip.dataset.originIdx = String(idx);
+    ansChip.onclick = function() {
+        if(isProcessing) return; // Không cho gỡ khi đang check
+        // FIX: Cast 'this' to HTMLElement to use the 'remove' method.
+        (this as HTMLElement).remove();
+        document.getElementById(`chip-${idx}`).classList.remove('used');
+        playSound(SFX.FLIP);
+    };
+    
+    ansArea.appendChild(ansChip);
+
+    // --- AUTO CHECK LOGIC ---
+    // Kiểm tra xem còn chip nào chưa dùng không
+    const remaining = document.querySelectorAll('.sentence-area .word-chip:not(.used)').length;
+    if(remaining === 0) {
+        // Tự động check sau 1 khoảng ngắn
+        // FIX: Functions are assigned to window property, which is handled by the global declaration.
+        setTimeout(() => window.checkSentence(window.sentenceState.targetStr), 200);
+    }
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.resetSentence = function() {
+    if(isProcessing) return;
+    const ansArea = document.getElementById('answerArea');
+    ansArea.innerHTML = '';
+    document.querySelectorAll('.word-chip').forEach(el => el.classList.remove('used'));
+    playSound(SFX.FLIP);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.checkSentence = function(correctSentence) {
+    if(isProcessing) return;
+    const ansArea = document.getElementById('answerArea');
+    // FIX: Cast child elements to HTMLElement to access 'innerText' property.
+    const userWords = Array.from(ansArea.children).map(c => (c as HTMLElement).innerText);
+    const userSentence = userWords.join(' ');
+    
+    // Case insensitive comparison
+    if(userSentence.toLowerCase() === correctSentence.toLowerCase()) {
+        showToast("Tuyệt vời! Chính xác!", "success");
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.processResult(true);
+    } else {
+        playSound(SFX.WRONG);
+        ansArea.classList.add('animate__animated', 'animate__shakeX');
+        setTimeout(() => ansArea.classList.remove('animate__animated', 'animate__shakeX'), 500);
+        showToast("Sai rồi, hãy thử lại!", "error");
+        
+        // Auto reset sau khi sai để xếp lại cho nhanh
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        setTimeout(window.resetSentence, 1000);
+    }
+}
+// --- END SENTENCE MODE ---
+
+function renderFill() {
+    isProcessing = false;
+    const w = sessionQueue[sessionIndex];
+    const sentence = w.example || `The word is ${w.english}`;
+    const hidden = sentence.replace(new RegExp(w.english, 'gi'), '_____');
+    
+    document.getElementById('gameContent').innerHTML = `
+        <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; text-align:center; margin-bottom:25px;">
+            <div style="font-size:1.4rem; margin-bottom:15px; line-height:1.5; font-weight:600; text-shadow:0 1px 2px rgba(0,0,0,0.5);">${hidden}</div>
+            <div style="opacity:0.9; font-size:1rem; color:#60a5fa; font-weight:600;">Gợi ý: ${w.vietnamese}</div>
+        </div>
+        <div style="width:95%; display:flex; gap:10px;">
+            <input type="text" id="fillInp" class="input-glass" style="margin-bottom:0;" placeholder="Nhập từ vựng..." autocomplete="off" 
+                   onkeypress="if(event.key==='Enter') window.checkFill('${w.english}')">
+            <button class="btn-hint" onclick="window.showHint('${w.english}')"><i class="fas fa-lightbulb"></i></button>
+        </div>
+        <div style="width:95%; margin-top:15px;">
+             <button class="btn-primary" onclick="window.checkFill('${w.english}')">KIỂM TRA</button>
+        </div>
+        <button class="btn-speak-round" style="margin-top:20px; width:50px; height:50px; font-size:1.2rem;" onclick="window.speakWord()"><i class="fas fa-volume-up"></i></button>
+    `;
+    setTimeout(() => document.getElementById('fillInp').focus(), 100);
+    setTimeout(window.speakWord, 400);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.showHint = function(ans) {
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    const inp = document.getElementById('fillInp') as HTMLInputElement;
+    const currentVal = inp.value;
+    if (currentVal.length < ans.length) {
+        // FIX: Cast element to HTMLInputElement to access 'value' property.
+        inp.value = ans.substring(0, currentVal.length + 1);
+        playSound(SFX.POP);
+        inp.focus();
+    }
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.checkFill = function(ans) {
+    if(isProcessing) return;
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    const val = (document.getElementById('fillInp') as HTMLInputElement).value.trim();
+    const correct = val.toLowerCase() === ans.toLowerCase();
+    
+    if(correct) {
+        showToast("Chính xác!", "success");
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.processResult(true); 
+    } else {
+        // FIX: Cast element to HTMLInputElement to access 'value' property.
+        const inp = document.getElementById('fillInp') as HTMLInputElement;
+        inp.classList.add('animate__animated', 'animate__shakeX');
+        inp.style.borderColor = '#ef4444';
+        inp.style.color = '#ef4444';
+        // FIX: Cast element to HTMLInputElement to access 'value' property.
+        inp.value = ans; 
+        playSound(SFX.WRONG);
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.processResult(false);
+    }
+}
+
+function setupMatching() {
+    const subset = sessionQueue.slice(0, 4);
+    if(subset.length < 2) { showToast("Cần tối thiểu 2 từ!", "error"); window.closeGame(); return; }
+    sessionQueue = subset;
+    
+    let items = [];
+    subset.forEach((w, i) => {
+        items.push({ txt: w.english, id: i, type: 'en' });
+        items.push({ txt: w.vietnamese, id: i, type: 'vn' });
+    });
+    items.sort(() => Math.random() - 0.5);
+    
+    let html = `<div class="matching-grid animate__animated animate__fadeInUp">`;
+    items.forEach((item, idx) => {
+        html += `<div class="match-card" id="m-${idx}" onclick="window.matchClick(${idx}, ${item.id})">${item.txt}</div>`;
+    });
+    html += `</div>`;
+    document.getElementById('gameContent').innerHTML = html;
+    // FIX: Property is assigned to window, which is handled by the global declaration.
+    window.matchState = { selected: null, solved: 0, total: subset.length };
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.matchClick = function(idx, id) {
+    const el = document.getElementById(`m-${idx}`);
+    if(el.classList.contains('correct')) return;
+    
+    // FIX: Property is assigned to window, which is handled by the global declaration.
+    const state = window.matchState;
+    playSound(SFX.POP);
+    
+    if(state.selected === null) {
+        state.selected = { idx, id, el };
+        el.classList.add('selected');
+    } else {
+        if(state.selected.idx === idx) {
+            el.classList.remove('selected');
+            state.selected = null;
+            return;
+        }
+        
+        if(state.selected.id === id) { 
+            playSound(SFX.CORRECT);
+            el.classList.add('correct');
+            state.selected.el.classList.add('correct');
+            state.solved++;
+            state.selected = null;
+            addPoints(5); 
+            
+            if(state.solved === state.total) {
+                // FIX: Function is assigned to window property, which is handled by the global declaration.
+                setTimeout(() => { showToast("Hoàn thành xuất sắc!", "success"); window.closeGame(); }, 1000);
+            }
+        } else {
+            playSound(SFX.WRONG);
+            el.classList.add('wrong');
+            state.selected.el.classList.add('wrong');
+            setTimeout(() => {
+                el.classList.remove('wrong', 'selected');
+                state.selected.el.classList.remove('wrong', 'selected');
+                state.selected = null;
+            }, 600);
+        }
+    }
+}
+
+function setupQuiz() {
+    isProcessing = false;
+    const w = sessionQueue[sessionIndex];
+    const all = allTopics[currentTopicKey].words;
+    
+    let options = all.filter(x => getWordKey(x) !== getWordKey(w))
+                     .sort(() => Math.random() - 0.5).slice(0,3);
+    options.push(w);
+    options.sort(() => Math.random() - 0.5);
+    
+    let html = `<div style="text-align:center; margin-bottom:30px;" class="animate__animated animate__fadeInDown">
+        <div style="font-size:2.8rem; font-weight:800; margin-bottom:10px; color:#fff; text-shadow:0 0 20px rgba(59, 130, 246, 0.5);">${w.english}</div>
+        <button class="btn-speak-round" style="margin:0 auto; width:50px; height:50px; font-size:1.2rem;" onclick="window.speakWord()"><i class="fas fa-volume-up"></i></button>
+    </div>
+    <div style="width:100%; display:grid; gap:15px;" class="animate__animated animate__fadeInUp">`;
+    
+    options.forEach(opt => {
+        const isCorrect = getWordKey(opt) === getWordKey(w);
+        html += `<button class="action-btn" style="width:100%; background:rgba(255,255,255,0.95); color:#0f172a;" onclick="window.handleQuiz(this, ${isCorrect})">${opt.vietnamese}</button>`;
+    });
+    html += `</div>`;
+    document.getElementById('gameContent').innerHTML = html;
+    setTimeout(window.speakWord, 500);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.handleQuiz = function(el, isCorrect) {
+    if(isProcessing) return;
+    
+    if(isCorrect) {
+        el.style.background = '#00e676';
+        el.style.color = 'white';
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.processResult(true);
+    } else {
+        el.style.background = '#ff5252';
+        el.style.color = 'white';
+        el.classList.add('animate__animated', 'animate__shakeX');
+        // FIX: Function is assigned to window property, which is handled by the global declaration.
+        window.processResult(false);
+    }
+}
+
+// --- UTILITIES ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.startGame = function(mode) {
+    if(!currentUser) return showToast("Vui lòng đăng nhập để luyện tập!", "error");
+    if(!currentTopicKey || !allTopics[currentTopicKey]) return showToast("Chưa chọn chủ đề hoặc kho dữ liệu trống!", "error");
+    playSound(SFX.POP);
+    const allWords = allTopics[currentTopicKey].words;
+    
+    // FIX: Ensure the argument to parseInt is a string.
+    config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || '5', 10);
+    // FIX: Ensure the argument to parseInt is a string.
+    config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || '20', 10);
+    const totalLimit = config.newLimit + config.reviewLimit;
+    
+    if(mode === 'flashcard_all') {
+        // Flashcard mode shows all words (Preview Mode)
+        sessionQueue = [...allWords]; 
+    } else {
+        // OTHER GAMES: Only show learned words (SRS or Mastered)
+        let learnedWords = allWords.filter(w => {
+            const k = getWordKey(w);
+            return srsData[k] || masteredWords[k];
+        });
+
+        if (learnedWords.length === 0) {
+            return showToast("Bạn chưa học từ nào! Hãy chọn 'HỌC NGAY' để bắt đầu.", "error");
+        }
+
+        if (mode === 'matching' && learnedWords.length < 2) {
+            return showToast("Cần ít nhất 2 từ đã học để chơi ghép thẻ!", "error");
+        }
+
+        // Shuffle and limit learned words
+        learnedWords.sort(() => Math.random() - 0.5);
+        if(learnedWords.length > totalLimit) {
+            sessionQueue = learnedWords.slice(0, totalLimit);
+        } else {
+            sessionQueue = learnedWords;
+        }
+    }
+    
+    if(sessionQueue.length === 0) return showToast("Không có từ nào để học", "error");
+
+    showToast(`Bắt đầu: ${sessionQueue.length} thẻ`, "info");
+    
+    sessionIndex = 0;
+    currentMode = mode;
+    
+    // Start Preloading for specific game modes that might use images (flashcard)
+    if(mode === 'flashcard_all') preloadImages(0, 4);
+
+    openGameOverlay();
+    
+    if(mode === 'fill') renderFill();
+    else if(mode === 'matching') setupMatching();
+    else if(mode === 'quiz') setupQuiz();
+    else if(mode === 'spelling') renderSpelling();
+    else if(mode === 'sentence') renderSentence();
+    else renderFlashcard();
+}
+
+function renderDashboard() {
+    // REMOVED LOGIN CHECK to allow guest access
+    document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
+    updateUserPointsUI();
+    if(!currentTopicKey || !allTopics[currentTopicKey]) {
+        document.getElementById('currentTopicName').innerText = "(Chưa có dữ liệu)";
+        return;
+    }
+    const topic = allTopics[currentTopicKey];
+    document.getElementById('currentTopicName').innerText = topic.name;
+    
+    let cntNew=0, cntDue=0, cntMaster=0, cntLearned=0;
+    const now = Date.now();
+    
+    topic.words.forEach(w => {
+        const key = getWordKey(w);
+        if(masteredWords[key]) {
+            cntMaster++;
+            cntLearned++;
+        }
+        else if(srsData[key]) {
+            if(srsData[key].nextReview <= now) cntDue++;
+            cntLearned++;
+        } else {
+            cntNew++;
+        }
+    });
+    
+    animateValue("statNew", parseInt(document.getElementById('statNew').innerText, 10), cntNew, 1000);
+    animateValue("statDue", parseInt(document.getElementById('statDue').innerText, 10), cntDue, 1000);
+    animateValue("statLearned", parseInt(document.getElementById('statLearned').innerText, 10), cntLearned, 1000);
+    animateValue("statMastered", parseInt(document.getElementById('statMastered').innerText, 10), cntMaster, 1000);
+}
+
+// --- NEW FUNCTION: WORD LIST POPUP ---
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.openWordList = function(type) {
+    if(!currentTopicKey || !allTopics[currentTopicKey]) return;
+    const topic = allTopics[currentTopicKey];
+    const now = Date.now();
+    
+    let wordsToShow = [];
+    let title = "";
+
+    if(type === 'new') {
+        title = "Từ Mới (Chưa học)";
+        wordsToShow = topic.words.filter(w => {
+            const k = getWordKey(w);
+            return !masteredWords[k] && !srsData[k];
+        });
+    } else if(type === 'due') {
+        title = "Cần Ôn Tập";
+        wordsToShow = topic.words.filter(w => {
+            const k = getWordKey(w);
+            return srsData[k] && srsData[k].nextReview <= now && !masteredWords[k];
+        });
+    } else if(type === 'learned') {
+        title = "Đã Học";
+        wordsToShow = topic.words.filter(w => {
+            const k = getWordKey(w);
+            return srsData[k] || masteredWords[k];
+        });
+    } else if(type === 'mastered') {
+        title = "Đã Thuộc Lòng";
+        wordsToShow = topic.words.filter(w => {
+            const k = getWordKey(w);
+            return masteredWords[k];
+        });
+    }
+
+    const overlay = document.getElementById('wordListOverlay');
+    const content = document.getElementById('wordListContent');
+    const titleEl = document.getElementById('listTitle');
+    
+    titleEl.innerText = `${title} (${wordsToShow.length})`;
+    content.innerHTML = "";
+    
+    if(wordsToShow.length === 0) {
+        content.innerHTML = `<div style="text-align:center; padding:20px; opacity:0.6;">Chưa có từ nào trong mục này.</div>`;
+    } else {
+        wordsToShow.forEach(w => {
+            const div = document.createElement('div');
+            div.className = "list-item";
+            div.innerHTML = `
+                <div>
+                    <div class="list-word-main">${w.english}</div>
+                    <div class="list-word-sub">${w.vietnamese}</div>
+                </div>
+                <div style="opacity:0.6; cursor:pointer;" onclick="window.speakText('${w.english}')">
+                    <i class="fas fa-volume-up"></i>
+                </div>
+            `;
+            content.appendChild(div);
+        });
+    }
+    
+    overlay.style.display = 'flex';
+    playSound(SFX.POP);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.closeWordList = function() {
+    document.getElementById('wordListOverlay').style.display = 'none';
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.speakText = function(text) {
+    if(config.muted) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    // Use dynamic TTS code from config
+    u.lang = LANG_CONFIG[currentLang].tts; 
+    if(selectedVoice) u.voice = selectedVoice;
+    window.speechSynthesis.speak(u);
+}
+
+function animateValue(id, start, end, duration) {
+    if (start === end) return;
+    const range = end - start;
+    let current = start;
+    const increment = end > start ? 1 : -1;
+    const stepTime = Math.abs(Math.floor(duration / range));
+    const obj = document.getElementById(id);
+    const timer = setInterval(function() {
+        current += increment;
+        // FIX: The value for innerHTML must be a string, but 'current' is a number.
+        obj.innerHTML = String(current);
+        if (current == end) clearInterval(timer);
+    }, Math.max(stepTime, 50));
+}
+
+function renderTopicList() {
+    const list = document.getElementById('topicList');
+    list.innerHTML = '';
+
+    // If active language is English (Basic or Advanced), show repo switcher tab
+    if (currentLang.startsWith('en')) {
+        const switcher = document.createElement('div');
+        switcher.className = 'repo-toggle animate__animated animate__fadeIn';
+        const isBasic = currentLang === 'en';
+        switcher.innerHTML = `
+            <div class="repo-opt ${isBasic ? 'active' : ''}" onclick="window.switchLanguage('en')">
+                <i class="fas fa-seedling"></i> Kho Cơ bản (tuvung)
+            </div>
+            <div class="repo-opt ${!isBasic ? 'active' : ''}" onclick="window.switchLanguage('en_adv')">
+                <i class="fas fa-graduation-cap"></i> Kho Nâng cao (3000tv)
+            </div>
+        `;
+        list.appendChild(switcher);
+    }
+
+    // Calculate Grand Totals for current Repo
+    let repoTotalWords = 0;
+    let repoTotalLearned = 0;
+
+    Object.keys(allTopics).forEach(key => {
+        const t = allTopics[key];
+        repoTotalWords += t.words.length;
+        t.words.forEach(w => {
+             const k = getWordKey(w);
+             if(masteredWords[k] || srsData[k]) repoTotalLearned++;
+        });
+    });
+
+    // Render Grand Summary Card
+    const summaryPct = repoTotalWords > 0 ? Math.floor((repoTotalLearned/repoTotalWords)*100) : 0;
+    
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = "glass-panel animate__animated animate__fadeInDown";
+    summaryDiv.style.padding = "20px";
+    summaryDiv.style.marginBottom = "25px";
+    summaryDiv.style.background = "rgba(59, 130, 246, 0.15)";
+    summaryDiv.style.border = "1px solid rgba(59, 130, 246, 0.4)";
+    summaryDiv.innerHTML = `
+        <div style="text-align:center;">
+            <h3 style="color:#fff; margin-bottom:5px; text-transform:uppercase; letter-spacing:1px; font-size:0.9rem;">Tổng quan Kho từ</h3>
+            <div style="font-size:2.5rem; font-weight:800; color:#38bdf8; text-shadow:0 0 10px rgba(56,189,248,0.5)">${repoTotalLearned} <span style="font-size:1rem; color:#94a3b8">/ ${repoTotalWords}</span></div>
+            <div style="font-size:0.9rem; margin-top:5px; font-weight:600;">Tiến độ: ${summaryPct}%</div>
+            <div class="topic-progress-bg" style="margin-top:10px; height:8px;">
+                <div class="topic-progress-fill" style="width:${summaryPct}%; background:#38bdf8; box-shadow:0 0 10px #38bdf8;"></div>
+            </div>
+        </div>
+    `;
+    list.appendChild(summaryDiv);
+
+    Object.keys(allTopics).forEach(key => {
+        const t = allTopics[key];
+        
+        let learnedCount = 0;
+        t.words.forEach(w => {
+            const k = getWordKey(w);
+            if(masteredWords[k] || srsData[k]) learnedCount++;
+        });
+        const pct = t.words.length > 0 ? Math.floor((learnedCount / t.words.length) * 100) : 0;
+
+        const el = document.createElement('div');
+        el.className = `glass-panel ${key===currentTopicKey ? 'animate__animated animate__pulse':''}`;
+        el.style.padding = '20px';
+        el.style.marginBottom = '15px';
+        el.style.cursor = 'pointer';
+        
+        el.innerHTML = `
+            <div style="width:100%">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-weight:700; font-size:1.1rem;">${t.name}</div>
+                    ${key===currentTopicKey ? '<i class="fas fa-check-circle" style="color:var(--success-color); font-size:1.2rem;"></i>' : ''}
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:0.75rem; opacity:0.7; margin-top:2px;">
+                    <span>${t.words.length} thẻ</span>
+                    <span>Đã học ${pct}%</span>
+                </div>
+                <div class="topic-progress-bg">
+                    <div class="topic-progress-fill" style="width:${pct}%"></div>
+                </div>
+            </div>
+        `;
+        el.onclick = () => {
+            currentTopicKey = key;
+            localStorage.setItem(getDataKey('fp_aurora_topic'), key);
+            playSound(SFX.POP);
+            showToast("Đã chọn: " + t.name);
+            saveProgressToCloud(); 
+            // FIX: Function is assigned to window property, which is handled by the global declaration.
+            window.navTo('view-home');
+        };
+        list.appendChild(el);
+    });
+}
+
+function showToast(msg, type='info') {
+    const el = document.getElementById('toast');
+    const txt = document.getElementById('toast-msg');
+    const icon = document.getElementById('toast-icon');
+    
+    if(type==='success') { icon.innerHTML = '<i class="fas fa-check-circle" style="color:#4ade80"></i>'; el.style.border = "1px solid #4ade80"; }
+    else if(type==='error') { icon.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#f87171"></i>'; el.style.border = "1px solid #f87171"; }
+    else { icon.innerHTML = '<i class="fas fa-info-circle" style="color:#60a5fa"></i>'; el.style.border = "1px solid #60a5fa"; }
+    
+    txt.innerText = msg;
+    el.classList.add('show');
+    // FIX: Property is assigned to window, which is handled by the global declaration.
+    if(window.toastTimeout) clearTimeout(window.toastTimeout);
+    // FIX: Property is assigned to window, which is handled by the global declaration.
+    window.toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.markMastered = function() {
+    if(!confirm("Bạn chắc chắn đã thuộc lòng từ này? Nó sẽ không xuất hiện lại.")) return;
+    const w = sessionQueue[sessionIndex];
+    const key = getWordKey(w);
+    masteredWords[key] = true;
+    delete srsData[key];
+    localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+    localStorage.setItem(getDataKey('fp_aurora_mastered'), JSON.stringify(masteredWords));
+    
+    addPoints(100); 
+    saveProgressToCloud(); 
+    playSound(SFX.WIN);
+    showToast("Đã chuyển vào kho Tinh thông!", "success");
+    nextStep();
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.resetProgress = function() {
+    if(!confirm("CẢNH BÁO: Hành động này sẽ xoá TOÀN BỘ dữ liệu học tập của ngôn ngữ hiện tại, bao gồm từ đã thuộc và tiến độ ôn tập. Bạn có chắc chắn không?")) return;
+    
+    srsData = {};
+    masteredWords = {};
+    accumulatedPoints = 0;
+    accumulatedTime = 0;
+    
+    localStorage.removeItem(getDataKey('fp_aurora_srs'));
+    localStorage.removeItem(getDataKey('fp_aurora_mastered'));
+    localStorage.removeItem('fp_aurora_points');
+    localStorage.removeItem('fp_aurora_time');
+    
+    saveProgressToCloud();
+    renderDashboard();
+    showToast("Đã xoá dữ liệu thành công", "success");
+    playSound(SFX.POP);
+}
+
+function setupVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    const targetLang = LANG_CONFIG[currentLang].tts;
+    // Try to find exact match for current language
+    selectedVoice = voices.find(v => v.lang === targetLang) ||
+                    voices.find(v => v.lang.startsWith(targetLang.split('-')[0])) ||
+                    voices.find(v => v.name === 'Google US English'); // Fallback
+}
+
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.speakWord = function(e) {
+    if(e) e.stopPropagation();
+    if(config.muted) return;
+    const w = sessionQueue[sessionIndex];
+    if(!w) return;
+    window.speechSynthesis.cancel();
+    // Nếu là mode sentence, đọc cả câu, còn lại đọc từ
+    const text = (currentMode === 'sentence' && w.example) ? w.example : w.english;
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = LANG_CONFIG[currentLang].tts; 
+    u.rate = 0.85; 
+    if(selectedVoice) u.voice = selectedVoice;
+    window.speechSynthesis.speak(u);
+}
+
+function applyTheme() {
+    document.body.classList.toggle('dark-mode', config.darkMode);
+    document.getElementById('themeBtn').innerHTML = config.darkMode ? '<i class="fas fa-sun" style="color:#fcd34d"></i>' : '<i class="fas fa-moon" style="color:#fff"></i>';
+}
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.toggleTheme = function() { config.darkMode = !config.darkMode; localStorage.setItem('fp_aurora_dark', String(config.darkMode)); applyTheme(); playSound(SFX.POP); saveProgressToCloud(); }
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.toggleMute = function() { config.muted = !config.muted; localStorage.setItem('fp_aurora_muted', String(config.muted)); updateMuteIcon(); saveProgressToCloud(); }
+function updateMuteIcon() { document.getElementById('muteIcon').className = config.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up'; }
+// FIX: Function is assigned to window property, which is handled by the global declaration.
+window.saveConfig = function() {
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    config.newLimit = parseInt((document.getElementById('cfgNewLimit') as HTMLInputElement).value, 10);
+    // FIX: Cast element to HTMLInputElement to access 'value' property.
+    config.reviewLimit = parseInt((document.getElementById('cfgReviewLimit') as HTMLInputElement).value, 10);
+    // FIX: Ensure value passed to localStorage.setItem is a string.
+    localStorage.setItem('fp_aurora_cfg_new', String(config.newLimit));
+    // FIX: Ensure value passed to localStorage.setItem is a string.
+    localStorage.setItem('fp_aurora_cfg_review', String(config.reviewLimit));
+    saveProgressToCloud();
+    updateConfigUI();
+}
+function updateConfigUI() {
+    // FIX: Cast element to HTMLInputElement to access 'value' property and ensure value is a string.
+    (document.getElementById('cfgNewLimit') as HTMLInputElement).value = String(config.newLimit);
+    // FIX: Ensure value assigned to innerText is a string.
+    document.getElementById('dispLimitNew').innerText = String(config.newLimit);
+    // FIX: Cast element to HTMLInputElement to access 'value' property and ensure value is a string.
+    (document.getElementById('cfgReviewLimit') as HTMLInputElement).value = String(config.reviewLimit);
+    // FIX: Ensure value assigned to innerText is a string.
+    document.getElementById('dispLimitReview').innerText = String(config.reviewLimit);
+}
