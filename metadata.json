@@ -1,6 +1,7 @@
-
 {
-  "name": "Hihi Vocabulary - Ultimate",
-  "description": "An interactive vocabulary learning application with flashcards, quizzes, and various game modes to help users master new words. It features progress tracking, leaderboards, and data synchronization.",
-  "requestFramePermissions": []
+  "name": "Hihi Vocabulary Pro",
+  "description": "Advanced vocabulary learning app with spaced repetition, gamification, and multi-repository support.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

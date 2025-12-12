@@ -1,5 +1,5 @@
 {
-  "name": "hihi-vocabulary---ultimate",
+  "name": "hihi-vocabulary-pro",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,11 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "firebase": "^12.6.0",
+    "canvas-confetti": "^1.9.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
-    
+    "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }

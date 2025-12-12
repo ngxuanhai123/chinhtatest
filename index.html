@@ -1,82 +1,56 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Hihi Vocabulary</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Hihi Vocabulary Pro</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700;800&family=Quicksand:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
     <style>
         body { font-family: 'Poppins', sans-serif; background-color: #0f172a; color: white; overflow-x: hidden; }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .text-shadow { text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .card-flip { transform-style: preserve-3d; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+        .card-flipped { transform: rotateY(180deg); }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
         
-        /* Aurora Background */
+        /* Aurora Background Animation */
         .aurora-bg {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -2;
             background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
-            opacity: 0.8;
-        }
-        .dark .aurora-bg {
-            background: linear-gradient(-45deg, #020024, #090979, #1a0b2e, #001f3f);
-            background-size: 400% 400%;
         }
         @keyframes gradientBG {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-
-        /* Glassmorphism */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-        }
-        .dark .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        /* 3D Card Flip */
-        .perspective-1000 { perspective: 1000px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .backface-hidden { backface-visibility: hidden; }
-        .rotate-y-180 { transform: rotateY(180deg); }
-        
-        /* Snowflakes */
-        .snowflake {
-            position: fixed; top: -20px; z-index: 0; color: #fff;
-            font-size: 1em; opacity: 0.8; pointer-events: none;
-            animation: fall linear forwards;
-            text-shadow: 0 0 5px rgba(255,255,255,0.8);
-        }
-        @keyframes fall { to { transform: translateY(105vh) rotate(360deg); } }
-
-        /* Animations */
-        @keyframes floatCrown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
-        .animate-float { animation: floatCrown 2s ease-in-out infinite; }
-        
-        .hide-scrollbar::-webkit-scrollbar { display: none; }
-        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 <script type="importmap">
 {
   "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "firebase/": "https://esm.sh/firebase@^12.6.0/"
+    "firebase/": "https://esm.sh/firebase@^12.6.0/",
+    "canvas-confetti": "https://esm.sh/canvas-confetti@^1.9.4"
   }
 }
 </script>
+<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
-    <script type="module" src="./index.tsx"></script>
+<script type="module" src="/index.tsx"></script>
 </body>
 </html>
