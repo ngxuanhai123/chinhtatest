@@ -1,7 +1,0 @@
-{
-  "name": "Hihi Vocabulary Pro",
-  "description": "Advanced vocabulary learning app with spaced repetition, gamification, and multi-repository support.",
-  "requestFramePermissions": [
-    "microphone"
-  ]
-}
