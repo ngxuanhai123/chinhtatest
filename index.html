@@ -186,14 +186,14 @@
   .list-word-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
 
   /* --- FLASHCARD 3D --- */
-  .scene { width: 100%; height: 480px; perspective: 1500px; margin: 20px 0; }
+  .scene { width: 100%; height: 550px; perspective: 1500px; margin: 20px 0; }
   .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
   .card.is-flipped { transform: rotateY(180deg); }
   
   .card__face {
     position: absolute; width: 100%; height: 100%; backface-visibility: hidden;
     border-radius: 30px; display: flex; flex-direction: column; justify-content: center; align-items: center;
-    padding: 30px; text-align: center;
+    padding: 20px; text-align: center;
     background: rgba(255, 255, 255, 0.95);
     border: 2px solid rgba(255, 255, 255, 0.8);
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
@@ -209,7 +209,7 @@
   .card__face--back { transform: rotateY(180deg); }
   
   .word-en { 
-      font-size: 3.2rem; font-weight: 800; margin-bottom: 5px; line-height: 1.1; 
+      font-size: 2.8rem; font-weight: 800; margin-bottom: 5px; line-height: 1.1; 
       background: linear-gradient(45deg, #2563EB, #4F46E5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
       filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
   }
@@ -220,10 +220,10 @@
 
   .word-vn { font-size: 2.2rem; font-weight: 700; color: var(--card-text-main); margin-bottom: 15px; }
   
-  .ipa { font-family: 'Times New Roman', serif; font-style: italic; color: var(--card-text-sub); font-size: 1.4rem; margin-bottom: 15px; }
+  .ipa { font-family: 'Times New Roman', serif; font-style: italic; color: var(--card-text-sub); font-size: 1.2rem; margin-bottom: 10px; }
   
   .example-box {
-      font-style: italic; opacity: 0.9; font-size: 1.1rem; padding: 10px;
+      font-style: italic; opacity: 0.9; font-size: 1rem; padding: 10px;
       color: var(--card-text-main);
       background: rgba(0,0,0,0.05);
       border-radius: 12px;
@@ -231,6 +231,20 @@
       width: 100%;
   }
   body.dark-mode .example-box { background: rgba(255,255,255,0.08); }
+
+  /* FLASHCARD IMAGE */
+  .flashcard-img {
+      width: 100%; height: auto; object-fit: contain;
+      border-radius: 16px; margin: 10px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      max-height: 200px;
+      display: block;
+      background: rgba(0,0,0,0.05);
+  }
+  @media (min-width: 768px) {
+      .flashcard-img { max-height: 260px; }
+      .scene { height: 600px; }
+  }
 
   /* --- GAME OVERLAY --- */
   #gameOverlay {
@@ -528,7 +542,6 @@
   .repo-btn.active { background: #3b82f6; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
 </style>
-<link rel="stylesheet" href="/index.css">
 <script type="importmap">
 {
   "imports": {
@@ -1014,12 +1027,6 @@ window.initLeaderboardListener = () => {
     const podiumDiv = document.getElementById('podiumContainer');
     listDiv.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.7;"><i class="fas fa-spinner fa-spin"></i> Đang kết nối máy chủ...</div>';
     
-    // Attempt to sort by language specific score. 
-    // Note: If index is missing in Firestore, this will throw an error.
-    // Falling back to 'score' (global) if language specific index doesn't exist might be tricky in client code.
-    // For now we assume 'score' represents the active language or main activity.
-    // Ideally: orderBy(`score_${currentLang}`, "desc")
-    
     const sortField = `score_${currentLang}`;
     const q = query(collection(db, "leaderboard"), orderBy(sortField, "desc"), limit(20));
     
@@ -1029,7 +1036,6 @@ window.initLeaderboardListener = () => {
         const users = [];
         querySnapshot.forEach(doc => {
             const d = doc.data();
-            // Use the language specific score for display
             const langScore = d[sortField] || 0;
             users.push({ id: doc.id, ...d, displayScore: langScore });
         });
@@ -1194,6 +1200,23 @@ async function getTranslation(text) {
     return "Không thể dịch tự động.";
 }
 
+// --- HELPER: GET IMAGE URL ---
+function getImageUrl(word) {
+    // Using Bing Thumbnail Proxy for stable, relevant illustrations
+    return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(word)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
+}
+
+// --- HELPER: PRELOAD NEXT IMAGES ---
+function preloadImages() {
+    if (!sessionQueue || sessionQueue.length === 0) return;
+    const start = sessionIndex + 1;
+    const end = Math.min(start + 4, sessionQueue.length); // Load next 3-4 images
+    for (let i = start; i < end; i++) {
+        const img = new Image();
+        img.src = getImageUrl(sessionQueue[i].english);
+    }
+}
+
 // --- INITIALIZATION ---
 window.initApp = function() {
     createParticles();
@@ -1327,7 +1350,6 @@ window.navTo = function(viewId) {
 window.fetchTopics = async function(manual = false) {
     const status = document.getElementById('status-msg');
     
-    // Determine user and repo based on config
     let ghUser = 'ngxuanhai123';
     let ghRepo = 'tuvung';
     const langCfg = LANG_CONFIG[currentLang];
@@ -1340,7 +1362,6 @@ window.fetchTopics = async function(manual = false) {
         ghRepo = langCfg.repo;
     }
 
-    // Update UI inputs
     document.getElementById('gh-user').value = ghUser;
     document.getElementById('gh-repo').value = ghRepo;
 
@@ -1358,17 +1379,33 @@ window.fetchTopics = async function(manual = false) {
         const jsonFiles = files.filter(f => f.name.endsWith('.json'));
         
         allTopics = {};
-        for(const f of jsonFiles) {
-            const raw = await fetch(f.download_url);
-            const data = await raw.json();
+        
+        // --- OPTIMIZATION: CONCURRENT FETCHING ---
+        // Fetch all topic files in parallel instead of sequential await
+        const fetchPromises = jsonFiles.map(f => 
+            fetch(f.download_url)
+                .then(r => r.json())
+                .then(data => ({ name: f.name, data: data }))
+                .catch(err => {
+                    console.warn(`Failed to fetch topic ${f.name}`, err);
+                    return null;
+                })
+        );
+
+        const results = await Promise.all(fetchPromises);
+
+        results.forEach(result => {
+            if (!result) return;
+            const { name, data } = result;
             const words = Array.isArray(data) ? data : (data.words || []);
             if(words.length) {
-                allTopics[f.name] = {
-                    name: (data.name || f.name.replace('.json','')).replace(/_/g,' '),
+                allTopics[name] = {
+                    name: (data.name || name.replace('.json','')).replace(/_/g,' '),
                     words: words
                 };
             }
-        }
+        });
+        // ------------------------------------------
         
         status.innerText = "Aurora Rank Master • Ready";
         // Ensure topic logic respects the saved key, only fallback if invalid
@@ -1443,6 +1480,7 @@ window.startSmartSession = function() {
     currentMode = 'smart';
     
     openGameOverlay();
+    preloadImages(); // Preload images for session
     decideSmartRender();
 }
 
@@ -1594,6 +1632,7 @@ function nextStep() {
         setTimeout(() => {
             sessionIndex++;
             updateProgress();
+            preloadImages(); // Preload next images
             
             content.classList.remove('slide-out-left');
             content.style.opacity = 0;
@@ -1634,17 +1673,18 @@ function renderFlashcard() {
     
     const isReviewMode = (currentMode === 'smart');
     const labelLang = LANG_CONFIG[currentLang].label;
+    const imgUrl = getImageUrl(w.english);
 
     const html = `
         <div class="scene">
             <div class="card" id="flashcardObj" onclick="window.flipCard()">
                 <div class="card__face card__face--front">
                     ${badge}
-                    <div style="font-size:0.8rem; opacity:0.6; margin-bottom:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase;">${labelLang}</div>
                     <div class="word-en">${w.english}</div>
                     <div class="ipa">${w.ipa || ''}</div>
                     
-                    <div style="width:100%; border-top:1px dashed rgba(0,0,0,0.1); margin: 10px 0;"></div>
+                    <img src="${imgUrl}" class="flashcard-img" alt="${w.english}" onerror="this.style.display='none'" />
+                    
                     <div style="font-size:0.8rem; opacity:0.7; margin-bottom:5px;">Ví dụ mẫu:</div>
                     <div class="example-box">"${w.example || ''}"</div>
                     
@@ -2168,6 +2208,8 @@ window.startGame = function(mode) {
     currentMode = mode;
     openGameOverlay();
     
+    preloadImages(); // Preload for start
+
     if(mode === 'fill') renderFill();
     else if(mode === 'matching') setupMatching();
     else if(mode === 'quiz') setupQuiz();
