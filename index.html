@@ -562,6 +562,34 @@
   }
   .repo-btn.active { background: #3b82f6; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
+  /* --- RESPONSIVE ADJUSTMENTS --- */
+  @media (max-width: 600px) {
+    .scene { height: 400px; }
+    .card__face { padding: 15px; }
+    .word-en { font-size: 2rem; margin-bottom: 2px; }
+    .word-vn { font-size: 1.6rem; }
+    .flashcard-img { max-height: 150px; }
+    .header-content h1 { font-size: 1.5rem; }
+    .action-btn { height: 60px; font-size: 0.9rem; }
+    .btn-speak-round { width: 55px; height: 55px; font-size: 1.4rem; }
+    .stats-grid { gap: 8px; }
+    .stat-card { padding: 10px 5px; }
+    .stat-num { font-size: 1.3rem; }
+    .mode-btn { height: 90px; padding: 10px; }
+    .mode-btn i { font-size: 1.6rem; margin-bottom: 5px; }
+    .mode-btn span { font-size: 0.8rem; }
+    .view-container { width: 96%; }
+    .char-slot { width: 30px; height: 40px; font-size: 1.2rem; }
+  }
+
+  @media (max-width: 380px) {
+    .scene { height: 360px; }
+    .word-en { font-size: 1.6rem; }
+    .word-vn { font-size: 1.3rem; }
+    .btn-primary { font-size: 0.9rem; padding: 12px; }
+    .lang-opt { padding: 5px 10px; font-size: 0.75rem; }
+  }
+
 </style>
 <script type="importmap">
 {
@@ -969,11 +997,11 @@ onAuthStateChanged(auth, async (user) => {
     const reqMsg = document.getElementById('requireLoginMsg');
     
     // Check access permissions based on trialCount (Page Accesses)
+    // Rule: Allow strictly only 3 first accesses for guests. 4th -> blocked.
     let allowAccess = false;
     if (user) {
         allowAccess = true;
     } else {
-        // Guests allowed if trial count <= 3
         if (trialCount <= 3) allowAccess = true;
     }
 
@@ -1194,14 +1222,22 @@ window.initLeaderboardListener = () => {
             if(currentUser && u.id === currentUser.uid) currentUserFound = true;
             
             // SHOW ALL RANKS (Including Top 3) in the detailed list as requested
+            let extraStyle = '';
+            if(currentUser && u.id === currentUser.uid) {
+                extraStyle = 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;';
+            }
             
-            const isMe = currentUser && u.id === currentUser.uid ? 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;' : '';
+            // Highlight Top 3 in list as well for details
+            if(rank === 1) extraStyle += ' border-right: 3px solid #ffd700;';
+            if(rank === 2) extraStyle += ' border-right: 3px solid #c0c0c0;';
+            if(rank === 3) extraStyle += ' border-right: 3px solid #cd7f32;';
+
             const rankObj = getRankInfo(u[`score_${currentLang}`] || 0); // Always base title on total score
             const learnedCount = u[`learnedCount_${currentLang}`] || 0;
 
             listHTML += `
-                <div class="leaderboard-row animate__animated animate__fadeIn" style="${isMe}">
-                    <div class="rank-num">${rank}</div>
+                <div class="leaderboard-row animate__animated animate__fadeIn" style="${extraStyle}">
+                    <div class="rank-num" style="${rank<=3 ? 'color:#fbbf24; font-size:1.1rem;':''}">${rank}</div>
                     <img src="${u.photoURL}" class="lb-avatar">
                     <div class="lb-info">
                         <div class="lb-name">${u.displayName}</div>
@@ -1369,10 +1405,11 @@ async function getTranslation(text) {
 
 // --- HELPER: GET IMAGE URL ---
 function getImageUrl(word) {
-    // FIX FOR INDONESIA IMAGE SEARCH:
-    // Do not add "indonesia" suffix as it often returns maps/flags.
-    // Standard query for just the word works better.
     let q = word;
+    // Fix for Indonesia: use 'drawing' or 'clipart' to avoid generic/irrelevant photos (flags/maps)
+    if(currentLang === 'id') {
+         return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(q)}+drawing&w=600&h=400&c=7&rs=1&p=0`;
+    }
     return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(q)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
 }
 
@@ -1390,7 +1427,8 @@ function preloadImages() {
 // --- INITIALIZATION ---
 window.initApp = function() {
     // TRIAL LOGIC: Increment trial count on page access (initApp)
-    if (!currentUser) {
+    // Only increment if not yet strictly blocked, to account for "first 3 accesses".
+    if (!currentUser && trialCount < 5) { // <5 just to be safe, logic handles <=3
         trialCount++;
         localStorage.setItem('fp_aurora_trial_access', trialCount);
     }
@@ -1438,7 +1476,7 @@ window.switchLanguage = function(lang) {
     accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${currentLang}`) || 0);
     updateUserPointsUI();
     
-    // RELOAD DAILY TRACKING FOR NEW LANG
+    // RELOAD DAILY TRACKING FOR NEW LANG (ISOLATION FIX)
     dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
     checkDailyLimit();
 
@@ -1737,7 +1775,7 @@ window.processResult = function(isCorrect) {
         
         // --- DAILY TRACKING INCREMENT (LANGUAGE SPECIFIC) ---
         if(isNewWord) {
-            checkDailyLimit();
+            checkDailyLimit(); // Ensure date is fresh before increment
             dailyTracking.count++;
             localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
         }
