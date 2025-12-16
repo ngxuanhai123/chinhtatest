@@ -184,6 +184,13 @@
   }
   .list-word-main { font-weight: 700; color: #fff; font-size: 1rem; }
   .list-word-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
+  .btn-undo {
+      background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.5);
+      color: #ef4444; width: 35px; height: 35px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; margin-left: 10px; transition: 0.2s;
+  }
+  .btn-undo:active { transform: scale(0.9); background: rgba(239, 68, 68, 0.4); }
 
   /* --- FLASHCARD 3D --- */
   .scene { width: 100%; height: 550px; perspective: 1500px; margin: 20px 0; }
@@ -420,6 +427,19 @@
   .user-badge:active { transform: scale(0.95); }
   .user-avatar { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #fff; object-fit: cover; }
 
+  /* LB TABS */
+  .lb-tabs {
+      display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+      padding: 5px; background: rgba(0,0,0,0.2); border-radius: 25px;
+  }
+  .lb-tab {
+      padding: 8px 16px; border-radius: 20px; font-size: 0.8rem; font-weight: 700;
+      color: rgba(255,255,255,0.6); cursor: pointer; transition: 0.3s;
+  }
+  .lb-tab.active {
+      background: rgba(255,255,255,0.2); color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  }
+
   /* --- SPELLING MODE STYLES --- */
   .spelling-container {
     display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 25px 0;
@@ -597,12 +617,13 @@
         </div>
     </div>
     
-    <div id="requireLoginMsg" style="text-align:center; margin-top:50px; padding:20px; display:block;">
+    <div id="requireLoginMsg" style="text-align:center; margin-top:50px; padding:20px; display:none;">
         <i class="fas fa-lock" style="font-size:3rem; margin-bottom:15px; opacity:0.7;"></i>
-        <div style="font-weight:600;">Vui lòng đăng nhập để sử dụng.</div>
+        <div style="font-weight:600; margin-bottom: 10px;">Vui lòng đăng nhập để sử dụng.</div>
+        <div style="font-size:0.85rem; opacity:0.8;">Bạn đã hết lượt dùng thử miễn phí (3 phiên).</div>
     </div>
 
-    <div id="dashboardContent" style="display: none;">
+    <div id="dashboardContent" style="display: block;">
         <div class="glass-panel" style="padding: 24px; position: relative; overflow: hidden;">
             <div style="position:absolute; top:-10px; right:-10px; width:80px; height:80px; background:white; opacity:0.1; border-radius:50%; filter:blur(20px);"></div>
             
@@ -633,11 +654,8 @@
             </div>
         </div>
         
-        <button class="btn-primary animate__animated animate__pulse animate__infinite" style="margin-top: 30px; animation-duration: 2s;" onclick="window.startSmartSession()">
-            <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
-        </button>
-        <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-            <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+        <div id="actionArea" style="margin-top: 30px;">
+             <!-- Content injected by JS -->
         </div>
 
         <h3 style="margin-top: 35px; margin-bottom: 15px; font-size:1.2rem; padding-left:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Chế độ Luyện tập</h3>
@@ -680,16 +698,22 @@
 
   <div id="view-leaderboard" class="view-container animate__animated animate__fadeIn" style="display:none;">
       <h2 style="margin-bottom: 5px; padding-left: 10px; text-align:center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"><i class="fas fa-crown" style="color:#fbbf24"></i> Đấu Trường <span id="lb-lang-label"></span></h2>
-      <div style="text-align:center; font-size:0.85rem; opacity:0.8; margin-bottom:10px;">Vinh danh những học giả xuất sắc nhất</div>
+      <div style="text-align:center; font-size:0.85rem; opacity:0.8; margin-bottom:15px;">Vinh danh những học giả xuất sắc nhất</div>
       
+      <div class="lb-tabs">
+          <div class="lb-tab active" id="tab-week" onclick="window.switchLbTab('week')">Tuần này</div>
+          <div class="lb-tab" id="tab-month" onclick="window.switchLbTab('month')">Tháng này</div>
+          <div class="lb-tab" id="tab-all" onclick="window.switchLbTab('all')">Toàn thời gian</div>
+      </div>
+
       <div id="podiumContainer" class="podium-container" style="display:none;">
-          </div>
+      </div>
 
       <div class="glass-panel" style="padding: 0; overflow: hidden; min-height: 200px;">
           <div style="display: grid; grid-template-columns: 30px 45px 1fr auto; padding: 12px 15px; background: rgba(0,0,0,0.2); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">
              <div style="text-align:center">#</div>
              <div></div>
-             <div>Học viên & Cấp bậc</div>
+             <div>Học viên</div>
              <div style="text-align:right">XP</div>
           </div>
           <div id="leaderboardList">
@@ -832,6 +856,34 @@ let currentUser = null;
 let studyTimer = null;
 let accumulatedTime = parseInt(localStorage.getItem('fp_aurora_time') || 0);
 let unsubscribeLeaderboard = null; 
+let currentLbTab = 'week';
+
+// --- NEW GLOBALS ---
+let dailyTracking = JSON.parse(localStorage.getItem('fp_aurora_daily') || '{"date":"", "count":0}');
+let trialCount = parseInt(localStorage.getItem('fp_aurora_trial') || '0');
+
+function checkDailyLimit() {
+    const today = new Date().toISOString().split('T')[0];
+    if (dailyTracking.date !== today) {
+        dailyTracking = { date: today, count: 0 };
+        localStorage.setItem('fp_aurora_daily', JSON.stringify(dailyTracking));
+    }
+}
+
+// --- HELPER: DATE KEYS ---
+function getWeekKey() {
+    const d = new Date();
+    d.setHours(0,0,0,0);
+    d.setDate(d.getDate() + 4 - (d.getDay()||7));
+    const yearStart = new Date(d.getFullYear(),0,1);
+    const weekNo = Math.ceil(( ( (d - yearStart) / 86400000) + 1)/7);
+    return `${d.getFullYear()}-W${weekNo}`;
+}
+
+function getMonthKey() {
+    const d = new Date();
+    return `${d.getFullYear()}-${d.getMonth()+1}`;
+}
 
 // --- HELPER: FORMAT TIME ---
 function formatTime(seconds) {
@@ -898,9 +950,10 @@ window.logoutGoogle = () => {
         signOut(auth).then(() => {
             showToast("Đã đăng xuất");
             accumulatedPoints = 0; 
+            weekPoints = 0;
+            monthPoints = 0;
             updateUserPointsUI();
-            document.getElementById('dashboardContent').style.display = 'none';
-            document.getElementById('requireLoginMsg').style.display = 'block';
+            // Let onAuthStateChanged handle UI
         });
     }
 };
@@ -912,21 +965,37 @@ onAuthStateChanged(auth, async (user) => {
     const dash = document.getElementById('dashboardContent');
     const reqMsg = document.getElementById('requireLoginMsg');
     
+    // Check if we allow guest access (trial < 3)
+    let allowAccess = false;
     if (user) {
-        btn.style.display = 'none';
-        profile.style.display = 'flex';
-        reqMsg.style.display = 'none';
-        dash.style.display = 'block'; // SHOW DASHBOARD
-        
-        document.getElementById('userImg').src = user.photoURL;
-        document.getElementById('userName').innerText = user.displayName;
-        await syncDataFromServer();
-        saveProgressToCloud(); 
+        allowAccess = true;
     } else {
+        if (trialCount < 3) allowAccess = true;
+    }
+
+    if (allowAccess) {
+        dash.style.display = 'block';
+        reqMsg.style.display = 'none';
+        
+        if (user) {
+            btn.style.display = 'none';
+            profile.style.display = 'flex';
+            document.getElementById('userImg').src = user.photoURL;
+            document.getElementById('userName').innerText = user.displayName;
+            await syncDataFromServer();
+            saveProgressToCloud(); 
+        } else {
+            // Guest Mode
+            btn.style.display = 'block';
+            profile.style.display = 'none';
+        }
+        renderDashboard(); // Update dashboard logic
+    } else {
+        // Guest limit reached and no user logged in
+        dash.style.display = 'none';
+        reqMsg.style.display = 'block';
         btn.style.display = 'block';
         profile.style.display = 'none';
-        reqMsg.style.display = 'block';
-        dash.style.display = 'none'; // HIDE DASHBOARD
     }
 });
 
@@ -937,8 +1006,6 @@ async function syncDataFromServer() {
         const docRef = doc(db, "leaderboard", currentUser.uid);
         const docSnap = await getDoc(docRef);
         
-        const currentMonthKey = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
-
         if (docSnap.exists()) {
             const data = docSnap.data();
             
@@ -950,6 +1017,19 @@ async function syncDataFromServer() {
             } else {
                 accumulatedPoints = 0;
             }
+
+            // Sync Week/Month Scores
+            const curWKey = getWeekKey();
+            const curMKey = getMonthKey();
+            const scoreWKey = `score_week_${currentLang}`;
+            const scoreMKey = `score_month_${currentLang}`;
+
+            // Reset if keys don't match stored keys, otherwise load
+            if(data.weekKey === curWKey && data[scoreWKey]) weekPoints = data[scoreWKey];
+            else weekPoints = 0;
+
+            if(data.monthKey === curMKey && data[scoreMKey]) monthPoints = data[scoreMKey];
+            else monthPoints = 0;
 
             if (data.studyTime > accumulatedTime) accumulatedTime = data.studyTime;
             
@@ -993,25 +1073,38 @@ async function syncDataFromServer() {
 
 async function saveProgressToCloud() {
     if(!currentUser) return;
-    const currentMonthKey = new Date().getFullYear() + '-' + (new Date().getMonth() + 1);
     
     // Dynamic keys based on language
     const srsKey = `srsData_${currentLang}`;
     const masterKey = `masteredWords_${currentLang}`;
     const topicKey = `currentTopicKey_${currentLang}`;
     const scoreKey = `score_${currentLang}`;
+    
+    // Week/Month Keys
+    const curWKey = getWeekKey();
+    const curMKey = getMonthKey();
+    const scoreWKey = `score_week_${currentLang}`;
+    const scoreMKey = `score_month_${currentLang}`;
+    const learnedCountKey = `learnedCount_${currentLang}`;
+
+    // Calculate learned count
+    const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
 
     try {
         await setDoc(doc(db, "leaderboard", currentUser.uid), {
             displayName: currentUser.displayName,
             photoURL: currentUser.photoURL,
-            [scoreKey]: accumulatedPoints, // Save score to language specific field
-            score: accumulatedPoints, // Keep global score update for backward compat/total (approximated)
+            [scoreKey]: accumulatedPoints,
+            [scoreWKey]: weekPoints,
+            [scoreMKey]: monthPoints,
+            [learnedCountKey]: learnedCount,
+            weekKey: curWKey,
+            monthKey: curMKey,
+            score: accumulatedPoints, // Global fallback
             studyTime: accumulatedTime,
             lastUpdated: Date.now(),
-            monthKey: currentMonthKey,
-            [srsKey]: JSON.stringify(srsData),
-            [masterKey]: JSON.stringify(masteredWords),
+            [srsData ? srsKey : 'ignore']: JSON.stringify(srsData), // simple check to avoid undefined
+            [masteredWords ? masterKey : 'ignore']: JSON.stringify(masteredWords),
             config: config,
             [topicKey]: currentTopicKey
         }, { merge: true });
@@ -1021,32 +1114,49 @@ async function saveProgressToCloud() {
 }
 
 // --- NEW LEADERBOARD LOGIC (REAL-TIME SNAPSHOT) ---
+window.switchLbTab = (tab) => {
+    currentLbTab = tab;
+    document.querySelectorAll('.lb-tab').forEach(el => el.classList.remove('active'));
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    window.initLeaderboardListener();
+}
+
 window.initLeaderboardListener = () => {
-    if (unsubscribeLeaderboard) unsubscribeLeaderboard(); // Reset listener on nav
+    if (unsubscribeLeaderboard) unsubscribeLeaderboard(); 
 
     const listDiv = document.getElementById('leaderboardList');
     const podiumDiv = document.getElementById('podiumContainer');
     listDiv.innerHTML = '<div style="text-align:center; padding:30px; opacity:0.7;"><i class="fas fa-spinner fa-spin"></i> Đang kết nối máy chủ...</div>';
     
-    const sortField = `score_${currentLang}`;
-    const q = query(collection(db, "leaderboard"), orderBy(sortField, "desc"), limit(20));
-    
     document.getElementById('lb-lang-label').innerText = LANG_CONFIG[currentLang].label;
 
+    let sortField = `score_${currentLang}`; // Default 'all'
+    if(currentLbTab === 'week') sortField = `score_week_${currentLang}`;
+    if(currentLbTab === 'month') sortField = `score_month_${currentLang}`;
+    
+    const q = query(collection(db, "leaderboard"), orderBy(sortField, "desc"), limit(20));
+
     unsubscribeLeaderboard = onSnapshot(q, (querySnapshot) => {
-        const users = [];
+        let users = [];
         querySnapshot.forEach(doc => {
             const d = doc.data();
             const langScore = d[sortField] || 0;
-            users.push({ id: doc.id, ...d, displayScore: langScore });
+            // Only include if score > 0 or it's the current user
+            if(langScore > 0 || (currentUser && doc.id === currentUser.uid)) {
+                users.push({ id: doc.id, ...d, displayScore: langScore });
+            }
         });
+        
+        // Sort manually just in case firestore index issues cause weirdness
+        users.sort((a,b) => b.displayScore - a.displayScore);
 
         if (users.length === 0) {
-             listDiv.innerHTML = '<div style="text-align:center; padding:20px;">Chưa có dữ liệu. Hãy là người đầu tiên!</div>';
+             listDiv.innerHTML = '<div style="text-align:center; padding:20px;">Chưa có dữ liệu cho bảng này.</div>';
              podiumDiv.style.display = 'none';
              return;
         }
 
+        // Render Podium
         let podiumHTML = '';
         if(users.length > 0) {
             podiumDiv.style.display = 'flex';
@@ -1070,13 +1180,20 @@ window.initLeaderboardListener = () => {
             podiumDiv.innerHTML = podiumHTML;
         }
 
+        // Render List
         let listHTML = '';
+        let currentUserFound = false;
+        
+        // Show Top 20
         users.forEach((u, index) => {
             const rank = index + 1;
-            if (rank <= 3) return;
+            if(currentUser && u.id === currentUser.uid) currentUserFound = true;
+
+            if (rank <= 3) return; // Top 3 already in podium
 
             const isMe = currentUser && u.id === currentUser.uid ? 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;' : '';
-            const rankObj = getRankInfo(u.displayScore);
+            const rankObj = getRankInfo(u[`score_${currentLang}`] || 0); // Always base title on total score
+            const learnedCount = u[`learnedCount_${currentLang}`] || 0;
 
             listHTML += `
                 <div class="leaderboard-row animate__animated animate__fadeIn" style="${isMe}">
@@ -1088,6 +1205,7 @@ window.initLeaderboardListener = () => {
                             <span class="rank-badge" style="color:${rankObj.color}; background:${rankObj.bg}; border-color:${rankObj.color}">
                                 <i class="${rankObj.icon}"></i> ${rankObj.title}
                             </span>
+                            <span style="font-size:0.65rem; opacity:0.7; margin-top:5px; margin-left:5px;">• ${learnedCount} từ</span>
                         </div>
                     </div>
                     <div class="lb-stats">
@@ -1097,10 +1215,51 @@ window.initLeaderboardListener = () => {
                 </div>
             `;
         });
+
+        // If current user not in top 20, fetch and append them? 
+        // Real-time listener on query limit(20) won't return them.
+        // We can just append a row manually if we have their data and they weren't found.
+        if(currentUser && !currentUserFound) {
+            // We know our own score from local variables
+            let myScore = 0;
+            if(currentLbTab === 'week') myScore = weekPoints;
+            else if(currentLbTab === 'month') myScore = monthPoints;
+            else myScore = accumulatedPoints;
+
+            if(myScore > 0) { // Only show if we have score
+                const rankObj = getRankInfo(accumulatedPoints);
+                const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
+                listHTML += `
+                    <div style="text-align:center; padding:10px; opacity:0.5;">...</div>
+                    <div class="leaderboard-row animate__animated animate__fadeIn" style="background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;">
+                        <div class="rank-num">-</div>
+                        <img src="${currentUser.photoURL}" class="lb-avatar">
+                        <div class="lb-info">
+                            <div class="lb-name">${currentUser.displayName} (Bạn)</div>
+                            <div class="lb-meta">
+                                <span class="rank-badge" style="color:${rankObj.color}; background:${rankObj.bg}; border-color:${rankObj.color}">
+                                    <i class="${rankObj.icon}"></i> ${rankObj.title}
+                                </span>
+                                <span style="font-size:0.65rem; opacity:0.7; margin-top:5px; margin-left:5px;">• ${learnedCount} từ</span>
+                            </div>
+                        </div>
+                        <div class="lb-stats">
+                            <div class="lb-score">${myScore.toLocaleString()}</div>
+                            <div class="lb-time">${formatTime(accumulatedTime)}</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
         listDiv.innerHTML = listHTML || '<div style="text-align:center; padding:20px; opacity:0.6; font-size:0.8rem;">Chưa có thêm người chơi khác</div>';
+
     }, (error) => {
         console.error("Realtime Error:", error);
-        listDiv.innerHTML = '<div style="text-align:center; color:#ff5252; font-size:0.8rem; padding:10px;">Lỗi tải BXH: Cần tạo Index trong Firestore (Consoloe) hoặc chưa có dữ liệu.</div>';
+        listDiv.innerHTML = `<div style="text-align:center; color:#ff5252; font-size:0.8rem; padding:10px;">
+            Lỗi tải BXH. Vui lòng thử tab khác hoặc báo cáo Admin.<br>
+            (Missing Index: ${sortField})
+        </div>`;
     });
 };
 
@@ -1169,6 +1328,9 @@ let srsData = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_srs')) || '{
 let masteredWords = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_mastered')) || '{}');
 // Load context specific points
 let accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${currentLang}`) || 0);
+// Volatile points for session tracking (Week/Month) - normally should load from server but simplified here
+let weekPoints = 0;
+let monthPoints = 0;
 
 let config = {
     newLimit: parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5),
@@ -1203,8 +1365,10 @@ async function getTranslation(text) {
 
 // --- HELPER: GET IMAGE URL ---
 function getImageUrl(word) {
-    // Using Bing Thumbnail Proxy for stable, relevant illustrations
-    return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(word)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
+    // Fix for Indonesia search context
+    let q = word;
+    if(currentLang === 'id') q += " indonesia";
+    return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(q)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
 }
 
 // --- HELPER: PRELOAD NEXT IMAGES ---
@@ -1220,6 +1384,7 @@ function preloadImages() {
 
 // --- INITIALIZATION ---
 window.initApp = function() {
+    checkDailyLimit();
     createParticles();
     startSnow();
     applyTheme();
@@ -1312,6 +1477,11 @@ function updateUserPointsUI() {
 function addPoints(amount) {
     accumulatedPoints += amount;
     localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+    
+    // Update week/month scores
+    weekPoints += amount;
+    monthPoints += amount;
+
     updateUserPointsUI();
     saveProgressToCloud(); 
 }
@@ -1344,7 +1514,9 @@ window.navTo = function(viewId) {
 
     if(viewId === 'view-home') renderDashboard();
     if(viewId === 'view-topics') renderTopicList();
-    if(viewId === 'view-leaderboard') window.initLeaderboardListener(); 
+    if(viewId === 'view-leaderboard') {
+        window.switchLbTab('week'); // Default to week
+    }
 }
 
 // --- DATA & SYNC ---
@@ -1433,8 +1605,19 @@ function getWordKey(w) {
 }
 
 // --- GAME LOGIC START ---
-window.startSmartSession = function() {
-    if(!currentUser) return showToast("Vui lòng đăng nhập!", "error");
+window.startSmartSession = function(isExtra = false) {
+    if(!currentUser) {
+        if(trialCount >= 3) {
+             showToast("Hết phiên dùng thử (3/3). Vui lòng đăng nhập!", "error");
+             document.getElementById('requireLoginMsg').style.display = 'block';
+             document.getElementById('dashboardContent').style.display = 'none';
+             return;
+        }
+        trialCount++;
+        localStorage.setItem('fp_aurora_trial', trialCount);
+        // showToast(`Phiên dùng thử ${trialCount}/3`, "info");
+    }
+
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
     
     config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5);
@@ -1442,11 +1625,29 @@ window.startSmartSession = function() {
 
     const allWords = allTopics[currentTopicKey].words;
     
+    // --- DAILY LIMIT LOGIC ---
+    checkDailyLimit();
+    let limitNew = config.newLimit;
+    let learnedToday = dailyTracking.count;
+    let maxNewToAdd = 0;
+
+    if (learnedToday >= limitNew) {
+        // If limit reached, only allow more if user explicitly clicked 'Learn More'
+        if(isExtra) maxNewToAdd = Math.ceil(limitNew * 0.5);
+        else maxNewToAdd = 0;
+    } else {
+        // If limit not reached, allow remaining.
+        maxNewToAdd = limitNew - learnedToday;
+        // If user explicitly clicked 'Learn More', add extra buffer
+        if(isExtra) maxNewToAdd += Math.ceil(limitNew * 0.5);
+    }
+    // -------------------------
+
     let candidatesNew = allWords.filter(w => {
         const k = getWordKey(w);
         return !masteredWords[k] && !srsData[k];
     });
-    const batchNew = candidatesNew.slice(0, config.newLimit);
+    const batchNew = candidatesNew.slice(0, maxNewToAdd);
 
     let allLearning = allWords.filter(w => {
         const k = getWordKey(w);
@@ -1511,6 +1712,10 @@ window.processResult = function(isCorrect) {
     
     const w = sessionQueue[sessionIndex];
     const key = getWordKey(w);
+    
+    // Check if it's a new word BEFORE we update srsData
+    const isNewWord = !srsData[key];
+
     let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
     
     if(isCorrect) {
@@ -1518,6 +1723,14 @@ window.processResult = function(isCorrect) {
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
         addPoints(10); 
         
+        // --- DAILY TRACKING INCREMENT ---
+        if(isNewWord) {
+            checkDailyLimit();
+            dailyTracking.count++;
+            localStorage.setItem('fp_aurora_daily', JSON.stringify(dailyTracking));
+        }
+        // --------------------------------
+
         // Reset count wrong
         data.consecutiveWrongs = 0;
 
@@ -1706,18 +1919,13 @@ function renderFlashcard() {
         </div>
         
         <div class="control-row">
-            ${isReviewMode ? `
-                <button class="action-btn btn-wrong" onclick="window.processResult(false)">
-                    <i class="fas fa-times"></i> &nbsp;Chưa thuộc
-                </button>
-                <button class="btn-speak-round animate__animated animate__bounceIn" onclick="window.speakWord(event)"><i class="fas fa-volume-up"></i></button>
-                <button class="action-btn btn-next" onclick="window.processResult(true)">
-                    Đã thuộc &nbsp;<i class="fas fa-check"></i>
-                </button>
-            ` : `
-                 <button class="btn-speak-round" onclick="window.speakWord(event)"><i class="fas fa-volume-up"></i></button>
-                 <button class="action-btn btn-next" onclick="window.nextStep()" style="background:#3b82f6; border-color:#60a5fa;">Tiếp theo <i class="fas fa-arrow-right"></i></button>
-            `}
+            <button class="action-btn btn-wrong" onclick="window.processResult(false)">
+                <i class="fas fa-times"></i> &nbsp;Chưa thuộc
+            </button>
+            <button class="btn-speak-round animate__animated animate__bounceIn" onclick="window.speakWord(event)"><i class="fas fa-volume-up"></i></button>
+            <button class="action-btn btn-next" onclick="window.processResult(true)">
+                Đã thuộc &nbsp;<i class="fas fa-check"></i>
+            </button>
         </div>
         
         <div style="margin-top:15px; cursor:pointer; opacity:0.7; font-size:0.8rem; text-shadow:0 1px 2px rgba(0,0,0,0.5);" onclick="window.markMastered()">
@@ -1877,6 +2085,32 @@ function highlightChar(idx) {
 }
 
 // --- NEW FEATURE: SENTENCE SCRAMBLE MODE ---
+window.revealSentenceHint = function() {
+    if(isProcessing) return;
+    const ansArea = document.getElementById('answerArea');
+    const currentWords = Array.from(ansArea.children).map(c => c.innerText);
+    const targetWords = window.sentenceState.targetStr.split(/\s+/);
+    
+    if(currentWords.length >= targetWords.length) return;
+    
+    const nextWord = targetWords[currentWords.length];
+    // Find unused chip (case-insensitive check generally safer, but exact match here)
+    const chips = document.querySelectorAll('#sourceArea .word-chip:not(.used)');
+    let foundIdx = -1;
+    
+    for(let i=0; i<chips.length; i++) {
+        if(chips[i].innerText === nextWord) {
+             const idParts = chips[i].id.split('-');
+             foundIdx = parseInt(idParts[1]);
+             break;
+        }
+    }
+    
+    if(foundIdx !== -1) {
+        window.moveWord(foundIdx, nextWord.replace(/'/g, "\\'"));
+    }
+}
+
 async function renderSentence() {
     isProcessing = false;
     const w = sessionQueue[sessionIndex];
@@ -1945,6 +2179,7 @@ async function renderSentence() {
 
         <div style="display:flex; gap:15px; margin-top:10px;">
              <button class="btn-speak-round" onclick="window.speakText('${sourceEnglish.replace(/'/g, "\\'")}')"><i class="fas fa-volume-up"></i></button>
+             <button class="btn-hint animate__animated animate__fadeIn" onclick="window.revealSentenceHint()" style="width:50px; height:50px; border-radius:16px; font-size:1.2rem;"><i class="fas fa-lightbulb"></i></button>
              <button class="action-btn" style="width:50px; flex:none; background:rgba(255,255,255,0.1);" onclick="window.resetSentence()"><i class="fas fa-redo"></i></button>
         </div>
     `;
@@ -2162,9 +2397,39 @@ function setupQuiz() {
     setTimeout(window.speakWord, 500);
 }
 
+window.handleQuiz = function(el, isCorrect) {
+    if(isProcessing) return;
+    
+    // Disable all buttons to prevent double clicking
+    const btns = document.querySelectorAll('#gameContent .action-btn');
+    btns.forEach(b => b.style.pointerEvents = 'none');
+
+    if(isCorrect) {
+        el.style.background = '#22c55e'; // Green
+        el.style.color = 'white';
+        el.innerHTML += ' <i class="fas fa-check"></i>';
+    } else {
+        el.style.background = '#ef4444'; // Red
+        el.style.color = 'white';
+        el.innerHTML += ' <i class="fas fa-times"></i>';
+        el.classList.add('animate__animated', 'animate__shakeX');
+    }
+    
+    window.processResult(isCorrect);
+}
+
 // --- UTILITIES ---
 window.startGame = function(mode) {
-    if(!currentUser) return showToast("Vui lòng đăng nhập!", "error");
+    if(!currentUser) {
+        if(trialCount >= 3) {
+             showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
+             document.getElementById('requireLoginMsg').style.display = 'block';
+             document.getElementById('dashboardContent').style.display = 'none';
+             return;
+        }
+        trialCount++;
+        localStorage.setItem('fp_aurora_trial', trialCount);
+    }
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
     playSound(SFX.POP);
     const allWords = allTopics[currentTopicKey].words;
@@ -2220,7 +2485,8 @@ window.startGame = function(mode) {
 }
 
 function renderDashboard() {
-    if(!currentUser) return; // Don't render if not logged in
+    if(!currentUser && trialCount >= 3) return; // Don't render if trial over and not logged in
+
     document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
     updateUserPointsUI();
     if(!currentTopicKey || !allTopics[currentTopicKey]) return;
@@ -2248,6 +2514,38 @@ function renderDashboard() {
     animateValue("statDue", parseInt(document.getElementById('statDue').innerText), cntDue, 1000);
     animateValue("statLearned", parseInt(document.getElementById('statLearned').innerText), cntLearned, 1000);
     animateValue("statMastered", parseInt(document.getElementById('statMastered').innerText), cntMaster, 1000);
+
+    // --- DAILY LIMIT UI LOGIC ---
+    checkDailyLimit();
+    const currentLimit = config.newLimit;
+    const learnedToday = dailyTracking.count;
+    const remaining = Math.max(0, currentLimit - learnedToday);
+
+    const actionArea = document.getElementById('actionArea');
+    if(actionArea) {
+        if (remaining === 0) {
+             actionArea.innerHTML = `
+                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
+                    <i class="fas fa-sync-alt"></i> &nbsp; CHỈ ÔN TẬP
+                </button>
+                <div style="font-size:0.8rem; color:#4ade80; font-weight:700; text-align:center; margin-top:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-check-circle"></i> Đã hoàn thành ${learnedToday}/${currentLimit} từ mới hôm nay
+                </div>
+                <button class="action-btn" style="margin:15px auto 0 auto; height:50px; width:100%; font-size:0.95rem; background:rgba(251, 191, 36, 0.15); color:#fbbf24; border:1px solid rgba(251, 191, 36, 0.4);" onclick="window.startSmartSession(true)">
+                    <i class="fas fa-plus-circle"></i> &nbsp; Học thêm (+${Math.ceil(currentLimit * 0.5)})
+                </button>
+             `;
+        } else {
+             actionArea.innerHTML = `
+                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
+                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY (${remaining} từ mới)
+                </button>
+                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+                </div>
+             `;
+        }
+    }
 }
 
 // --- NEW FUNCTION: WORD LIST POPUP ---
@@ -2298,13 +2596,22 @@ window.openWordList = function(type) {
         wordsToShow.forEach(w => {
             const div = document.createElement('div');
             div.className = "list-item";
+            
+            let undoBtn = '';
+            if(type === 'mastered') {
+                undoBtn = `<button onclick="window.unmarkMastered('${w.english}')" class="btn-undo"><i class="fas fa-undo"></i></button>`;
+            }
+
             div.innerHTML = `
                 <div>
                     <div class="list-word-main">${w.english}</div>
                     <div class="list-word-sub">${w.vietnamese}</div>
                 </div>
-                <div style="opacity:0.6; cursor:pointer;" onclick="window.speakText('${w.english}')">
-                    <i class="fas fa-volume-up"></i>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <div style="opacity:0.6; cursor:pointer;" onclick="window.speakText('${w.english}')">
+                        <i class="fas fa-volume-up"></i>
+                    </div>
+                    ${undoBtn}
                 </div>
             `;
             content.appendChild(div);
@@ -2317,6 +2624,28 @@ window.openWordList = function(type) {
 
 window.closeWordList = function() {
     document.getElementById('wordListOverlay').style.display = 'none';
+}
+
+window.unmarkMastered = function(wordEn) {
+    if(!confirm(`Bỏ đánh dấu "Thuộc lòng" cho từ: ${wordEn}?`)) return;
+    
+    // Find the word object to get the key
+    // We need to loop through current topic to find exact key generator inputs
+    const topic = allTopics[currentTopicKey];
+    const w = topic.words.find(x => x.english === wordEn);
+    if(!w) return;
+    
+    const key = getWordKey(w);
+    
+    if(masteredWords[key]) {
+        delete masteredWords[key];
+        // Note: we don't restore SRS data, effectively resetting it to "New"
+        localStorage.setItem(getDataKey('fp_aurora_mastered'), JSON.stringify(masteredWords));
+        saveProgressToCloud();
+        showToast("Đã khôi phục về trạng thái chưa học", "success");
+        renderDashboard();
+        window.openWordList('mastered'); // Refresh list
+    }
 }
 
 window.speakText = function(text) {
