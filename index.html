@@ -620,7 +620,7 @@
     <div id="requireLoginMsg" style="text-align:center; margin-top:50px; padding:20px; display:none;">
         <i class="fas fa-lock" style="font-size:3rem; margin-bottom:15px; opacity:0.7;"></i>
         <div style="font-weight:600; margin-bottom: 10px;">Vui lòng đăng nhập để sử dụng.</div>
-        <div style="font-size:0.85rem; opacity:0.8;">Bạn đã hết lượt dùng thử miễn phí (3 phiên).</div>
+        <div style="font-size:0.85rem; opacity:0.8;">Bạn đã hết lượt dùng thử miễn phí (3 phiên truy cập).</div>
     </div>
 
     <div id="dashboardContent" style="display: block;">
@@ -859,14 +859,18 @@ let unsubscribeLeaderboard = null;
 let currentLbTab = 'week';
 
 // --- NEW GLOBALS ---
-let dailyTracking = JSON.parse(localStorage.getItem('fp_aurora_daily') || '{"date":"", "count":0}');
-let trialCount = parseInt(localStorage.getItem('fp_aurora_trial') || '0');
+// Language config is loaded before dailyTracking to ensure correct key
+let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
+
+// DAILY TRACKING NOW LANGUAGE SPECIFIC
+let dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+let trialCount = parseInt(localStorage.getItem('fp_aurora_trial_access') || '0');
 
 function checkDailyLimit() {
     const today = new Date().toISOString().split('T')[0];
     if (dailyTracking.date !== today) {
         dailyTracking = { date: today, count: 0 };
-        localStorage.setItem('fp_aurora_daily', JSON.stringify(dailyTracking));
+        localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
     }
 }
 
@@ -925,7 +929,6 @@ const LANG_CONFIG = {
     }
 };
 
-let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
 // Repo state mainly for English
 let currentRepoType = localStorage.getItem('fp_aurora_repo_type_en') || 'standard'; 
 
@@ -965,12 +968,13 @@ onAuthStateChanged(auth, async (user) => {
     const dash = document.getElementById('dashboardContent');
     const reqMsg = document.getElementById('requireLoginMsg');
     
-    // Check if we allow guest access (trial < 3)
+    // Check access permissions based on trialCount (Page Accesses)
     let allowAccess = false;
     if (user) {
         allowAccess = true;
     } else {
-        if (trialCount < 3) allowAccess = true;
+        // Guests allowed if trial count <= 3
+        if (trialCount <= 3) allowAccess = true;
     }
 
     if (allowAccess) {
@@ -1188,9 +1192,9 @@ window.initLeaderboardListener = () => {
         users.forEach((u, index) => {
             const rank = index + 1;
             if(currentUser && u.id === currentUser.uid) currentUserFound = true;
-
-            if (rank <= 3) return; // Top 3 already in podium
-
+            
+            // SHOW ALL RANKS (Including Top 3) in the detailed list as requested
+            
             const isMe = currentUser && u.id === currentUser.uid ? 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;' : '';
             const rankObj = getRankInfo(u[`score_${currentLang}`] || 0); // Always base title on total score
             const learnedCount = u[`learnedCount_${currentLang}`] || 0;
@@ -1365,9 +1369,10 @@ async function getTranslation(text) {
 
 // --- HELPER: GET IMAGE URL ---
 function getImageUrl(word) {
-    // Fix for Indonesia search context
+    // FIX FOR INDONESIA IMAGE SEARCH:
+    // Do not add "indonesia" suffix as it often returns maps/flags.
+    // Standard query for just the word works better.
     let q = word;
-    if(currentLang === 'id') q += " indonesia";
     return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(q)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
 }
 
@@ -1384,6 +1389,12 @@ function preloadImages() {
 
 // --- INITIALIZATION ---
 window.initApp = function() {
+    // TRIAL LOGIC: Increment trial count on page access (initApp)
+    if (!currentUser) {
+        trialCount++;
+        localStorage.setItem('fp_aurora_trial_access', trialCount);
+    }
+    
     checkDailyLimit();
     createParticles();
     startSnow();
@@ -1426,6 +1437,10 @@ window.switchLanguage = function(lang) {
     // Switch Points Context
     accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${currentLang}`) || 0);
     updateUserPointsUI();
+    
+    // RELOAD DAILY TRACKING FOR NEW LANG
+    dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+    checkDailyLimit();
 
     // Reload Data for new language
     currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
@@ -1607,15 +1622,12 @@ function getWordKey(w) {
 // --- GAME LOGIC START ---
 window.startSmartSession = function(isExtra = false) {
     if(!currentUser) {
-        if(trialCount >= 3) {
+        if(trialCount > 3) {
              showToast("Hết phiên dùng thử (3/3). Vui lòng đăng nhập!", "error");
              document.getElementById('requireLoginMsg').style.display = 'block';
              document.getElementById('dashboardContent').style.display = 'none';
              return;
         }
-        trialCount++;
-        localStorage.setItem('fp_aurora_trial', trialCount);
-        // showToast(`Phiên dùng thử ${trialCount}/3`, "info");
     }
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
@@ -1723,11 +1735,11 @@ window.processResult = function(isCorrect) {
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
         addPoints(10); 
         
-        // --- DAILY TRACKING INCREMENT ---
+        // --- DAILY TRACKING INCREMENT (LANGUAGE SPECIFIC) ---
         if(isNewWord) {
             checkDailyLimit();
             dailyTracking.count++;
-            localStorage.setItem('fp_aurora_daily', JSON.stringify(dailyTracking));
+            localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
         }
         // --------------------------------
 
@@ -2421,14 +2433,12 @@ window.handleQuiz = function(el, isCorrect) {
 // --- UTILITIES ---
 window.startGame = function(mode) {
     if(!currentUser) {
-        if(trialCount >= 3) {
+        if(trialCount > 3) {
              showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
              document.getElementById('requireLoginMsg').style.display = 'block';
              document.getElementById('dashboardContent').style.display = 'none';
              return;
         }
-        trialCount++;
-        localStorage.setItem('fp_aurora_trial', trialCount);
     }
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
     playSound(SFX.POP);
@@ -2485,7 +2495,7 @@ window.startGame = function(mode) {
 }
 
 function renderDashboard() {
-    if(!currentUser && trialCount >= 3) return; // Don't render if trial over and not logged in
+    if(!currentUser && trialCount > 3) return; // Don't render if trial over and not logged in
 
     document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
     updateUserPointsUI();
