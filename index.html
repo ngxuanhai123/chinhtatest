@@ -1480,6 +1480,10 @@ window.switchLanguage = function(lang) {
     dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
     checkDailyLimit();
 
+    // Reload TTS
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+    setTimeout(setupVoice, 500);
+
     // Reload Data for new language
     currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
     srsData = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_srs')) || '{}'); 
@@ -1682,7 +1686,7 @@ window.startSmartSession = function(isExtra = false) {
     let maxNewToAdd = 0;
 
     if (learnedToday >= limitNew) {
-        // If limit reached, only allow more if user explicitly clicked 'Learn More'
+        // If limit reached, only allow more if user explicitly clicked 'Learn More' (override)
         if(isExtra) maxNewToAdd = Math.ceil(limitNew * 0.5);
         else maxNewToAdd = 0;
     } else {
@@ -1713,6 +1717,9 @@ window.startSmartSession = function(isExtra = false) {
         showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
         return;
     }
+
+    // Flag for silent injection later
+    window.isReviewOnlySession = (batchNew.length === 0 && batchReview.length > 0);
 
     showToast(`Bắt đầu: ${batchNew.length} từ mới + ${batchReview.length} ôn tập`, "info");
     playSound(SFX.POP);
@@ -1888,6 +1895,37 @@ window.nextStep = function() {
     nextStep();
 }
 
+function injectSilentWords(count) {
+    if(!currentTopicKey || !allTopics[currentTopicKey]) return;
+    const allWords = allTopics[currentTopicKey].words;
+    
+    // Get set of words already in queue to avoid duplicates
+    const inQueue = new Set(sessionQueue.map(w => getWordKey(w)));
+    
+    // Filter potential new words
+    let candidates = allWords.filter(w => {
+        const k = getWordKey(w);
+        return !masteredWords[k] && !srsData[k] && !inQueue.has(k);
+    });
+    
+    if(candidates.length === 0) return;
+    
+    // Take top N candidates
+    const toAdd = candidates.slice(0, count);
+    
+    // Add to sessionQueue
+    toAdd.forEach(w => sessionQueue.push(w));
+    
+    // Preload images
+    toAdd.forEach(w => {
+        const img = new Image();
+        img.src = getImageUrl(w.english);
+    });
+    
+    // Update progress bar to reflect new total
+    updateProgress();
+}
+
 function nextStep() {
     if(sessionIndex < sessionQueue.length - 1) {
         const content = document.getElementById('gameContent');
@@ -1895,6 +1933,15 @@ function nextStep() {
         
         setTimeout(() => {
             sessionIndex++;
+            
+            // --- SILENT INJECTION LOGIC ---
+            // If we just moved to the 3rd card (index 2) and it was a review-only session
+            if(currentMode === 'smart' && window.isReviewOnlySession && sessionIndex === 2) {
+                 injectSilentWords(3); // Add 3 words
+                 window.isReviewOnlySession = false; // Disable flag so it only happens once
+            }
+            // ------------------------------
+            
             updateProgress();
             preloadImages(); // Preload next images
             
@@ -1919,9 +1966,22 @@ function nextStep() {
     } else {
         playSound(SFX.WIN);
         confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
-        showToast("Buổi học hoàn tất! Xuất sắc!", "success");
-        setTimeout(window.closeGame, 2000);
+        renderSessionEnd();
     }
+}
+
+function renderSessionEnd() {
+    document.getElementById('gameContent').innerHTML = `
+        <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; max-width:400px; text-align:center;">
+            <i class="fas fa-flag-checkered" style="font-size:3rem; color:#fbbf24; margin-bottom:15px;"></i>
+            <div style="font-size:1.5rem; font-weight:800; margin-bottom:10px;">Tuyệt vời!</div>
+            <div style="opacity:0.8; margin-bottom:25px;">Bạn đã hoàn thành mục tiêu.</div>
+            
+            <button class="action-btn" style="width:100%; height:50px; background:transparent; border:1px solid rgba(255,255,255,0.2);" onclick="window.closeGame()">
+                <i class="fas fa-home"></i> Về trang chủ
+            </button>
+        </div>
+    `;
 }
 
 // --- CARD RENDERERS ---
@@ -2574,14 +2634,11 @@ function renderDashboard() {
         if (remaining === 0) {
              actionArea.innerHTML = `
                 <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
-                    <i class="fas fa-sync-alt"></i> &nbsp; CHỈ ÔN TẬP
+                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
                 </button>
                 <div style="font-size:0.8rem; color:#4ade80; font-weight:700; text-align:center; margin-top:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-check-circle"></i> Đã hoàn thành ${learnedToday}/${currentLimit} từ mới hôm nay
+                    <i class="fas fa-check-circle"></i> Đã hoàn thành mục tiêu hôm nay
                 </div>
-                <button class="action-btn" style="margin:15px auto 0 auto; height:50px; width:100%; font-size:0.95rem; background:rgba(251, 191, 36, 0.15); color:#fbbf24; border:1px solid rgba(251, 191, 36, 0.4);" onclick="window.startSmartSession(true)">
-                    <i class="fas fa-plus-circle"></i> &nbsp; Học thêm (+${Math.ceil(currentLimit * 0.5)})
-                </button>
              `;
         } else {
              actionArea.innerHTML = `
