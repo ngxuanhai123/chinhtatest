@@ -1674,6 +1674,9 @@ window.startSmartSession = function(isExtra = false) {
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
     
+    // --- RESET SESSION STREAK ---
+    window.sessionCorrectStreak = 0;
+    
     config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5);
     config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20);
 
@@ -1776,6 +1779,9 @@ window.processResult = function(isCorrect) {
     let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
     
     if(isCorrect) {
+        // --- STREAK TRACKING ---
+        window.sessionCorrectStreak = (window.sessionCorrectStreak || 0) + 1;
+
         playSound(SFX.CORRECT);
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
         addPoints(10); 
@@ -1810,6 +1816,9 @@ window.processResult = function(isCorrect) {
         setTimeout(() => { isProcessing = false; nextStep(); }, 600);
         
     } else {
+        // --- STREAK RESET ---
+        window.sessionCorrectStreak = 0;
+
         playSound(SFX.WRONG);
         data.level = 0;
         data.interval = 0;
@@ -1935,10 +1944,14 @@ function nextStep() {
             sessionIndex++;
             
             // --- SILENT INJECTION LOGIC ---
-            // If we just moved to the 3rd card (index 2) and it was a review-only session
-            if(currentMode === 'smart' && window.isReviewOnlySession && sessionIndex === 2) {
-                 injectSilentWords(3); // Add 3 words
-                 window.isReviewOnlySession = false; // Disable flag so it only happens once
+            // New Condition: Inject if streak of 3 correct answers in a review-only session
+            // sessionIndex 3 means we have completed 0, 1, 2 (3 items)
+            if(currentMode === 'smart' && window.isReviewOnlySession && sessionIndex === 3) {
+                 if(window.sessionCorrectStreak >= 3) {
+                     injectSilentWords(3); // Add 3 words
+                     window.isReviewOnlySession = false; // Disable flag so it only happens once
+                     showToast("Bạn đang học rất tốt! Đã thêm 3 từ mới.", "success");
+                 }
             }
             // ------------------------------
             
@@ -2123,8 +2136,7 @@ function renderSpelling() {
             e.target.value = ''; 
         }
     });
-    
-    setTimeout(window.speakWord, 300);
+    // Removed auto-speak on start
 }
 
 window.revealSpellingHint = function() {
@@ -2172,6 +2184,8 @@ function checkSpellingChar(inputChar) {
         
         if(window.spellingIdx >= target.length) {
             document.getElementById('spellingInput').blur();
+            // Speak only when finished
+            window.speakWord(); 
             showToast("Chính xác!", "success");
             window.processResult(true);
         } else {
@@ -2198,13 +2212,37 @@ function highlightChar(idx) {
 window.revealSentenceHint = function() {
     if(isProcessing) return;
     const ansArea = document.getElementById('answerArea');
-    const currentWords = Array.from(ansArea.children).map(c => c.innerText);
     const targetWords = window.sentenceState.targetStr.split(/\s+/);
     
-    if(currentWords.length >= targetWords.length) return;
+    // 1. Check for existing mistakes and clear them
+    const currentChips = Array.from(ansArea.children);
     
-    const nextWord = targetWords[currentWords.length];
-    // Find unused chip (case-insensitive check generally safer, but exact match here)
+    // Check current chips against target
+    for(let i = 0; i < currentChips.length; i++) {
+        const chipText = currentChips[i].innerText;
+        const targetWord = targetWords[i];
+        
+        // Case insensitive check
+        if (!targetWord || chipText.toLowerCase() !== targetWord.toLowerCase()) {
+            // Found a mismatch (or extra words). Remove this chip and all following.
+            // Loop backwards from end to i to remove safely
+            for (let j = currentChips.length - 1; j >= i; j--) {
+                currentChips[j].click(); // Trigger the return to source logic
+            }
+            break; // Stop checking, we cleared the tail
+        }
+    }
+    
+    // 2. Add the next correct word
+    // Re-query ansArea because we might have removed elements
+    const updatedChips = Array.from(document.getElementById('answerArea').children);
+    const nextIdx = updatedChips.length;
+    
+    if(nextIdx >= targetWords.length) return; // Sentence complete
+    
+    const nextWord = targetWords[nextIdx];
+    
+    // Find unused chip in source
     const chips = document.querySelectorAll('#sourceArea .word-chip:not(.used)');
     let foundIdx = -1;
     
@@ -2296,13 +2334,11 @@ async function renderSentence() {
     
     window.sentenceState = {
         targetStr: targetStr.replace(/\s+/g, ' '),
-        originalMode: mode
+        originalMode: mode,
+        textToSpeak: sourceEnglish // Always speak the target/source concept (usually English or main language)
     };
 
-    // Auto-read English prompt if we are arranging Vietnamese
-    if (mode === 'arrange_vn' && !config.muted) {
-        setTimeout(() => window.speakText(sourceEnglish), 500);
-    }
+    // Removed auto-speak on start for arrange_vn
 }
 
 window.moveWord = function(idx, word) {
@@ -2352,6 +2388,10 @@ window.checkSentence = function(correctSentence) {
     
     // Case insensitive comparison
     if(userSentence.toLowerCase() === correctSentence.toLowerCase()) {
+        // Speak only when finished correctly
+        if(window.sentenceState.textToSpeak) {
+             window.speakText(window.sentenceState.textToSpeak);
+        }
         showToast("Tuyệt vời! Chính xác!", "success");
         window.processResult(true);
     } else {
@@ -2388,7 +2428,6 @@ function renderFill() {
         <button class="btn-speak-round" style="margin-top:20px; width:50px; height:50px; font-size:1.2rem;" onclick="window.speakWord()"><i class="fas fa-volume-up"></i></button>
     `;
     setTimeout(() => document.getElementById('fillInp').focus(), 100);
-    setTimeout(window.speakWord, 400);
 }
 
 window.showHint = function(ans) {
@@ -2407,6 +2446,7 @@ window.checkFill = function(ans) {
     const correct = val.toLowerCase() === ans.toLowerCase();
     
     if(correct) {
+        window.speakWord(); 
         showToast("Chính xác!", "success");
         window.processResult(true); 
     } else {
