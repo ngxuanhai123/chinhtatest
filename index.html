@@ -414,6 +414,43 @@
   .lb-score { font-weight: 800; color: #34d399; font-size: 1rem; }
   .lb-time { font-size: 0.7rem; color: #60a5fa; font-weight: 600; margin-top: 2px; }
 
+  /* Streak Calendar */
+  .streak-panel {
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+      padding: 15px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255,255,255,0.1);
+  }
+  .streak-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 10px;
+  }
+  .streak-count {
+      font-size: 1.2rem; font-weight: 800; color: #fbbf24;
+      text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+  }
+  .calendar-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
+      text-align: center;
+  }
+  .cal-day-name {
+      font-size: 0.7rem; font-weight: 700; opacity: 0.6; margin-bottom: 5px;
+  }
+  .cal-day {
+      aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 0.8rem; font-weight: 600;
+      position: relative; transition: 0.3s;
+      background: rgba(255,255,255,0.05);
+  }
+  .cal-day.active {
+      background: #22c55e; color: white;
+      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+  }
+  .cal-day.today {
+      border: 1px solid rgba(255,255,255,0.5);
+  }
+
   /* Crown animation for top 1 */
   .crown-icon { position: absolute; top: -25px; font-size: 1.5rem; color: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.8)); animation: floatCrown 2s ease-in-out infinite; }
   @keyframes floatCrown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
@@ -728,6 +765,11 @@
       <h2 style="margin-bottom: 5px; padding-left: 10px; text-align:center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);"><i class="fas fa-crown" style="color:#fbbf24"></i> Đấu Trường <span id="lb-lang-label"></span></h2>
       <div style="text-align:center; font-size:0.85rem; opacity:0.8; margin-bottom:15px;">Vinh danh những học giả xuất sắc nhất</div>
       
+      <!-- STREAK CALENDAR ADDED HERE -->
+      <div class="streak-panel animate__animated animate__fadeIn">
+          <div id="calendarContainer"></div>
+      </div>
+
       <div class="lb-tabs">
           <div class="lb-tab active" id="tab-week" onclick="window.switchLbTab('week')">Tuần này</div>
           <div class="lb-tab" id="tab-month" onclick="window.switchLbTab('month')">Tháng này</div>
@@ -892,7 +934,12 @@ let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
 
 // DAILY TRACKING NOW LANGUAGE SPECIFIC
 let dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+// STREAK HISTORY TRACKING (Shared or language specific? Let's make it shared for simplicity, showing general activity)
+let streakHistory = JSON.parse(localStorage.getItem('fp_aurora_streak_history') || '[]');
+
 let trialCount = parseInt(localStorage.getItem('fp_aurora_trial_access') || '0');
+// Calendar view mode state
+let calendarViewMode = 'week';
 
 function checkDailyLimit() {
     const today = new Date().toISOString().split('T')[0];
@@ -1065,6 +1112,14 @@ async function syncDataFromServer() {
 
             if (data.studyTime > accumulatedTime) accumulatedTime = data.studyTime;
             
+            // Sync Streak History
+            if (data.streakHistory) {
+                const serverHistory = JSON.parse(data.streakHistory || '[]');
+                const localSet = new Set([...streakHistory, ...serverHistory]);
+                streakHistory = Array.from(localSet).sort();
+                localStorage.setItem('fp_aurora_streak_history', JSON.stringify(streakHistory));
+            }
+
             // Sync Language Specific Data
             const srsKey = `srsData_${currentLang}`;
             const masterKey = `masteredWords_${currentLang}`;
@@ -1134,6 +1189,7 @@ async function saveProgressToCloud() {
             monthKey: curMKey,
             score: accumulatedPoints, // Global fallback
             studyTime: accumulatedTime,
+            streakHistory: JSON.stringify(streakHistory),
             lastUpdated: Date.now(),
             [srsData ? srsKey : 'ignore']: JSON.stringify(srsData), // simple check to avoid undefined
             [masteredWords ? masterKey : 'ignore']: JSON.stringify(masteredWords),
@@ -1573,8 +1629,124 @@ window.navTo = function(viewId) {
     if(viewId === 'view-topics') renderTopicList();
     if(viewId === 'view-leaderboard') {
         window.switchLbTab('week'); // Default to week
+        renderStreakCalendar();
     }
 }
+
+// --- CALENDAR RENDERER ---
+function renderStreakCalendar() {
+    const now = new Date();
+    // Use ISO string for today comparison to match save logic
+    const todayStr = now.toISOString().split('T')[0];
+    
+    // Header
+    let html = `
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+             <div style="font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-fire" style="color:#fbbf24"></i> 
+                ${calendarViewMode === 'week' ? 'Tuần này' : 'Lịch sử tháng'}
+             </div>
+             <div style="display:flex; align-items:center; gap:10px;">
+                 <span class="streak-count" id="streakDisplay" style="font-size:1rem;">0 ngày</span>
+                 <button onclick="window.toggleCalendarView()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:white; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">
+                    ${calendarViewMode === 'week' ? '<i class="fas fa-calendar-alt"></i>' : '<i class="fas fa-minus"></i>'}
+                 </button>
+             </div>
+        </div>
+        <div class="calendar-grid">
+            <div class="cal-day-name">T2</div><div class="cal-day-name">T3</div><div class="cal-day-name">T4</div><div class="cal-day-name">T5</div><div class="cal-day-name">T6</div><div class="cal-day-name">T7</div><div class="cal-day-name">CN</div>
+    `;
+
+    if (calendarViewMode === 'month') {
+        const year = now.getFullYear();
+        const month = now.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDayIndex = new Date(year, month, 1).getDay(); 
+        
+        let startSlot = (firstDayIndex + 6) % 7; 
+        for(let i=0; i<startSlot; i++) html += `<div></div>`;
+        
+        const currentMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+        
+        for(let d=1; d<=daysInMonth; d++) {
+            // Replicating original logic exactly for month view string construction
+            const dateStr = `${currentMonthPrefix}-${String(d).padStart(2,'0')}`;
+            const isActive = streakHistory.includes(dateStr);
+            const isToday = (dateStr === todayStr); 
+            
+            let classes = 'cal-day';
+            if(isActive) classes += ' active';
+            if(isToday) classes += ' today';
+            
+            html += `<div class="${classes}">${d}</div>`;
+        }
+    } else {
+        // Week View
+        // Let's try to find the "Monday" of the current week in Local time.
+        const currentDay = now.getDay(); // 0-6 (Sun-Sat)
+        const distanceToMon = (currentDay + 6) % 7;
+        const mondayDate = new Date(now);
+        mondayDate.setDate(now.getDate() - distanceToMon);
+        
+        for(let i=0; i<7; i++) {
+            const d = new Date(mondayDate);
+            d.setDate(mondayDate.getDate() + i);
+            
+            // Generate display number (Local)
+            const dayNum = d.getDate();
+            // Generate comparison string (ISO UTC cut) - This matches how data is saved: new Date().toISOString().split('T')[0]
+            const dateStr = d.toISOString().split('T')[0];
+            
+            const isActive = streakHistory.includes(dateStr);
+            const isToday = (dateStr === todayStr);
+
+            let classes = 'cal-day';
+            if(isActive) classes += ' active';
+            if(isToday) classes += ' today';
+            
+            html += `<div class="${classes}">${dayNum}</div>`;
+        }
+    }
+    
+    html += `</div>`;
+    document.getElementById('calendarContainer').innerHTML = html;
+    
+    // Streak Calculation
+    const sorted = [...new Set(streakHistory)].sort();
+    let streak = 0;
+    const todayISO = new Date().toISOString().split('T')[0];
+    const yesterdayISO = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+    
+    if (sorted.includes(todayISO)) {
+        streak = 1;
+        let d = new Date();
+        while(true) {
+            d.setDate(d.getDate() - 1);
+            const s = d.toISOString().split('T')[0];
+            if(sorted.includes(s)) streak++;
+            else break;
+        }
+    } else if (sorted.includes(yesterdayISO)) {
+        streak = 1;
+        let d = new Date(Date.now() - 86400000);
+        while(true) {
+            d.setDate(d.getDate() - 1);
+            const s = d.toISOString().split('T')[0];
+            if(sorted.includes(s)) streak++;
+            else break;
+        }
+    }
+    
+    document.getElementById('streakDisplay').innerText = `${streak} ngày`;
+}
+
+// And add toggle function
+window.toggleCalendarView = function() {
+    calendarViewMode = calendarViewMode === 'week' ? 'month' : 'week';
+    playSound(SFX.POP); // Add sound effect for polish
+    renderStreakCalendar();
+}
+
 
 // --- DATA & SYNC ---
 window.fetchTopics = async function(manual = false) {
@@ -1715,6 +1887,32 @@ window.startSmartSession = function(isExtra = false) {
     const batchReview = allLearning.slice(0, config.reviewLimit);
     
     if(batchNew.length === 0 && batchReview.length === 0) {
+        // --- AUTO SWITCH TOPIC LOGIC ---
+        const topicKeys = Object.keys(allTopics);
+        const currentIdx = topicKeys.indexOf(currentTopicKey);
+        
+        if(currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
+             const nextKey = topicKeys[currentIdx + 1];
+             const nextTopicName = allTopics[nextKey].name;
+             
+             currentTopicKey = nextKey;
+             localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+             saveProgressToCloud(); // Save change to firestore
+             
+             showToast(`Hoàn thành! Đang tải: ${nextTopicName}`, "success");
+             playSound(SFX.POP);
+             
+             // Update UI
+             renderDashboard();
+             
+             // Auto restart with new topic after short delay
+             setTimeout(() => {
+                 window.startSmartSession(isExtra);
+             }, 1500);
+             return;
+        }
+        // -------------------------------
+
         confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
         showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
@@ -1766,7 +1964,7 @@ function decideSmartRender() {
 }
 
 
-window.processResult = function(isCorrect) {
+window.processResult = function(isCorrect, skipNext = false) {
     if(isProcessing) return;
     isProcessing = true;
     
@@ -1779,6 +1977,13 @@ window.processResult = function(isCorrect) {
     let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
     
     if(isCorrect) {
+        // --- STREAK HISTORY UPDATE ---
+        const todayStr = new Date().toISOString().split('T')[0];
+        if(!streakHistory.includes(todayStr)) {
+            streakHistory.push(todayStr);
+            localStorage.setItem('fp_aurora_streak_history', JSON.stringify(streakHistory));
+        }
+        
         // --- STREAK TRACKING ---
         window.sessionCorrectStreak = (window.sessionCorrectStreak || 0) + 1;
 
@@ -1813,7 +2018,10 @@ window.processResult = function(isCorrect) {
         srsData[key] = data;
         localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
         saveProgressToCloud(); 
-        setTimeout(() => { isProcessing = false; nextStep(); }, 600);
+
+        if(!skipNext) {
+            setTimeout(() => { isProcessing = false; nextStep(); }, 600);
+        }
         
     } else {
         // --- STREAK RESET ---
@@ -2388,12 +2596,18 @@ window.checkSentence = function(correctSentence) {
     
     // Case insensitive comparison
     if(userSentence.toLowerCase() === correctSentence.toLowerCase()) {
-        // Speak only when finished correctly
-        if(window.sentenceState.textToSpeak) {
-             window.speakText(window.sentenceState.textToSpeak);
-        }
         showToast("Tuyệt vời! Chính xác!", "success");
-        window.processResult(true);
+        window.processResult(true, true); // Update stats, skip auto next
+        
+        if(window.sentenceState.textToSpeak) {
+             window.speakText(window.sentenceState.textToSpeak, () => {
+                 isProcessing = false;
+                 nextStep();
+             });
+        } else {
+             isProcessing = false;
+             nextStep();
+        }
     } else {
         playSound(SFX.WRONG);
         ansArea.classList.add('animate__animated', 'animate__shakeX');
@@ -2446,9 +2660,12 @@ window.checkFill = function(ans) {
     const correct = val.toLowerCase() === ans.toLowerCase();
     
     if(correct) {
-        window.speakWord(); 
         showToast("Chính xác!", "success");
-        window.processResult(true); 
+        window.processResult(true, true); // Update data, skip next
+        window.speakWord(null, () => {
+            isProcessing = false;
+            nextStep();
+        });
     } else {
         const inp = document.getElementById('fillInp');
         inp.classList.add('animate__animated', 'animate__shakeX');
@@ -2793,14 +3010,33 @@ window.unmarkMastered = function(wordEn) {
     }
 }
 
-window.speakText = function(text) {
-    if(config.muted) return;
+window.speakText = function(text, onEnd) {
+    if(config.muted) {
+        if(onEnd) setTimeout(onEnd, 600); 
+        return;
+    }
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    // Use dynamic TTS code from config
     u.lang = LANG_CONFIG[currentLang].tts; 
+    u.rate = 0.85; 
     if(selectedVoice) u.voice = selectedVoice;
+    
+    if(onEnd) {
+        u.onend = onEnd;
+        u.onerror = onEnd;
+    }
     window.speechSynthesis.speak(u);
+}
+
+window.speakWord = function(e, onEnd) {
+    if(e && e.stopPropagation) e.stopPropagation();
+    const w = sessionQueue[sessionIndex];
+    if(!w) {
+        if(onEnd) onEnd();
+        return;
+    }
+    const text = (currentMode === 'sentence' && w.example) ? w.example : w.english;
+    window.speakText(text, onEnd);
 }
 
 function animateValue(id, start, end, duration) {
@@ -2951,21 +3187,6 @@ function setupVoice() {
     selectedVoice = voices.find(v => v.lang === targetLang) ||
                     voices.find(v => v.lang.startsWith(targetLang.split('-')[0])) ||
                     voices.find(v => v.name === 'Google US English'); // Fallback
-}
-
-window.speakWord = function(e) {
-    if(e) e.stopPropagation();
-    if(config.muted) return;
-    const w = sessionQueue[sessionIndex];
-    if(!w) return;
-    window.speechSynthesis.cancel();
-    // Nếu là mode sentence, đọc cả câu, còn lại đọc từ
-    const text = (currentMode === 'sentence' && w.example) ? w.example : w.english;
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = LANG_CONFIG[currentLang].tts; 
-    u.rate = 0.85; 
-    if(selectedVoice) u.voice = selectedVoice;
-    window.speechSynthesis.speak(u);
 }
 
 function applyTheme() {
