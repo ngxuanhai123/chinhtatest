@@ -414,41 +414,65 @@
   .lb-score { font-weight: 800; color: #34d399; font-size: 1rem; }
   .lb-time { font-size: 0.7rem; color: #60a5fa; font-weight: 600; margin-top: 2px; }
 
-  /* Streak Calendar */
+  /* --- Streak Calendar Enhanced --- */
   .streak-panel {
-      background: rgba(0,0,0,0.2);
-      border-radius: 20px;
-      padding: 15px;
-      margin-bottom: 20px;
-      border: 1px solid rgba(255,255,255,0.1);
+      background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+      border-radius: 24px;
+      padding: 20px;
+      margin-bottom: 25px;
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+      backdrop-filter: blur(10px);
   }
   .streak-header {
       display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 15px;
   }
   .streak-count {
-      font-size: 1.2rem; font-weight: 800; color: #fbbf24;
-      text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+      font-size: 1.2rem; font-weight: 800; 
+      background: linear-gradient(to right, #ffd700, #fdb931);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   }
   .calendar-grid {
-      display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px;
+      display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px;
       text-align: center;
   }
   .cal-day-name {
-      font-size: 0.7rem; font-weight: 700; opacity: 0.6; margin-bottom: 5px;
+      font-size: 0.75rem; font-weight: 700; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase;
   }
   .cal-day {
       aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
-      border-radius: 50%; font-size: 0.8rem; font-weight: 600;
-      position: relative; transition: 0.3s;
-      background: rgba(255,255,255,0.05);
+      border-radius: 14px; font-size: 0.85rem; font-weight: 700;
+      position: relative; transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.4);
+      border: 1px solid transparent;
   }
+  /* Colorful Active Days */
   .cal-day.active {
-      background: #22c55e; color: white;
-      box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+      color: #fff; transform: scale(1.05);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      border: none;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   }
+  /* Rainbow / Gradient Pattern for days */
+  .cal-day.active:nth-child(7n+1) { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); box-shadow: 0 4px 12px rgba(255, 154, 158, 0.4); }
+  .cal-day.active:nth-child(7n+2) { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); box-shadow: 0 4px 12px rgba(161, 140, 209, 0.4); }
+  .cal-day.active:nth-child(7n+3) { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); box-shadow: 0 4px 12px rgba(132, 250, 176, 0.4); color: #0f172a; }
+  .cal-day.active:nth-child(7n+4) { background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%); box-shadow: 0 4px 12px rgba(224, 195, 252, 0.4); color: #0f172a; }
+  .cal-day.active:nth-child(7n+5) { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); box-shadow: 0 4px 12px rgba(79, 172, 254, 0.4); }
+  .cal-day.active:nth-child(7n+6) { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); box-shadow: 0 4px 12px rgba(67, 233, 123, 0.4); color: #0f172a; }
+  .cal-day.active:nth-child(7n+7) { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); box-shadow: 0 4px 12px rgba(250, 112, 154, 0.4); }
+
   .cal-day.today {
-      border: 1px solid rgba(255,255,255,0.5);
+      border: 2px solid #fff;
+      z-index: 5;
+      animation: pulseDay 2s infinite;
+  }
+  @keyframes pulseDay {
+      0% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4); }
+      70% { box-shadow: 0 0 0 8px rgba(255, 255, 255, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
   }
 
   /* Crown animation for top 1 */
@@ -1888,28 +1912,33 @@ window.startSmartSession = function(isExtra = false) {
     
     if(batchNew.length === 0 && batchReview.length === 0) {
         // --- AUTO SWITCH TOPIC LOGIC ---
-        const topicKeys = Object.keys(allTopics);
-        const currentIdx = topicKeys.indexOf(currentTopicKey);
+        // Check if the current topic is truly exhausted (no new words left at all, regardless of daily limit)
+        // If candidatesNew.length is 0, it means we have learned everything in this topic.
         
-        if(currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
-             const nextKey = topicKeys[currentIdx + 1];
-             const nextTopicName = allTopics[nextKey].name;
-             
-             currentTopicKey = nextKey;
-             localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-             saveProgressToCloud(); // Save change to firestore
-             
-             showToast(`Hoàn thành! Đang tải: ${nextTopicName}`, "success");
-             playSound(SFX.POP);
-             
-             // Update UI
-             renderDashboard();
-             
-             // Auto restart with new topic after short delay
-             setTimeout(() => {
-                 window.startSmartSession(isExtra);
-             }, 1500);
-             return;
+        if (candidatesNew.length === 0) {
+            const topicKeys = Object.keys(allTopics);
+            const currentIdx = topicKeys.indexOf(currentTopicKey);
+            
+            if(currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
+                 const nextKey = topicKeys[currentIdx + 1];
+                 const nextTopicName = allTopics[nextKey].name;
+                 
+                 currentTopicKey = nextKey;
+                 localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+                 saveProgressToCloud(); // Save change to firestore
+                 
+                 showToast(`Hoàn thành! Đang chuyển sang: ${nextTopicName}`, "success");
+                 playSound(SFX.POP);
+                 
+                 // Update UI
+                 renderDashboard();
+                 
+                 // Automatically start session for the new topic
+                 setTimeout(() => {
+                     window.startSmartSession(isExtra);
+                 }, 1500);
+                 return;
+            }
         }
         // -------------------------------
 
@@ -2625,6 +2654,7 @@ function renderFill() {
     const w = sessionQueue[sessionIndex];
     const sentence = w.example || `The word is ${w.english}`;
     const hidden = sentence.replace(new RegExp(w.english, 'gi'), '_____');
+    const safeWord = w.english.replace(/'/g, "\\'");
     
     document.getElementById('gameContent').innerHTML = `
         <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; text-align:center; margin-bottom:25px;">
@@ -2633,11 +2663,12 @@ function renderFill() {
         </div>
         <div style="width:95%; display:flex; gap:10px;">
             <input type="text" id="fillInp" class="input-glass" style="margin-bottom:0;" placeholder="Nhập từ vựng..." autocomplete="off" 
-                   onkeypress="if(event.key==='Enter') window.checkFill('${w.english}')">
-            <button class="btn-hint" onclick="window.showHint('${w.english}')"><i class="fas fa-lightbulb"></i></button>
+                   oninput="window.checkAutoFill(this, '${safeWord}')"
+                   onkeypress="if(event.key==='Enter') window.checkFill('${safeWord}')">
+            <button class="btn-hint" onclick="window.showHint('${safeWord}')"><i class="fas fa-lightbulb"></i></button>
         </div>
         <div style="width:95%; margin-top:15px;">
-             <button class="btn-primary" onclick="window.checkFill('${w.english}')">KIỂM TRA</button>
+             <button class="btn-primary" onclick="window.checkFill('${safeWord}')">KIỂM TRA</button>
         </div>
         <button class="btn-speak-round" style="margin-top:20px; width:50px; height:50px; font-size:1.2rem;" onclick="window.speakWord()"><i class="fas fa-volume-up"></i></button>
     `;
@@ -2651,6 +2682,14 @@ window.showHint = function(ans) {
         inp.value = ans.substring(0, currentVal.length + 1);
         playSound(SFX.POP);
         inp.focus();
+        window.checkAutoFill(inp, ans);
+    }
+}
+
+window.checkAutoFill = function(el, ans) {
+    if(isProcessing) return;
+    if(el.value.trim().toLowerCase() === ans.toLowerCase()) {
+        window.checkFill(ans);
     }
 }
 
