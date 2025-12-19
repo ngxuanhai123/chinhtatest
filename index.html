@@ -2,6 +2,7 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Hihi Vocabulary</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
@@ -29,6 +30,36 @@
     --glass-border: rgba(255, 255, 255, 0.1);
     --card-text-main: #f1f5f9;
     --card-text-sub: #cbd5e1;
+  }
+
+  /* --- ECO MODE STYLES --- */
+  body.eco-mode .aurora-bg,
+  body.eco-mode #particles,
+  body.eco-mode .snowflake,
+  body.eco-mode .heart-beat { display: none !important; }
+  
+  /* Disable costly effects */
+  body.eco-mode .glass-panel,
+  body.eco-mode .streak-panel,
+  body.eco-mode .tab-bar,
+  body.eco-mode .btn-primary,
+  body.eco-mode #gameOverlay {
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      box-shadow: none !important;
+  }
+  
+  /* Solid backgrounds for readability in Eco Mode */
+  body.eco-mode .glass-panel { background: rgba(30, 41, 59, 0.98); border: 1px solid #334155; }
+  body.eco-mode .streak-panel { background: rgba(30, 41, 59, 0.98); }
+  body.eco-mode .tab-bar { background: #0f172a; border-top: 1px solid #334155; }
+  body.eco-mode .btn-primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
+  
+  /* Brightness Overlay */
+  #brightness-overlay {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: black; opacity: 0; pointer-events: none; z-index: 99999;
+      transition: opacity 0.1s linear;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; user-select: none; }
@@ -623,6 +654,22 @@
   }
   .repo-btn.active { background: #3b82f6; opacity: 1; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
+  /* Toggle Switch */
+  .switch-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+  .toggle-switch {
+      position: relative; width: 50px; height: 26px;
+      -webkit-appearance: none; background: rgba(255,255,255,0.2);
+      outline: none; border-radius: 15px; box-shadow: inset 0 0 5px rgba(0,0,0,0.2);
+      transition: 0.3s; cursor: pointer;
+  }
+  .toggle-switch:checked { background: #4ade80; }
+  .toggle-switch::before {
+      content: ''; position: absolute; width: 20px; height: 20px;
+      border-radius: 50%; top: 3px; left: 3px; background: #fff;
+      transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  .toggle-switch:checked::before { transform: translateX(24px); }
+
   /* --- RESPONSIVE ADJUSTMENTS --- */
   @media (max-width: 600px) {
     .scene { height: 400px; }
@@ -664,6 +711,7 @@
 </head>
 <body onload="window.initApp()">
 
+<div id="brightness-overlay"></div>
 <div class="aurora-bg"></div>
 <div id="particles"></div>
 
@@ -869,6 +917,21 @@
             <strong id="dispLimitReview">20</strong>
         </div>
         <input type="range" id="cfgReviewLimit" min="5" max="50" value="20" oninput="window.saveConfig()">
+
+        <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
+
+        <h4 style="margin-bottom:15px; color:#A78BFA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Hiệu năng & Hiển thị</h4>
+        
+        <div class="switch-container">
+            <span>Chế độ Tiết kiệm pin (Máy yếu)</span>
+            <input type="checkbox" id="cfgEco" class="toggle-switch" onchange="window.saveConfig()">
+        </div>
+
+        <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+            <small>Độ sáng màn hình</small>
+            <strong id="dispBrightness">100%</strong>
+        </div>
+        <input type="range" id="cfgBrightness" min="20" max="100" value="100" oninput="window.saveConfig()">
         
         <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
 
@@ -877,7 +940,7 @@
         </button>
 
         <div style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">
-            Sound FX Engine v2.1 &bull; Realtime DB
+            Sound FX Engine v2.2 &bull; Realtime DB
         </div>
     </div>
   </div>
@@ -946,11 +1009,23 @@ const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
 
+// --- PEXELS CONFIG ---
+const PEXELS_API_KEY = "h5bmSVJ5uNx35YhSACVFvrZ6tHuww3TfZmPnDdCYRsedmnkTnwvHS1y5";
+const PEXELS_LOCALE_MAP = {
+    'en': 'en-US',
+    'id': 'id-ID'
+};
+
 let currentUser = null;
 let studyTimer = null;
 let accumulatedTime = parseInt(localStorage.getItem('fp_aurora_time') || 0);
 let unsubscribeLeaderboard = null; 
 let currentLbTab = 'week';
+const imageCache = {}; // Cache for images to prevent reload
+
+// --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING ---
+const ttsPlayer = new Audio();
+let ttsUnlocked = false;
 
 // --- NEW GLOBALS ---
 // Language config is loaded before dailyTracking to ensure correct key
@@ -1164,10 +1239,17 @@ async function syncDataFromServer() {
 
             if(data.config) {
                 config = data.config;
+                // Merge fallback defaults for new keys
+                if (config.ecoMode === undefined) config.ecoMode = true; // Default to true
+                if (config.brightness === undefined) config.brightness = 100;
+
                 localStorage.setItem('fp_aurora_dark', config.darkMode);
                 localStorage.setItem('fp_aurora_muted', config.muted);
                 localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
                 localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
+                localStorage.setItem('fp_aurora_eco', config.ecoMode);
+                localStorage.setItem('fp_aurora_brightness', config.brightness);
+                
                 applyTheme();
                 updateMuteIcon();
                 updateConfigUI();
@@ -1395,27 +1477,30 @@ function initAudio() {
         masterGain = audioCtx.createGain();
         masterGain.connect(audioCtx.destination);
     }
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => console.warn(e));
 }
 
 const SFX = { CORRECT: 'correct', WRONG: 'wrong', FLIP: 'flip', WIN: 'win', POP: 'pop' };
 
 function playTone(freq, type, duration, startTime, vol=0.1) {
-    const osc = audioCtx.createOscillator();
-    const gain = audioCtx.createGain();
-    osc.type = type;
-    osc.frequency.setValueAtTime(freq, startTime);
-    gain.gain.setValueAtTime(vol, startTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-    osc.connect(gain);
-    gain.connect(masterGain);
-    osc.start(startTime);
-    osc.stop(startTime + duration);
+    if(config.muted) return;
+    try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, startTime);
+        gain.gain.setValueAtTime(vol, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(masterGain);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+    } catch(e) { console.warn("Audio Error", e); }
 }
 
 function playSound(sfx) {
     if(config.muted) return;
-    initAudio();
+    initAudio(); // Attempt resume
     const now = audioCtx.currentTime;
 
     switch(sfx) {
@@ -1456,7 +1541,9 @@ let config = {
     newLimit: parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5),
     reviewLimit: parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20),
     darkMode: localStorage.getItem('fp_aurora_dark') === 'true',
-    muted: localStorage.getItem('fp_aurora_muted') === 'true'
+    muted: localStorage.getItem('fp_aurora_muted') === 'true',
+    ecoMode: localStorage.getItem('fp_aurora_eco') !== 'false', // Default true if not explicitly 'false'
+    brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100')
 };
 
 let sessionQueue = []; 
@@ -1493,19 +1580,73 @@ function getImageUrl(word) {
     return `https://tse2.mm.bing.net/th?q=${encodeURIComponent(q)}+illustration&w=600&h=400&c=7&rs=1&p=0`;
 }
 
+// --- NEW FUNCTION: PEXELS API IMAGE FETCHER WITH CACHE ---
+async function fetchPexelsImage(query) {
+    if(imageCache[query]) return imageCache[query];
+
+    const locale = PEXELS_LOCALE_MAP[currentLang] || 'en-US';
+    
+    try {
+        const url = `https://api.pexels.com/v1/search?query=${encodeURIComponent(query)}&locale=${locale}&per_page=1`;
+        const res = await fetch(url, {
+            headers: {
+                Authorization: PEXELS_API_KEY
+            }
+        });
+        
+        if (res.ok) {
+            const data = await res.json();
+            if (data.photos && data.photos.length > 0) {
+                // Return medium sized image
+                imageCache[query] = data.photos[0].src.medium;
+                return imageCache[query];
+            }
+        }
+    } catch (e) {
+        console.warn("Pexels fetch error", e);
+    }
+    
+    // Fallback to Bing if Pexels fails or returns no results
+    imageCache[query] = getImageUrl(query);
+    return imageCache[query];
+}
+
 // --- HELPER: PRELOAD NEXT IMAGES ---
 function preloadImages() {
     if (!sessionQueue || sessionQueue.length === 0) return;
     const start = sessionIndex + 1;
-    const end = Math.min(start + 4, sessionQueue.length); // Load next 3-4 images
+    const end = Math.min(start + 3, sessionQueue.length); // Load next 2-3 images
     for (let i = start; i < end; i++) {
-        const img = new Image();
-        img.src = getImageUrl(sessionQueue[i].english);
+        const w = sessionQueue[i];
+        if(!w) continue;
+        // Call fetch to cache the URL and start browser network request
+        fetchPexelsImage(w.english).then(url => {
+            const img = new Image();
+            img.src = url;
+        });
     }
 }
 
 // --- INITIALIZATION ---
 window.initApp = function() {
+    // Add global click listener to unlock Audio Context reliably
+    // Also unlock Google TTS Audio element for iOS
+    document.addEventListener('click', () => {
+        if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => {});
+        if(!ttsUnlocked) {
+            ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
+            ttsUnlocked = true;
+        }
+    }, { once: true, capture: true });
+    
+    document.addEventListener('touchstart', () => {
+        if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => {});
+        if(!ttsUnlocked) {
+            ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
+            ttsUnlocked = true;
+        }
+    }, { once: true, capture: true });
+
     // TRIAL LOGIC: Increment trial count on page access (initApp)
     // Only increment if not yet strictly blocked, to account for "first 3 accesses".
     if (!currentUser && trialCount < 5) { // <5 just to be safe, logic handles <=3
@@ -1516,7 +1657,7 @@ window.initApp = function() {
     checkDailyLimit();
     createParticles();
     startSnow();
-    applyTheme();
+    applyTheme(); // Applies dark mode, eco mode, brightness
     updateConfigUI();
     updateLangUI();
     window.fetchTopics(); 
@@ -1593,6 +1734,7 @@ window.setRepo = function(type) {
 
 function startSnow() {
     const snowInterval = setInterval(() => {
+        if(config.ecoMode) return; // Disable generation in Eco mode
         const snowflake = document.createElement('div');
         snowflake.innerHTML = '❄';
         snowflake.classList.add('snowflake');
@@ -1624,7 +1766,9 @@ function addPoints(amount) {
 }
 
 function createParticles() {
+    if(config.ecoMode) return;
     const container = document.getElementById('particles');
+    container.innerHTML = '';
     for(let i=0; i<15; i++) {
         const p = document.createElement('div');
         p.className = 'particle';
@@ -1665,7 +1809,7 @@ function renderStreakCalendar() {
     
     // Header
     let html = `
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="streak-header">
              <div style="font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px;">
                 <i class="fas fa-fire" style="color:#fbbf24"></i> 
                 ${calendarViewMode === 'week' ? 'Tuần này' : 'Lịch sử tháng'}
@@ -1859,6 +2003,7 @@ function getWordKey(w) {
 
 // --- GAME LOGIC START ---
 window.startSmartSession = function(isExtra = false) {
+    // 1. Validation (Login/Trial)
     if(!currentUser) {
         if(trialCount > 3) {
              showToast("Hết phiên dùng thử (3/3). Vui lòng đăng nhập!", "error");
@@ -1869,16 +2014,27 @@ window.startSmartSession = function(isExtra = false) {
     }
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
+
+    // Reset Global Flag
+    window.isGlobalReviewSession = false;
+
+    // 2. Sort Topics Alphabetically
+    const topicKeys = Object.keys(allTopics).sort(); 
     
-    // --- RESET SESSION STREAK ---
+    // Verify currentTopicKey exists, if not fallback to first
+    if (!allTopics[currentTopicKey]) {
+        currentTopicKey = topicKeys[0];
+        if (!currentTopicKey) return showToast("Không có dữ liệu chủ đề!", "error");
+        localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+    }
+
+    // 3. Reset Session Streak
     window.sessionCorrectStreak = 0;
     
     config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5);
     config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20);
 
-    const allWords = allTopics[currentTopicKey].words;
-    
-    // --- DAILY LIMIT LOGIC ---
+    // 4. Daily Limit Logic
     checkDailyLimit();
     let limitNew = config.newLimit;
     let learnedToday = dailyTracking.count;
@@ -1894,61 +2050,86 @@ window.startSmartSession = function(isExtra = false) {
         // If user explicitly clicked 'Learn More', add extra buffer
         if(isExtra) maxNewToAdd += Math.ceil(limitNew * 0.5);
     }
-    // -------------------------
 
-    let candidatesNew = allWords.filter(w => {
+    // 5. Gather Words from Current Topic
+    let currentTopicData = allTopics[currentTopicKey];
+    let allWordsCurrent = currentTopicData.words;
+
+    // Filter New Candidates from Current Topic
+    let candidatesNewCurrent = allWordsCurrent.filter(w => {
         const k = getWordKey(w);
         return !masteredWords[k] && !srsData[k];
     });
-    const batchNew = candidatesNew.slice(0, maxNewToAdd);
 
-    let allLearning = allWords.filter(w => {
+    // 6. Logic for Fetching New Words (Auto-Advance)
+    let batchNew = [];
+    
+    if (candidatesNewCurrent.length >= maxNewToAdd) {
+        // Current topic has enough
+        batchNew = candidatesNewCurrent.slice(0, maxNewToAdd);
+    } else {
+        // Current topic has some, but not enough (or zero)
+        batchNew = [...candidatesNewCurrent]; // Take all remaining
+        const deficit = maxNewToAdd - batchNew.length;
+
+        if (deficit > 0) {
+            // Find Next Topic
+            const currentIdx = topicKeys.indexOf(currentTopicKey);
+            if (currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
+                const nextKey = topicKeys[currentIdx + 1];
+                const nextTopicData = allTopics[nextKey];
+                
+                // Get words from next topic
+                const allWordsNext = nextTopicData.words;
+                const candidatesNewNext = allWordsNext.filter(w => {
+                    const k = getWordKey(w);
+                    return !masteredWords[k] && !srsData[k];
+                });
+
+                if (candidatesNewNext.length > 0) {
+                    // Take needed amount
+                    const nextTakeCount = Math.min(deficit, candidatesNewNext.length);
+                    const batchNext = candidatesNewNext.slice(0, nextTakeCount);
+                    
+                    batchNew = [...batchNew, ...batchNext];
+
+                    // UPDATE CURRENT TOPIC KEY
+                    currentTopicKey = nextKey;
+                    localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+                    saveProgressToCloud();
+                    
+                    showToast(`Đã học hết chủ đề cũ, đang chuyển sang: ${nextTopicData.name}`, "success");
+                    renderDashboard(); // Update UI
+                }
+            }
+        }
+    }
+
+    // 7. Get Review Words (From the original current topic logic usually, or globally)
+    // Here we stick to filtering from `allWordsCurrent` to keep it simple for this session,
+    // as SRS data is keyed globally anyway.
+    // If we switched topics, next session will pull reviews from new topic context if strictly scoped, 
+    // but usually SRS should be global. In this code structure, `allLearning` comes from `allWordsCurrent`.
+    // Let's keep it as is.
+    let allLearningCurrent = allWordsCurrent.filter(w => {
         const k = getWordKey(w);
         return !masteredWords[k] && srsData[k];
     });
-
-    allLearning.sort((a,b) => srsData[getWordKey(a)].nextReview - srsData[getWordKey(b)].nextReview);
-    const batchReview = allLearning.slice(0, config.reviewLimit);
+    allLearningCurrent.sort((a,b) => srsData[getWordKey(a)].nextReview - srsData[getWordKey(b)].nextReview);
+    const batchReview = allLearningCurrent.slice(0, config.reviewLimit);
     
+    // 8. Check if Empty
     if(batchNew.length === 0 && batchReview.length === 0) {
-        // --- AUTO SWITCH TOPIC LOGIC ---
-        // Check if the current topic is truly exhausted (no new words left at all, regardless of daily limit)
-        // If candidatesNew.length is 0, it means we have learned everything in this topic.
+        // Edge case: if we are here, it means even after trying to switch, we found nothing.
+        // Or limits are hit and no reviews pending.
         
-        if (candidatesNew.length === 0) {
-            const topicKeys = Object.keys(allTopics);
-            const currentIdx = topicKeys.indexOf(currentTopicKey);
-            
-            if(currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
-                 const nextKey = topicKeys[currentIdx + 1];
-                 const nextTopicName = allTopics[nextKey].name;
-                 
-                 currentTopicKey = nextKey;
-                 localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-                 saveProgressToCloud(); // Save change to firestore
-                 
-                 showToast(`Hoàn thành! Đang chuyển sang: ${nextTopicName}`, "success");
-                 playSound(SFX.POP);
-                 
-                 // Update UI
-                 renderDashboard();
-                 
-                 // Automatically start session for the new topic
-                 setTimeout(() => {
-                     window.startSmartSession(isExtra);
-                 }, 1500);
-                 return;
-            }
-        }
-        // -------------------------------
-
-        confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        if(!isExtra && !config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
         showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
         return;
     }
 
-    // Flag for silent injection later
+    // 9. Construct Queue
     window.isReviewOnlySession = (batchNew.length === 0 && batchReview.length > 0);
 
     showToast(`Bắt đầu: ${batchNew.length} từ mới + ${batchReview.length} ôn tập`, "info");
@@ -1969,7 +2150,50 @@ window.startSmartSession = function(isExtra = false) {
     currentMode = 'smart';
     
     openGameOverlay();
-    preloadImages(); // Preload images for session
+    preloadImages(); 
+    decideSmartRender();
+}
+
+// --- NEW FEATURE: GLOBAL REVIEW ---
+window.startGlobalReview = function() {
+    // 1. Scan all topics for due words
+    let globalDueWords = [];
+    const now = Date.now();
+    
+    Object.keys(allTopics).forEach(topicKey => {
+        const topic = allTopics[topicKey];
+        topic.words.forEach(w => {
+            const key = getWordKey(w);
+            // Check SRS data
+            if(srsData[key] && !masteredWords[key]) {
+                if(srsData[key].nextReview <= now) {
+                    globalDueWords.push(w);
+                }
+            }
+        });
+    });
+
+    if(globalDueWords.length === 0) {
+        if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        playSound(SFX.WIN);
+        showToast('Bạn đã ôn sạch sẽ tất cả các chủ đề!', 'success');
+        return;
+    }
+
+    // 2. Shuffle
+    globalDueWords.sort(() => Math.random() - 0.5);
+
+    // 3. Set Queue
+    sessionQueue = globalDueWords;
+    sessionIndex = 0;
+    currentMode = 'smart';
+    window.isGlobalReviewSession = true; // Flag to prevent new word injection
+
+    showToast(`Ôn tập tổng hợp: ${sessionQueue.length} từ`, "info");
+    playSound(SFX.POP);
+    
+    openGameOverlay();
+    preloadImages();
     decideSmartRender();
 }
 
@@ -2017,7 +2241,7 @@ window.processResult = function(isCorrect, skipNext = false) {
         window.sessionCorrectStreak = (window.sessionCorrectStreak || 0) + 1;
 
         playSound(SFX.CORRECT);
-        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
+        if(!config.ecoMode) confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
         addPoints(10); 
         
         // --- DAILY TRACKING INCREMENT (LANGUAGE SPECIFIC) ---
@@ -2164,8 +2388,10 @@ function injectSilentWords(count) {
     
     // Preload images
     toAdd.forEach(w => {
-        const img = new Image();
-        img.src = getImageUrl(w.english);
+        fetchPexelsImage(w.english).then(url => {
+            const img = new Image();
+            img.src = url;
+        });
     });
     
     // Update progress bar to reflect new total
@@ -2182,8 +2408,8 @@ function nextStep() {
             
             // --- SILENT INJECTION LOGIC ---
             // New Condition: Inject if streak of 3 correct answers in a review-only session
-            // sessionIndex 3 means we have completed 0, 1, 2 (3 items)
-            if(currentMode === 'smart' && window.isReviewOnlySession && sessionIndex === 3) {
+            // Prevent injection if global review session
+            if(currentMode === 'smart' && window.isReviewOnlySession && !window.isGlobalReviewSession && sessionIndex === 3) {
                  if(window.sessionCorrectStreak >= 3) {
                      injectSilentWords(3); // Add 3 words
                      window.isReviewOnlySession = false; // Disable flag so it only happens once
@@ -2215,7 +2441,7 @@ function nextStep() {
         }, 350);
     } else {
         playSound(SFX.WIN);
-        confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
+        if(!config.ecoMode) confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
         renderSessionEnd();
     }
 }
@@ -2234,7 +2460,7 @@ function renderSessionEnd() {
     `;
 }
 
-// --- CARD RENDERERS ---
+// --- CARD RENDERER (UPDATED ASYNC PEXELS) ---
 function renderFlashcard() {
     const w = sessionQueue[sessionIndex];
     isFlipped = false;
@@ -2244,10 +2470,11 @@ function renderFlashcard() {
     const badge = isRelearn ? '<div style="position:absolute; top:-10px; right:-10px; background:#f59e0b; color:white; padding:5px 10px; border-radius:10px; font-size:0.7rem; font-weight:bold; box-shadow:0 5px 10px rgba(0,0,0,0.2);">HỌC LẠI</div>' : '';
 
     const exampleId = `ex-trans-${sessionIndex}`;
+    const imgId = `fc-img-${sessionIndex}`;
+    const loadingSrc = "https://placehold.co/600x400/1e293b/94a3b8?text=Finding+Image...";
     
     const isReviewMode = (currentMode === 'smart');
     const labelLang = LANG_CONFIG[currentLang].label;
-    const imgUrl = getImageUrl(w.english);
 
     const html = `
         <div class="scene">
@@ -2257,7 +2484,7 @@ function renderFlashcard() {
                     <div class="word-en">${w.english}</div>
                     <div class="ipa">${w.ipa || ''}</div>
                     
-                    <img src="${imgUrl}" class="flashcard-img" alt="${w.english}" onerror="this.style.display='none'" />
+                    <img src="${loadingSrc}" id="${imgId}" class="flashcard-img" alt="${w.english}" onerror="this.style.display='none'" />
                     
                     <div style="font-size:0.8rem; opacity:0.7; margin-bottom:5px;">Ví dụ mẫu:</div>
                     <div class="example-box">"${w.example || ''}"</div>
@@ -2294,6 +2521,15 @@ function renderFlashcard() {
     `;
     document.getElementById('gameContent').innerHTML = html;
     
+    // Fetch Image Async
+    fetchPexelsImage(w.english).then(url => {
+        const img = document.getElementById(imgId);
+        // Ensure image element still exists and belongs to current word
+        if (img && sessionQueue[sessionIndex] === w) {
+            img.src = url;
+        }
+    });
+
     if(w.example) {
         getTranslation(w.example).then(trans => {
             const el = document.getElementById(exampleId);
@@ -2373,7 +2609,6 @@ function renderSpelling() {
             e.target.value = ''; 
         }
     });
-    // Removed auto-speak on start
 }
 
 window.revealSpellingHint = function() {
@@ -2574,8 +2809,6 @@ async function renderSentence() {
         originalMode: mode,
         textToSpeak: sourceEnglish // Always speak the target/source concept (usually English or main language)
     };
-
-    // Removed auto-speak on start for arrange_vn
 }
 
 window.moveWord = function(idx, word) {
@@ -2796,7 +3029,7 @@ function setupQuiz() {
     
     options.forEach(opt => {
         const isCorrect = getWordKey(opt) === getWordKey(w);
-        html += `<button class="action-btn" style="width:100%; background:rgba(255,255,255,0.95); color:#0f172a;" onclick="window.handleQuiz(this, ${isCorrect})">${opt.vietnamese}</button>`;
+        html += `<button class="action-btn" data-correct="${isCorrect}" style="width:100%; background:rgba(255,255,255,0.95); color:#0f172a;" onclick="window.handleQuiz(this, ${isCorrect})">${opt.vietnamese}</button>`;
     });
     html += `</div>`;
     document.getElementById('gameContent').innerHTML = html;
@@ -2819,6 +3052,14 @@ window.handleQuiz = function(el, isCorrect) {
         el.style.color = 'white';
         el.innerHTML += ' <i class="fas fa-times"></i>';
         el.classList.add('animate__animated', 'animate__shakeX');
+
+        // NEW: Find the correct answer and highlight it
+        btns.forEach(btn => {
+            if (btn.getAttribute('data-correct') === 'true') {
+                btn.style.background = '#22c55e';
+                btn.style.color = 'white';
+            }
+        });
     }
     
     window.processResult(isCorrect);
@@ -2919,6 +3160,17 @@ function renderDashboard() {
     animateValue("statLearned", parseInt(document.getElementById('statLearned').innerText), cntLearned, 1000);
     animateValue("statMastered", parseInt(document.getElementById('statMastered').innerText), cntMaster, 1000);
 
+    // --- GLOBAL DUE CHECK ---
+    let globalDueCount = 0;
+    Object.keys(allTopics).forEach(k => {
+        allTopics[k].words.forEach(w => {
+            const key = getWordKey(w);
+            if(srsData[key] && !masteredWords[key] && srsData[key].nextReview <= now) {
+                globalDueCount++;
+            }
+        });
+    });
+
     // --- DAILY LIMIT UI LOGIC ---
     checkDailyLimit();
     const currentLimit = config.newLimit;
@@ -2927,22 +3179,38 @@ function renderDashboard() {
 
     const actionArea = document.getElementById('actionArea');
     if(actionArea) {
-        if (remaining === 0) {
+        // Condition: Either new words available OR current topic review available
+        const currentHasTask = (remaining > 0 && cntNew > 0) || (cntDue > 0);
+
+        if (currentHasTask) {
+            let label = remaining === 0 ? "HỌC NGAY" : `HỌC NGAY (${remaining} từ mới)`;
+            if(remaining === 0 && cntDue > 0) label = `ÔN TẬP (${cntDue} từ)`;
+
              actionArea.innerHTML = `
                 <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
-                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+                    <i class="fas fa-brain"></i> &nbsp; ${label}
                 </button>
-                <div style="font-size:0.8rem; color:#4ade80; font-weight:700; text-align:center; margin-top:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-check-circle"></i> Đã hoàn thành mục tiêu hôm nay
+                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+                </div>
+             `;
+        } else if (globalDueCount > 0) {
+             // Global Review Mode (Disguised but with clear visual cue)
+             actionArea.innerHTML = `
+                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-color:rgba(139, 92, 246, 0.5);" onclick="window.startGlobalReview()">
+                    <i class="fas fa-sync-alt"></i> &nbsp; ÔN TẬP TỔNG HỢP (${globalDueCount})
+                </button>
+                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-globe-asia"></i> Quét toàn bộ kho từ vựng
                 </div>
              `;
         } else {
              actionArea.innerHTML = `
-                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
-                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY (${remaining} từ mới)
+                <button class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6);" onclick="window.startSmartSession(true)">
+                    <i class="fas fa-plus-circle"></i> &nbsp; HỌC THÊM (Vượt chỉ tiêu)
                 </button>
-                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+                <div style="font-size:0.8rem; color:#4ade80; font-weight:700; text-align:center; margin-top:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-check-circle"></i> Đã hoàn thành mục tiêu hôm nay
                 </div>
              `;
         }
@@ -3051,9 +3319,62 @@ window.unmarkMastered = function(wordEn) {
 
 window.speakText = function(text, onEnd) {
     if(config.muted) {
-        if(onEnd) setTimeout(onEnd, 600); 
+        if(onEnd) setTimeout(onEnd, 500); 
         return;
     }
+
+    // Determine language code
+    let tl = 'en'; 
+    if (currentLang === 'en') tl = 'en'; 
+    else if (currentLang === 'id') tl = 'id';
+    else if (currentLang === 'vi') tl = 'vi';
+
+    // Google TTS URL
+    // Use client=gtx for standard reliable access
+    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${tl}&q=${encodeURIComponent(text)}`;
+    
+    // Use global unlocked player if possible
+    ttsPlayer.src = url;
+    ttsPlayer.playbackRate = 1.0;
+    
+    // Clear previous handlers
+    ttsPlayer.onended = null;
+    ttsPlayer.onerror = null;
+
+    // Handle events
+    ttsPlayer.onended = () => {
+        if(onEnd) onEnd();
+        ttsPlayer.onended = null;
+        ttsPlayer.onerror = null;
+    };
+    
+    ttsPlayer.onerror = (e) => {
+        console.warn("Google TTS Error, trying fallback", e);
+        // Fallback to Native if Google fails
+        if ('speechSynthesis' in window) {
+            window.speakFallback(text, onEnd);
+        } else {
+             if(onEnd) onEnd();
+        }
+        ttsPlayer.onended = null;
+        ttsPlayer.onerror = null;
+    };
+
+    const playPromise = ttsPlayer.play();
+    if (playPromise !== undefined) {
+        playPromise.catch(error => {
+            console.warn("Google TTS Playback prevented:", error);
+            // Try fallback immediately
+             if ('speechSynthesis' in window) {
+                window.speakFallback(text, onEnd);
+            } else {
+                 if(onEnd) onEnd();
+            }
+        });
+    }
+}
+
+window.speakFallback = function(text, onEnd) {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.lang = LANG_CONFIG[currentLang].tts; 
@@ -3230,6 +3551,8 @@ function setupVoice() {
 
 function applyTheme() {
     document.body.classList.toggle('dark-mode', config.darkMode);
+    document.body.classList.toggle('eco-mode', config.ecoMode);
+    document.getElementById('brightness-overlay').style.opacity = (100 - config.brightness) / 100;
     document.getElementById('themeBtn').innerHTML = config.darkMode ? '<i class="fas fa-sun" style="color:#fcd34d"></i>' : '<i class="fas fa-moon" style="color:#fff"></i>';
 }
 window.toggleTheme = function() { config.darkMode = !config.darkMode; localStorage.setItem('fp_aurora_dark', config.darkMode); applyTheme(); playSound(SFX.POP); saveProgressToCloud(); }
@@ -3238,16 +3561,26 @@ function updateMuteIcon() { document.getElementById('muteIcon').className = conf
 window.saveConfig = function() {
     config.newLimit = parseInt(document.getElementById('cfgNewLimit').value);
     config.reviewLimit = parseInt(document.getElementById('cfgReviewLimit').value);
+    config.ecoMode = document.getElementById('cfgEco').checked;
+    config.brightness = parseInt(document.getElementById('cfgBrightness').value);
+    
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
     localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
+    localStorage.setItem('fp_aurora_eco', config.ecoMode);
+    localStorage.setItem('fp_aurora_brightness', config.brightness);
+
     saveProgressToCloud();
     updateConfigUI();
+    applyTheme(); // Apply eco mode and brightness changes immediately
 }
 function updateConfigUI() {
     document.getElementById('cfgNewLimit').value = config.newLimit;
     document.getElementById('dispLimitNew').innerText = config.newLimit;
     document.getElementById('cfgReviewLimit').value = config.reviewLimit;
     document.getElementById('dispLimitReview').innerText = config.reviewLimit;
+    document.getElementById('cfgEco').checked = config.ecoMode;
+    document.getElementById('cfgBrightness').value = config.brightness;
+    document.getElementById('dispBrightness').innerText = config.brightness + '%';
 }
 </script>
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
