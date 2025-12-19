@@ -923,6 +923,14 @@
         <h4 style="margin-bottom:15px; color:#A78BFA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Hiệu năng & Hiển thị</h4>
         
         <div class="switch-container">
+            <span>Giọng đọc Google (Hay hơn)</span>
+            <input type="checkbox" id="cfgVoiceGoogle" class="toggle-switch" onchange="window.saveConfig()">
+        </div>
+        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: -10px; margin-bottom: 15px;">
+            Tắt để dùng giọng mặc định của máy (Nhanh hơn, không cần mạng).
+        </div>
+        
+        <div class="switch-container">
             <span>Chế độ Tiết kiệm pin (Máy yếu)</span>
             <input type="checkbox" id="cfgEco" class="toggle-switch" onchange="window.saveConfig()">
         </div>
@@ -1242,6 +1250,7 @@ async function syncDataFromServer() {
                 // Merge fallback defaults for new keys
                 if (config.ecoMode === undefined) config.ecoMode = true; // Default to true
                 if (config.brightness === undefined) config.brightness = 100;
+                if (config.voiceEngine === undefined) config.voiceEngine = 'google';
 
                 localStorage.setItem('fp_aurora_dark', config.darkMode);
                 localStorage.setItem('fp_aurora_muted', config.muted);
@@ -1249,6 +1258,7 @@ async function syncDataFromServer() {
                 localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
                 localStorage.setItem('fp_aurora_eco', config.ecoMode);
                 localStorage.setItem('fp_aurora_brightness', config.brightness);
+                localStorage.setItem('fp_aurora_voice_engine', config.voiceEngine);
                 
                 applyTheme();
                 updateMuteIcon();
@@ -1543,7 +1553,8 @@ let config = {
     darkMode: localStorage.getItem('fp_aurora_dark') === 'true',
     muted: localStorage.getItem('fp_aurora_muted') === 'true',
     ecoMode: localStorage.getItem('fp_aurora_eco') !== 'false', // Default true if not explicitly 'false'
-    brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100')
+    brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100'),
+    voiceEngine: localStorage.getItem('fp_aurora_voice_engine') || 'google'
 };
 
 let sessionQueue = []; 
@@ -3323,6 +3334,12 @@ window.speakText = function(text, onEnd) {
         return;
     }
 
+    // CHECK CONFIG: If user chose native, skip google
+    if (config.voiceEngine === 'native') {
+        window.speakFallback(text, onEnd);
+        return;
+    }
+
     // Determine language code
     let tl = 'en'; 
     if (currentLang === 'en') tl = 'en'; 
@@ -3563,11 +3580,13 @@ window.saveConfig = function() {
     config.reviewLimit = parseInt(document.getElementById('cfgReviewLimit').value);
     config.ecoMode = document.getElementById('cfgEco').checked;
     config.brightness = parseInt(document.getElementById('cfgBrightness').value);
+    config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
     
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
     localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
     localStorage.setItem('fp_aurora_eco', config.ecoMode);
     localStorage.setItem('fp_aurora_brightness', config.brightness);
+    localStorage.setItem('fp_aurora_voice_engine', config.voiceEngine);
 
     saveProgressToCloud();
     updateConfigUI();
@@ -3581,6 +3600,7 @@ function updateConfigUI() {
     document.getElementById('cfgEco').checked = config.ecoMode;
     document.getElementById('cfgBrightness').value = config.brightness;
     document.getElementById('dispBrightness').innerText = config.brightness + '%';
+    document.getElementById('cfgVoiceGoogle').checked = (config.voiceEngine === 'google');
 }
 </script>
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
