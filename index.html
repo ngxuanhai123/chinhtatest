@@ -35,8 +35,7 @@
   /* --- ECO MODE STYLES --- */
   body.eco-mode .aurora-bg,
   body.eco-mode #particles,
-  body.eco-mode .snowflake,
-  body.eco-mode .heart-beat { display: none !important; }
+  body.eco-mode .snowflake, { display: none !important; }
   
   /* Disable costly effects */
   body.eco-mode .glass-panel,
@@ -1485,24 +1484,39 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let audioUnlocked = false; // Flag to track status
 
-// 1. Fix Audio Unlock (Kích hoạt âm thanh ngay lần chạm đầu tiên)
+// 1. Fix Audio Unlock LOGIC MỞ KHOÁ ÂM THANH "LÌ LỢM" HƠN ---
 const enableAudio = () => {
-    // Resume AudioContext nếu bị treo
+    // Luôn cố gắng resume mỗi khi chạm vào màn hình nếu chưa chạy
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        audioCtx.resume().then(() => {
+            console.log("AudioContext Resumed Successfully!");
+        }).catch(e => console.error(e));
     }
-    
-    // Tạo và phát một âm thanh rỗng cực ngắn để "mở khóa" trình duyệt
-    const buffer = audioCtx.createBuffer(1, 1, 22050);
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
 
-    // Khởi tạo GainNode
+    // Vẫn phát âm thanh rỗng để mồi
+    try {
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start(0);
+    } catch(e) {}
+
     initAudio();
-    
-    console.log("Audio Context Force Unlocked!");
+
+    // CHỈ GỠ SỰ KIỆN KHI ĐÃ CHẮC CHẮN AUDIO ĐANG CHẠY (state === 'running')
+    // Để tránh trường hợp chạm lần đầu bị trượt, lần sau vẫn còn cơ hội mở lại.
+    if (audioCtx.state === 'running') {
+        ['click', 'touchstart', 'keydown'].forEach(evt => 
+            document.removeEventListener(evt, enableAudio, {capture: true})
+        );
+    }
+};
+
+// Gắn sự kiện (Giữ nguyên)
+['click', 'touchstart', 'keydown'].forEach(evt => 
+    document.addEventListener(evt, enableAudio, { capture: true })
+);
 
     // Gỡ bỏ sự kiện sau khi đã kích hoạt xong để không chạy lại
     ['click', 'touchstart', 'keydown'].forEach(evt => 
@@ -1543,9 +1557,9 @@ function playTone(freq, type, duration, startTime, vol=0.1) {
 function playSound(sfx) {
     if(config.muted) return;
     
-    // 2. Check resume immediately before playing (Double safety)
+    // GỌI LẠI HÀM KÍCH HOẠT ĐỂ CHẮC CHẮN 100%
     if(audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(e => {});
+        enableAudio();
     }
 
     initAudio(); 
@@ -3215,17 +3229,6 @@ function renderDashboard() {
     if(actionArea) {
         // Condition: Either new words available OR current topic review available
         const currentHasTask = (remaining > 0 && cntNew > 0) || (cntDue > 0);
-
-        if (currentHasTask) {
-            // Chỉ hiển thị duy nhất 1 nút HỌC NGAY, không hiện số từ, không hiện nút học thêm
-    actionArea.innerHTML = `
-        <button class="btn-primary animate__animated animate__pulse animate__infinite" 
-            style="animation-duration: 2s;" 
-            onclick="window.startSmartSession(false)">
-            <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
-        </button>
-             `;
-        }
     }
 }
 
