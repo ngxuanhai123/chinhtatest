@@ -370,8 +370,10 @@
   }
   body.dark-mode .match-card { background: rgba(51, 65, 85, 0.95); color: white; }
   .match-card:active { top: 3px; box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
-  .match-card.selected { background: #3b82f6; color: white; transform: scale(1.02); }
-  .match-card.wrong { background: #ef4444; color: white; animation: shake 0.4s; }
+  
+  /* FIXED: Added !important to override dark mode specificity */
+  .match-card.selected { background: #3b82f6 !important; color: white !important; transform: scale(1.02); border: 2px solid #fff; }
+  .match-card.wrong { background: #ef4444 !important; color: white !important; animation: shake 0.4s; border: 2px solid #fff; }
   .match-card.correct { opacity: 0; visibility: hidden; transition: opacity 0.3s; }
 
   /* Toast */
@@ -829,7 +831,7 @@
     </div> 
     
     <div class="made-with-love">
-        Xuân Hải làm bằng cả trái tim <i class="fas fa-heart heart-beat"></i>
+        Xuân Hải làm bằng cả trái tim <i class="fas fa-heart heart-beat" style="margin-left: 5px;"></i>
     </div>
   </div>
 
@@ -1481,13 +1483,43 @@ window.initLeaderboardListener = () => {
 
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
+let audioUnlocked = false; // Flag to track status
+
+// 1. Fix Audio Unlock (Kích hoạt âm thanh ngay lần chạm đầu tiên)
+const enableAudio = () => {
+    // Resume AudioContext nếu bị treo
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    
+    // Tạo và phát một âm thanh rỗng cực ngắn để "mở khóa" trình duyệt
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+
+    // Khởi tạo GainNode
+    initAudio();
+    
+    console.log("Audio Context Force Unlocked!");
+
+    // Gỡ bỏ sự kiện sau khi đã kích hoạt xong để không chạy lại
+    ['click', 'touchstart', 'keydown'].forEach(evt => 
+        document.removeEventListener(evt, enableAudio, {capture: true})
+    );
+};
+
+// Gắn sự kiện vào toàn bộ trang để bắt cú chạm đầu tiên
+['click', 'touchstart', 'keydown'].forEach(evt => 
+    document.addEventListener(evt, enableAudio, { capture: true })
+);
 
 function initAudio() {
     if(!masterGain) {
         masterGain = audioCtx.createGain();
         masterGain.connect(audioCtx.destination);
     }
-    if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => console.warn(e));
 }
 
 const SFX = { CORRECT: 'correct', WRONG: 'wrong', FLIP: 'flip', WIN: 'win', POP: 'pop' };
@@ -1510,7 +1542,13 @@ function playTone(freq, type, duration, startTime, vol=0.1) {
 
 function playSound(sfx) {
     if(config.muted) return;
-    initAudio(); // Attempt resume
+    
+    // 2. Check resume immediately before playing (Double safety)
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(e => {});
+    }
+
+    initAudio(); 
     const now = audioCtx.currentTime;
 
     switch(sfx) {
@@ -1640,23 +1678,8 @@ function preloadImages() {
 
 // --- INITIALIZATION ---
 window.initApp = function() {
-    // Add global click listener to unlock Audio Context reliably
-    // Also unlock Google TTS Audio element for iOS
-    document.addEventListener('click', () => {
-        if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => {});
-        if(!ttsUnlocked) {
-            ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
-            ttsUnlocked = true;
-        }
-    }, { once: true, capture: true });
-    
-    document.addEventListener('touchstart', () => {
-        if(audioCtx.state === 'suspended') audioCtx.resume().catch(e => {});
-        if(!ttsUnlocked) {
-            ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
-            ttsUnlocked = true;
-        }
-    }, { once: true, capture: true });
+    // 3. Removed old event listeners for click/touchstart with {once:true} 
+    // New persistent listeners are attached in the Global Scope above.
 
     // TRIAL LOGIC: Increment trial count on page access (initApp)
     // Only increment if not yet strictly blocked, to account for "first 3 accesses".
@@ -3194,35 +3217,13 @@ function renderDashboard() {
         const currentHasTask = (remaining > 0 && cntNew > 0) || (cntDue > 0);
 
         if (currentHasTask) {
-            let label = remaining === 0 ? "HỌC NGAY" : `HỌC NGAY (${remaining} từ mới)`;
-            if(remaining === 0 && cntDue > 0) label = `ÔN TẬP (${cntDue} từ)`;
-
-             actionArea.innerHTML = `
-                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="window.startSmartSession(false)">
-                    <i class="fas fa-brain"></i> &nbsp; ${label}
-                </button>
-                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
-                </div>
-             `;
-        } else if (globalDueCount > 0) {
-             // Global Review Mode (Disguised but with clear visual cue)
-             actionArea.innerHTML = `
-                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s; background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-color:rgba(139, 92, 246, 0.5);" onclick="window.startGlobalReview()">
-                    <i class="fas fa-sync-alt"></i> &nbsp; ÔN TẬP TỔNG HỢP (${globalDueCount})
-                </button>
-                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-globe-asia"></i> Quét toàn bộ kho từ vựng
-                </div>
-             `;
-        } else {
-             actionArea.innerHTML = `
-                <button class="btn-primary" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6);" onclick="window.startSmartSession(true)">
-                    <i class="fas fa-plus-circle"></i> &nbsp; HỌC THÊM (Vượt chỉ tiêu)
-                </button>
-                <div style="font-size:0.8rem; color:#4ade80; font-weight:700; text-align:center; margin-top:10px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                    <i class="fas fa-check-circle"></i> Đã hoàn thành mục tiêu hôm nay
-                </div>
+            // Chỉ hiển thị duy nhất 1 nút HỌC NGAY, không hiện số từ, không hiện nút học thêm
+    actionArea.innerHTML = `
+        <button class="btn-primary animate__animated animate__pulse animate__infinite" 
+            style="animation-duration: 2s;" 
+            onclick="window.startSmartSession(false)">
+            <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+        </button>
              `;
         }
     }
