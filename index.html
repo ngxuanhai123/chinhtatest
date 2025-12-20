@@ -33,7 +33,7 @@
   }
 
   /* --- ECO MODE STYLES --- */
-  /* REMOVED .heart-beat from display:none to allow animation in Eco Mode */
+  /* Explicitly exclude heart-beat from being hidden */
   body.eco-mode .aurora-bg,
   body.eco-mode #particles,
   body.eco-mode .snowflake { display: none !important; }
@@ -1495,7 +1495,7 @@ let audioUnlocked = false; // Flag to track status
 
 // 1. Refactored Unlock Mechanism
 function unlockAudioContext() {
-    if (audioUnlocked) return;
+    if (audioCtx.state !== 'suspended') return;
     
     // Function to play a silent buffer (Critical for iOS)
     const playSilentBuffer = () => {
@@ -1511,12 +1511,11 @@ function unlockAudioContext() {
             playSilentBuffer();
             audioUnlocked = true;
             console.log("Audio Context Unlocked & Resumed");
-            removeUnlockListeners();
+            // Do not remove listeners immediately to ensure persistence across reloads/backgrounding
         }).catch(e => console.error("Audio unlock failed", e));
     } else {
         playSilentBuffer();
         audioUnlocked = true;
-        removeUnlockListeners();
     }
     
     // Also unlock Google TTS global audio
@@ -1524,12 +1523,6 @@ function unlockAudioContext() {
          ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
          ttsUnlocked = true;
     }
-}
-
-function removeUnlockListeners() {
-    ['click', 'touchstart', 'keydown'].forEach(evt => 
-        document.removeEventListener(evt, unlockAudioContext, {capture: true})
-    );
 }
 
 // Attach listeners immediately (Passive for better performance)
@@ -2073,6 +2066,11 @@ window.startSmartSession = function(isExtra = false) {
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
 
+    // FIX: Ensure AudioContext is running when user clicks "Start"
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
     // Reset Global Flag
     window.isGlobalReviewSession = false;
 
@@ -2603,6 +2601,12 @@ function renderFlashcard() {
 
 window.flipCard = function() {
     if(isProcessing && currentMode === 'smart') return;
+    
+    // FIX: Ensure context is resumed on card click interaction
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
     const card = document.getElementById('flashcardObj');
     if(!card) return;
     isFlipped = !isFlipped;
@@ -3134,6 +3138,12 @@ window.startGame = function(mode) {
         }
     }
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
+    
+    // FIX: Ensure AudioContext is running immediately on button click
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+
     playSound(SFX.POP);
     const allWords = allTopics[currentTopicKey].words;
     
@@ -3617,6 +3627,20 @@ window.saveConfig = function() {
     config.brightness = parseInt(document.getElementById('cfgBrightness').value);
     config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
     config.sfxEnabled = document.getElementById('cfgSfx').checked;
+    
+    // FIX: Resume AudioContext immediately if SFX enabled by user click
+    if (config.sfxEnabled && audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            // Optional: Play a tiny silent oscillator to 'warm up' iOS audio
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.001; 
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start(0);
+            osc.stop(0.1);
+        });
+    }
     
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
     localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
