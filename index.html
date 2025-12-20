@@ -1495,28 +1495,20 @@ let audioUnlocked = false; // Flag to track status
 
 // 1. Refactored Unlock Mechanism
 function unlockAudioContext() {
-    if (audioCtx.state !== 'suspended') return;
-    
-    // Function to play a silent buffer (Critical for iOS)
-    const playSilentBuffer = () => {
-        const buffer = audioCtx.createBuffer(1, 1, 22050);
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.start(0);
-    };
+    // Create a "Silent Buffer" and play immediately (iOS Trick)
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
 
     if (audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
-            playSilentBuffer();
-            audioUnlocked = true;
             console.log("Audio Context Unlocked & Resumed");
-            // Do not remove listeners immediately to ensure persistence across reloads/backgrounding
         }).catch(e => console.error("Audio unlock failed", e));
-    } else {
-        playSilentBuffer();
-        audioUnlocked = true;
     }
+    
+    audioUnlocked = true;
     
     // Also unlock Google TTS global audio
     if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
@@ -1525,9 +1517,9 @@ function unlockAudioContext() {
     }
 }
 
-// Attach listeners immediately (Passive for better performance)
+// Attach listeners immediately (Passive: false is crucial for iOS audio unlock on first touch)
 ['click', 'touchstart', 'keydown'].forEach(evt => 
-    document.addEventListener(evt, unlockAudioContext, { passive: true, capture: true })
+    document.addEventListener(evt, unlockAudioContext, { passive: false, capture: true })
 );
 
 function initAudio() {
@@ -2054,6 +2046,8 @@ function getWordKey(w) {
 
 // --- GAME LOGIC START ---
 window.startSmartSession = function(isExtra = false) {
+    unlockAudioContext(); // Ensure audio is unlocked immediately on user interaction
+
     // 1. Validation (Login/Trial)
     if(!currentUser) {
         if(trialCount > 3) {
@@ -2065,11 +2059,6 @@ window.startSmartSession = function(isExtra = false) {
     }
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
-
-    // FIX: Ensure AudioContext is running when user clicks "Start"
-    if(audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
 
     // Reset Global Flag
     window.isGlobalReviewSession = false;
@@ -3129,6 +3118,8 @@ window.handleQuiz = function(el, isCorrect) {
 
 // --- UTILITIES ---
 window.startGame = function(mode) {
+    unlockAudioContext(); // Ensure audio is unlocked immediately on user interaction
+
     if(!currentUser) {
         if(trialCount > 3) {
              showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
@@ -3628,18 +3619,21 @@ window.saveConfig = function() {
     config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
     config.sfxEnabled = document.getElementById('cfgSfx').checked;
     
-    // FIX: Resume AudioContext immediately if SFX enabled by user click
-    if (config.sfxEnabled && audioCtx.state === 'suspended') {
-        audioCtx.resume().then(() => {
-            // Optional: Play a tiny silent oscillator to 'warm up' iOS audio
+    // Immediate audio unlock if SFX is enabled
+    if (config.sfxEnabled) {
+        unlockAudioContext();
+        // Play a short "beep" to force browser audio permission and feedback
+        try {
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            gain.gain.value = 0.001; 
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start(0);
             osc.stop(0.1);
-        });
+        } catch(e) {}
     }
     
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
