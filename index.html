@@ -33,9 +33,10 @@
   }
 
   /* --- ECO MODE STYLES --- */
+  /* REMOVED .heart-beat from display:none to allow animation in Eco Mode */
   body.eco-mode .aurora-bg,
   body.eco-mode #particles,
-  body.eco-mode .snowflake, { display: none !important; }
+  body.eco-mode .snowflake { display: none !important; }
   
   /* Disable costly effects */
   body.eco-mode .glass-panel,
@@ -830,7 +831,7 @@
     </div> 
     
     <div class="made-with-love">
-        Xuân Hải làm bằng cả trái tim <i class="fas fa-heart heart-beat" style="margin-left: 5px;"></i>
+        Xuân Hải làm bằng cả trái tim <i class="fas fa-heart heart-beat"></i>
     </div>
   </div>
 
@@ -923,6 +924,12 @@
 
         <h4 style="margin-bottom:15px; color:#A78BFA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Hiệu năng & Hiển thị</h4>
         
+        <!-- NEW SFX TOGGLE -->
+        <div class="switch-container">
+            <span>Hiệu ứng âm thanh (SFX)</span>
+            <input type="checkbox" id="cfgSfx" class="toggle-switch" onchange="window.saveConfig()">
+        </div>
+
         <div class="switch-container">
             <span>Giọng đọc Google (Hay hơn)</span>
             <input type="checkbox" id="cfgVoiceGoogle" class="toggle-switch" onchange="window.saveConfig()">
@@ -1252,6 +1259,7 @@ async function syncDataFromServer() {
                 if (config.ecoMode === undefined) config.ecoMode = true; // Default to true
                 if (config.brightness === undefined) config.brightness = 100;
                 if (config.voiceEngine === undefined) config.voiceEngine = 'google';
+                if (config.sfxEnabled === undefined) config.sfxEnabled = true;
 
                 localStorage.setItem('fp_aurora_dark', config.darkMode);
                 localStorage.setItem('fp_aurora_muted', config.muted);
@@ -1260,6 +1268,7 @@ async function syncDataFromServer() {
                 localStorage.setItem('fp_aurora_eco', config.ecoMode);
                 localStorage.setItem('fp_aurora_brightness', config.brightness);
                 localStorage.setItem('fp_aurora_voice_engine', config.voiceEngine);
+                localStorage.setItem('fp_aurora_sfx', config.sfxEnabled);
                 
                 applyTheme();
                 updateMuteIcon();
@@ -1484,34 +1493,48 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let audioUnlocked = false; // Flag to track status
 
-// 1. Fix Audio Unlock (Kích hoạt âm thanh ngay lần chạm đầu tiên)
-const enableAudio = () => {
-    // Resume AudioContext nếu bị treo
+// 1. Refactored Unlock Mechanism
+function unlockAudioContext() {
+    if (audioUnlocked) return;
+    
+    // Function to play a silent buffer (Critical for iOS)
+    const playSilentBuffer = () => {
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start(0);
+    };
+
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        audioCtx.resume().then(() => {
+            playSilentBuffer();
+            audioUnlocked = true;
+            console.log("Audio Context Unlocked & Resumed");
+            removeUnlockListeners();
+        }).catch(e => console.error("Audio unlock failed", e));
+    } else {
+        playSilentBuffer();
+        audioUnlocked = true;
+        removeUnlockListeners();
     }
     
-    // Tạo và phát một âm thanh rỗng cực ngắn để "mở khóa" trình duyệt
-    const buffer = audioCtx.createBuffer(1, 1, 22050);
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
+    // Also unlock Google TTS global audio
+    if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
+         ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
+         ttsUnlocked = true;
+    }
+}
 
-    // Khởi tạo GainNode
-    initAudio();
-    
-    console.log("Audio Context Force Unlocked!");
-
-    // Gỡ bỏ sự kiện sau khi đã kích hoạt xong để không chạy lại
+function removeUnlockListeners() {
     ['click', 'touchstart', 'keydown'].forEach(evt => 
-        document.removeEventListener(evt, enableAudio, {capture: true})
+        document.removeEventListener(evt, unlockAudioContext, {capture: true})
     );
-};
+}
 
-// Gắn sự kiện vào toàn bộ trang để bắt cú chạm đầu tiên
+// Attach listeners immediately (Passive for better performance)
 ['click', 'touchstart', 'keydown'].forEach(evt => 
-    document.addEventListener(evt, enableAudio, { capture: true })
+    document.addEventListener(evt, unlockAudioContext, { passive: true, capture: true })
 );
 
 function initAudio() {
@@ -1541,6 +1564,7 @@ function playTone(freq, type, duration, startTime, vol=0.1) {
 
 function playSound(sfx) {
     if(config.muted) return;
+    if(!config.sfxEnabled) return; // New Check for specific SFX toggle
     
     // 2. Check resume immediately before playing (Double safety)
     if(audioCtx.state === 'suspended') {
@@ -1591,7 +1615,8 @@ let config = {
     muted: localStorage.getItem('fp_aurora_muted') === 'true',
     ecoMode: localStorage.getItem('fp_aurora_eco') !== 'false', // Default true if not explicitly 'false'
     brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100'),
-    voiceEngine: localStorage.getItem('fp_aurora_voice_engine') || 'google'
+    voiceEngine: localStorage.getItem('fp_aurora_voice_engine') || 'google',
+    sfxEnabled: localStorage.getItem('fp_aurora_sfx') !== 'false' // Default true
 };
 
 let sessionQueue = []; 
@@ -3214,17 +3239,27 @@ function renderDashboard() {
     if(actionArea) {
         // Condition: Either new words available OR current topic review available
         const currentHasTask = (remaining > 0 && cntNew > 0) || (cntDue > 0);
-
-        if (currentHasTask) {
-            // Chỉ hiển thị duy nhất 1 nút HỌC NGAY, không hiện số từ, không hiện nút học thêm
-    actionArea.innerHTML = `
-        <button class="btn-primary animate__animated animate__pulse animate__infinite" 
-            style="animation-duration: 2s;" 
-            onclick="window.startSmartSession(false)">
-            <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
-        </button>
-             `;
+        
+        let actionFn = "window.startSmartSession(false)";
+        
+        // Determine action based on state
+        if (!currentHasTask) {
+            if (globalDueCount > 0) {
+                actionFn = "window.startGlobalReview()";
+            } else {
+                // If no task and no global review, assume user wants to learn more (Extra)
+                actionFn = "window.startSmartSession(true)";
+            }
         }
+
+        actionArea.innerHTML = `
+            <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="${actionFn}">
+                <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+            </button>
+            <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+            </div>
+        `;
     }
 }
 
@@ -3581,12 +3616,14 @@ window.saveConfig = function() {
     config.ecoMode = document.getElementById('cfgEco').checked;
     config.brightness = parseInt(document.getElementById('cfgBrightness').value);
     config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
+    config.sfxEnabled = document.getElementById('cfgSfx').checked;
     
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
     localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
     localStorage.setItem('fp_aurora_eco', config.ecoMode);
     localStorage.setItem('fp_aurora_brightness', config.brightness);
     localStorage.setItem('fp_aurora_voice_engine', config.voiceEngine);
+    localStorage.setItem('fp_aurora_sfx', config.sfxEnabled);
 
     saveProgressToCloud();
     updateConfigUI();
@@ -3601,6 +3638,7 @@ function updateConfigUI() {
     document.getElementById('cfgBrightness').value = config.brightness;
     document.getElementById('dispBrightness').innerText = config.brightness + '%';
     document.getElementById('cfgVoiceGoogle').checked = (config.voiceEngine === 'google');
+    document.getElementById('cfgSfx').checked = config.sfxEnabled;
 }
 </script>
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
