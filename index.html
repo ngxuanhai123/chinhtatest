@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="referrer" content="no-referrer">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Hihi Vocabulary</title>
 <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@300;400;600;700&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
@@ -23,6 +23,7 @@
     --font-main: 'Poppins', sans-serif;
     --card-text-main: #1e293b;
     --card-text-sub: #475569;
+    --safe-area-bottom: env(safe-area-inset-bottom, 20px);
   }
 
   body.dark-mode {
@@ -33,12 +34,10 @@
   }
 
   /* --- ECO MODE STYLES --- */
-  /* Explicitly exclude heart-beat from being hidden */
   body.eco-mode .aurora-bg,
   body.eco-mode #particles,
   body.eco-mode .snowflake { display: none !important; }
   
-  /* Disable costly effects */
   body.eco-mode .glass-panel,
   body.eco-mode .streak-panel,
   body.eco-mode .tab-bar,
@@ -49,15 +48,13 @@
       box-shadow: none !important;
   }
   
-  /* Solid backgrounds for readability in Eco Mode */
   body.eco-mode .glass-panel { background: rgba(30, 41, 59, 0.98); border: 1px solid #334155; }
   body.eco-mode .streak-panel { background: rgba(30, 41, 59, 0.98); }
   body.eco-mode .tab-bar { background: #0f172a; border-top: 1px solid #334155; }
   body.eco-mode .btn-primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); }
   
-  /* Brightness Overlay */
   #brightness-overlay {
-      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh;
       background: black; opacity: 0; pointer-events: none; z-index: 99999;
       transition: opacity 0.1s linear;
   }
@@ -68,10 +65,11 @@
     font-family: var(--font-main);
     background: #0f172a;
     color: var(--text-color);
-    min-height: 100vh;
+    min-height: 100dvh; /* Mobile fix */
     display: flex; flex-direction: column; align-items: center;
-    padding-bottom: 110px;
+    padding-bottom: calc(90px + var(--safe-area-bottom));
     overflow-x: hidden;
+    overflow-y: auto; /* Enable scroll */
     position: relative;
   }
 
@@ -158,15 +156,18 @@
       width: 100%;
   }
 
-  h1 { font-size: 2rem; font-weight: 800; margin-bottom: 2px; letter-spacing: -1px; 
-       color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(0, 210, 255, 0.5); line-height: 1.2; }
+  h1 { 
+      font-size: clamp(1.5rem, 5vw, 2rem); /* Responsive Font */
+      font-weight: 800; margin-bottom: 2px; letter-spacing: -1px; 
+      color: white; text-shadow: 0 0 10px rgba(255,255,255,0.5), 0 0 20px rgba(0, 210, 255, 0.5); line-height: 1.2; 
+  }
 
   .view-container { width: 92%; max-width: 500px; z-index: 2; position: relative; padding-bottom: 20px; }
   
   /* --- DASHBOARD STATS --- */
   .stats-grid { 
       display: grid; 
-      grid-template-columns: 1fr 1fr; /* 2 cột */
+      grid-template-columns: 1fr 1fr;
       gap: 12px; margin-top: 20px; 
   }
   .stat-card {
@@ -178,7 +179,7 @@
   .stat-card:active { transform: scale(0.95); background: rgba(255,255,255,0.25); }
   .stat-card:hover { border-color: rgba(255,255,255,0.4); }
 
-  .stat-num { font-size: 1.6rem; font-weight: 800; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+  .stat-num { font-size: clamp(1.3rem, 4vw, 1.6rem); font-weight: 800; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
   .stat-label { font-size: 0.65rem; opacity: 0.9; margin-top: 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
   .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
@@ -199,19 +200,23 @@
       backdrop-filter: blur(10px);
       display: none; flex-direction: column;
       animation: fadeIn 0.3s;
+      height: 100dvh; /* Mobile fix */
   }
   .list-header {
       padding: 20px; display: flex; justify-content: space-between; align-items: center;
       background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
   }
   .list-content {
       flex: 1; overflow-y: auto; padding: 15px;
       display: flex; flex-direction: column; gap: 10px;
+      -webkit-overflow-scrolling: touch;
   }
   .list-item {
       display: flex; justify-content: space-between; align-items: center;
       background: rgba(255,255,255,0.08); padding: 15px; border-radius: 12px;
       border: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
   }
   .list-word-main { font-weight: 700; color: #fff; font-size: 1rem; }
   .list-word-sub { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 2px; }
@@ -224,7 +229,13 @@
   .btn-undo:active { transform: scale(0.9); background: rgba(239, 68, 68, 0.4); }
 
   /* --- FLASHCARD 3D --- */
-  .scene { width: 100%; height: 550px; perspective: 1500px; margin: 20px 0; }
+  .scene { 
+      width: 100%; 
+      /* Flexible height: minimum 300px, preferred 55% of viewport, max 550px */
+      height: clamp(300px, 55dvh, 550px); 
+      perspective: 1500px; 
+      margin: 2dvh 0; 
+  }
   .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
   .card.is-flipped { transform: rotateY(180deg); }
   
@@ -236,6 +247,7 @@
     border: 2px solid rgba(255, 255, 255, 0.8);
     box-shadow: 0 20px 50px rgba(0,0,0,0.3);
     color: var(--card-text-main);
+    overflow-y: auto; /* Allow internal scroll for long content */
   }
   
   body.dark-mode .card__face { 
@@ -247,7 +259,8 @@
   .card__face--back { transform: rotateY(180deg); }
   
   .word-en { 
-      font-size: 2.8rem; font-weight: 800; margin-bottom: 5px; line-height: 1.1; 
+      font-size: clamp(2rem, 5vw + 1rem, 3.5rem); /* Responsive Font */
+      font-weight: 800; margin-bottom: 5px; line-height: 1.1; 
       background: linear-gradient(45deg, #2563EB, #4F46E5); -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
       filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
   }
@@ -256,7 +269,7 @@
       filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
   }
 
-  .word-vn { font-size: 2.2rem; font-weight: 700; color: var(--card-text-main); margin-bottom: 15px; }
+  .word-vn { font-size: clamp(1.5rem, 4vw + 1rem, 2.5rem); font-weight: 700; color: var(--card-text-main); margin-bottom: 15px; }
   
   .ipa { font-family: 'Times New Roman', serif; font-style: italic; color: var(--card-text-sub); font-size: 1.2rem; margin-bottom: 10px; }
   
@@ -278,18 +291,23 @@
       max-height: 200px;
       display: block;
       background: rgba(0,0,0,0.05);
-  }
-  @media (min-width: 768px) {
-      /* Adjusted to 90% of original desktop size (260px -> 234px, 600px -> 540px) */
-      .flashcard-img { max-height: 234px; }
-      .scene { height: 540px; }
+      flex-shrink: 1; /* Allow shrinking */
   }
 
-  /* --- GAME OVERLAY --- */
+  /* --- GAME OVERLAY (SCROLLABLE FIX) --- */
   #gameOverlay {
     position: fixed; inset: 0; background: var(--bg-gradient); z-index: 2000;
     display: none; flex-direction: column; padding: 20px;
     background: radial-gradient(circle at center, #2e1065 0%, #0f172a 100%);
+    overflow-y: auto; /* Enable scrolling if content is too tall */
+    -webkit-overflow-scrolling: touch;
+    height: 100dvh;
+  }
+  
+  #gameContent {
+    flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; 
+    width: 100%; perspective: 1000px;
+    margin: auto 0; /* Center vertically */
   }
   
   .progress-track {
@@ -303,7 +321,7 @@
   }
 
   /* Control Buttons */
-  .control-row { display: flex; justify-content: center; gap: 15px; margin-top: auto; width: 100%; }
+  .control-row { display: flex; justify-content: center; gap: 15px; margin-top: auto; width: 100%; padding-bottom: 20px; }
   
   .action-btn {
     flex: 1; height: 70px; border-radius: 22px; border: none; font-size: 1.1rem; font-weight: 700;
@@ -324,6 +342,7 @@
     color: white; font-size: 1.8rem; display: flex; align-items: center; justify-content: center;
     cursor: pointer; transition: 0.2s;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    flex-shrink: 0;
   }
   .btn-speak-round:active { transform: scale(0.85); background: rgba(255,255,255,0.3); }
 
@@ -351,10 +370,13 @@
     border: 1px solid rgba(255,255,255,0.2); border-radius: 40px;
     display: flex; justify-content: space-around; align-items: center; z-index: 1000;
     box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    /* Safe Area for iPhone Home Indicator */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .tab-item {
     flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
     color: rgba(255,255,255,0.5); font-size: 0.75rem; font-weight: 600; transition: 0.3s;
+    height: 100%;
   }
   .tab-item i { font-size: 1.5rem; margin-bottom: 5px; transition: 0.3s; }
   .tab-item.active { color: #38bdf8; }
@@ -371,7 +393,6 @@
   body.dark-mode .match-card { background: rgba(51, 65, 85, 0.95); color: white; }
   .match-card:active { top: 3px; box-shadow: 0 2px 0 rgba(0,0,0,0.1); }
   
-  /* FIXED: Added !important to override dark mode specificity */
   .match-card.selected { background: #3b82f6 !important; color: white !important; transform: scale(1.02); border: 2px solid #fff; }
   .match-card.wrong { background: #ef4444 !important; color: white !important; animation: shake 0.4s; border: 2px solid #fff; }
   .match-card.correct { opacity: 0; visibility: hidden; transition: opacity 0.3s; }
@@ -488,7 +509,6 @@
       border: none;
       text-shadow: 0 1px 2px rgba(0,0,0,0.3);
   }
-  /* Rainbow / Gradient Pattern for days */
   .cal-day.active:nth-child(7n+1) { background: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%); box-shadow: 0 4px 12px rgba(255, 154, 158, 0.4); }
   .cal-day.active:nth-child(7n+2) { background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); box-shadow: 0 4px 12px rgba(161, 140, 209, 0.4); }
   .cal-day.active:nth-child(7n+3) { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); box-shadow: 0 4px 12px rgba(132, 250, 176, 0.4); color: #0f172a; }
@@ -508,7 +528,6 @@
       100% { box-shadow: 0 0 0 0 rgba(255, 255, 255, 0); }
   }
 
-  /* Crown animation for top 1 */
   .crown-icon { position: absolute; top: -25px; font-size: 1.5rem; color: #ffd700; filter: drop-shadow(0 0 10px rgba(255,215,0,0.8)); animation: floatCrown 2s ease-in-out infinite; }
   @keyframes floatCrown { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
 
@@ -674,17 +693,12 @@
 
   /* --- RESPONSIVE ADJUSTMENTS --- */
   @media (max-width: 600px) {
-    .scene { height: 400px; }
-    .card__face { padding: 15px; }
-    .word-en { font-size: 2rem; margin-bottom: 2px; }
-    .word-vn { font-size: 1.6rem; }
-    .flashcard-img { max-height: 150px; }
+    .word-en { margin-bottom: 2px; }
     .header-content h1 { font-size: 1.5rem; }
     .action-btn { height: 60px; font-size: 0.9rem; }
     .btn-speak-round { width: 55px; height: 55px; font-size: 1.4rem; }
     .stats-grid { gap: 8px; }
     .stat-card { padding: 10px 5px; }
-    .stat-num { font-size: 1.3rem; }
     .mode-btn { height: 90px; padding: 10px; }
     .mode-btn i { font-size: 1.6rem; margin-bottom: 5px; }
     .mode-btn span { font-size: 0.8rem; }
@@ -693,11 +707,24 @@
   }
 
   @media (max-width: 380px) {
-    .scene { height: 360px; }
-    .word-en { font-size: 1.6rem; }
-    .word-vn { font-size: 1.3rem; }
     .btn-primary { font-size: 0.9rem; padding: 12px; }
     .lang-opt { padding: 5px 10px; font-size: 0.75rem; }
+  }
+
+  /* SMALL HEIGHT / LANDSCAPE OPTIMIZATIONS */
+  @media (max-height: 600px) {
+      .flashcard-img { display: none !important; } /* Hide image on short screens */
+      .scene { height: 280px; margin: 5px 0; }
+      .header-content h1 { font-size: 1.2rem; }
+      .mode-btn { height: 80px; }
+      .control-row { padding-bottom: 10px; }
+      .tab-bar { height: 55px; }
+      .tab-item i { font-size: 1.2rem; }
+      .tab-item span { font-size: 0.7rem; }
+      #gameOverlay { padding: 10px; align-items: flex-start; } /* Align top for scroll */
+      #gameContent { margin: 10px 0; }
+      .word-vn { font-size: 1.5rem; margin-bottom: 5px; }
+      .example-box { font-size: 0.9rem; padding: 5px; }
   }
 
 </style>
@@ -972,7 +999,7 @@
 </div>
 
 <div id="gameOverlay">
-  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%;">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; width: 100%; flex-shrink: 0;">
     <button style="background:none; border:none; color:white; font-size:1.5rem; opacity:0.8;" onclick="window.closeGame()"><i class="fas fa-times"></i></button>
     <div class="progress-track">
         <div id="gameProgressBar" class="progress-bar"></div>
@@ -981,7 +1008,7 @@
     <button style="background:none; border:none; color:white; font-size:1.3rem; opacity:0.8;" onclick="window.toggleMute()"><i id="muteIcon" class="fas fa-volume-up"></i></button>
   </div>
 
-  <div id="gameContent" style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; perspective: 1000px;">
+  <div id="gameContent">
       </div>
 </div>
 
@@ -1495,20 +1522,28 @@ let audioUnlocked = false; // Flag to track status
 
 // 1. Refactored Unlock Mechanism
 function unlockAudioContext() {
-    // Create a "Silent Buffer" and play immediately (iOS Trick)
-    const buffer = audioCtx.createBuffer(1, 1, 22050);
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
+    if (audioCtx.state !== 'suspended') return;
+    
+    // Function to play a silent buffer (Critical for iOS)
+    const playSilentBuffer = () => {
+        const buffer = audioCtx.createBuffer(1, 1, 22050);
+        const source = audioCtx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(audioCtx.destination);
+        source.start(0);
+    };
 
     if (audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
+            playSilentBuffer();
+            audioUnlocked = true;
             console.log("Audio Context Unlocked & Resumed");
+            // Do not remove listeners immediately to ensure persistence across reloads/backgrounding
         }).catch(e => console.error("Audio unlock failed", e));
+    } else {
+        playSilentBuffer();
+        audioUnlocked = true;
     }
-    
-    audioUnlocked = true;
     
     // Also unlock Google TTS global audio
     if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
@@ -1517,9 +1552,9 @@ function unlockAudioContext() {
     }
 }
 
-// Attach listeners immediately (Passive: false is crucial for iOS audio unlock on first touch)
+// Attach listeners immediately (Passive for better performance)
 ['click', 'touchstart', 'keydown'].forEach(evt => 
-    document.addEventListener(evt, unlockAudioContext, { passive: false, capture: true })
+    document.addEventListener(evt, unlockAudioContext, { passive: true, capture: true })
 );
 
 function initAudio() {
@@ -2046,8 +2081,6 @@ function getWordKey(w) {
 
 // --- GAME LOGIC START ---
 window.startSmartSession = function(isExtra = false) {
-    unlockAudioContext(); // Ensure audio is unlocked immediately on user interaction
-
     // 1. Validation (Login/Trial)
     if(!currentUser) {
         if(trialCount > 3) {
@@ -2059,6 +2092,11 @@ window.startSmartSession = function(isExtra = false) {
     }
 
     if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
+
+    // FIX: Ensure AudioContext is running when user clicks "Start"
+    if(audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
 
     // Reset Global Flag
     window.isGlobalReviewSession = false;
@@ -2560,7 +2598,7 @@ function renderFlashcard() {
             </button>
         </div>
         
-        <div style="margin-top:15px; cursor:pointer; opacity:0.7; font-size:0.8rem; text-shadow:0 1px 2px rgba(0,0,0,0.5);" onclick="window.markMastered()">
+        <div style="margin-top:0px; cursor:pointer; opacity:0.7; font-size:0.8rem; text-shadow:0 1px 2px rgba(0,0,0,0.5); padding-bottom: 20px;" onclick="window.markMastered()">
             <i class="fas fa-archive"></i> Đánh dấu đã thuộc lòng (Ẩn vĩnh viễn)
         </div>
     `;
@@ -3118,8 +3156,6 @@ window.handleQuiz = function(el, isCorrect) {
 
 // --- UTILITIES ---
 window.startGame = function(mode) {
-    unlockAudioContext(); // Ensure audio is unlocked immediately on user interaction
-
     if(!currentUser) {
         if(trialCount > 3) {
              showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
@@ -3619,21 +3655,18 @@ window.saveConfig = function() {
     config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
     config.sfxEnabled = document.getElementById('cfgSfx').checked;
     
-    // Immediate audio unlock if SFX is enabled
-    if (config.sfxEnabled) {
-        unlockAudioContext();
-        // Play a short "beep" to force browser audio permission and feedback
-        try {
+    // FIX: Resume AudioContext immediately if SFX enabled by user click
+    if (config.sfxEnabled && audioCtx.state === 'suspended') {
+        audioCtx.resume().then(() => {
+            // Optional: Play a tiny silent oscillator to 'warm up' iOS audio
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-            gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+            gain.gain.value = 0.001; 
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start(0);
             osc.stop(0.1);
-        } catch(e) {}
+        });
     }
     
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
