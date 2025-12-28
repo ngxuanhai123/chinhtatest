@@ -42,7 +42,8 @@
   body.eco-mode .streak-panel,
   body.eco-mode .tab-bar,
   body.eco-mode .btn-primary,
-  body.eco-mode #gameOverlay {
+  body.eco-mode #gameOverlay,
+  body.eco-mode #gameConfigOverlay {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
       box-shadow: none !important;
@@ -182,26 +183,6 @@
   .stat-num { font-size: clamp(1.3rem, 4vw, 1.6rem); font-weight: 800; line-height: 1; text-shadow: 0 2px 5px rgba(0,0,0,0.3); }
   .stat-label { font-size: 0.65rem; opacity: 0.9; margin-top: 6px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
-  /* --- ACTIVITY CHART (NEW) --- */
-  .activity-chart {
-      display: flex; justify-content: space-between; align-items: flex-end;
-      height: 80px; margin-top: 20px; padding: 10px 5px 0 5px;
-      background: rgba(0,0,0,0.15); border-radius: 16px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-  }
-  .chart-col {
-      display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
-      gap: 6px; flex: 1; height: 100%;
-  }
-  .chart-bar {
-      width: 8px; border-radius: 4px;
-      transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      background: rgba(255,255,255,0.1);
-  }
-  .chart-day { 
-      font-size: 0.6rem; opacity: 0.6; font-weight: 700; text-transform: uppercase; 
-  }
-
   .mode-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
   .mode-btn {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -213,14 +194,18 @@
   .mode-btn:active { transform: scale(0.95); background: rgba(255,255,255,0.25); }
   .mode-btn i { font-size: 2rem; margin-bottom: 12px; opacity: 1; color: #fff; filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
 
-  /* --- LIST MODAL --- */
-  #wordListOverlay {
+  /* --- LIST MODAL (NEW) --- */
+  #wordListOverlay, #gameConfigOverlay {
       position: fixed; inset: 0; z-index: 5000;
       background: rgba(15, 23, 42, 0.95);
       backdrop-filter: blur(10px);
       display: none; flex-direction: column;
       animation: fadeIn 0.3s;
       height: 100dvh; /* Mobile fix */
+  }
+  #gameConfigOverlay {
+      justify-content: center; align-items: center;
+      padding: 20px;
   }
   .list-header {
       padding: 20px; display: flex; justify-content: space-between; align-items: center;
@@ -251,10 +236,11 @@
   /* --- FLASHCARD 3D --- */
   .scene { 
       width: 100%; 
-      /* Flexible height: minimum 300px, preferred 55% of viewport, max 550px */
-      height: clamp(300px, 55dvh, 550px); 
+      /* Updated height and margin as requested */
+      height: clamp(380px, 65dvh, 700px); 
       perspective: 1500px; 
       margin: 2dvh 0; 
+      margin-bottom: 40px; /* Added margin-bottom */
   }
   .card { width: 100%; height: 100%; position: relative; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); transform-style: preserve-3d; cursor: pointer; }
   .card.is-flipped { transform: rotateY(180deg); }
@@ -303,36 +289,15 @@
   }
   body.dark-mode .example-box { background: rgba(255,255,255,0.08); }
 
-  /* FLASHCARD IMAGE & SKELETON (UPDATED) */
-  .flashcard-img-container {
-      width: 100%; height: 200px; position: relative; margin: 10px 0; border-radius: 16px; overflow: hidden;
-      flex-shrink: 0;
-  }
+  /* FLASHCARD IMAGE */
   .flashcard-img {
-      width: 100%; height: 100%; object-fit: contain;
-      border-radius: 16px;
-      display: none; /* Hidden by default */
-      background: transparent;
-      transition: opacity 0.5s ease;
-  }
-  
-  /* Skeleton Loader */
-  .skeleton-loader {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: #f0f0f0;
-      background: linear-gradient(90deg, rgba(200,200,200,0.2) 25%, rgba(200,200,200,0.4) 50%, rgba(200,200,200,0.2) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 16px;
-  }
-  body.dark-mode .skeleton-loader {
-      background: rgba(255,255,255,0.05);
-      background: linear-gradient(90deg, rgba(255,255,255,0.05) 25%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.05) 75%);
-      background-size: 200% 100%;
-  }
-  @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
+      width: 100%; height: auto; object-fit: contain;
+      border-radius: 16px; margin: 10px 0;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      max-height: 200px;
+      display: block;
+      background: rgba(0,0,0,0.05);
+      flex-shrink: 1; /* Allow shrinking */
   }
 
   /* --- GAME OVERLAY (SCROLLABLE FIX) --- */
@@ -754,7 +719,7 @@
 
   /* SMALL HEIGHT / LANDSCAPE OPTIMIZATIONS */
   @media (max-height: 600px) {
-      .flashcard-img-container { display: none !important; } /* Hide image on short screens */
+      .flashcard-img { display: none !important; } /* Hide image on short screens */
       .scene { height: 280px; margin: 5px 0; }
       .header-content h1 { font-size: 1.2rem; }
       .mode-btn { height: 80px; }
@@ -769,15 +734,6 @@
   }
 
 </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
 </head>
 <body onload="window.initApp()">
 
@@ -856,8 +812,6 @@
                 </div>
             </div>
             
-            <div id="activityChartArea"></div>
-
             <div style="margin-top: 15px; text-align: center; font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 8px; border-radius: 12px;">
                 <i class="fas fa-hourglass-half" style="color:#fb923c"></i> Thời gian học tích lũy: <strong id="dashTime" style="color:white;">0m</strong>
             </div>
@@ -952,7 +906,7 @@
     <div class="glass-panel" style="padding: 20px; margin-bottom: 20px; display:flex; align-items:center; justify-content:space-between;">
         <div>
             <div style="font-size:0.75rem; text-transform:uppercase; font-weight:700; opacity:0.8;">Tổng quan kho từ</div>
-            <div style="font-size:1.4rem; font-weight:800; color:#fff;" id="repoTotalWords">0</div>
+            <div style="font-size:1.4rem; font-weight:800; color:#fff;" id="repoTotalWords">...</div>
         </div>
         <div style="text-align:right;">
              <div style="font-size:0.8rem; font-weight:600; color:#4ade80;">Đã học: <span id="repoLearned">0</span></div>
@@ -1026,7 +980,7 @@
         </button>
 
         <div style="margin-top:20px; font-size:0.8rem; opacity:0.6; text-align:center;">
-            Sound FX Engine v2.2 &bull; Realtime DB
+            Sound FX Engine v2.3 &bull; Realtime DB
         </div>
     </div>
   </div>
@@ -1039,6 +993,40 @@
         <button onclick="window.closeWordList()" style="background:none; border:none; color:white; font-size:1.5rem;"><i class="fas fa-times"></i></button>
     </div>
     <div id="wordListContent" class="list-content"></div>
+</div>
+
+<div id="gameConfigOverlay">
+    <div class="glass-panel animate__animated animate__zoomIn" style="width: 90%; max-width: 400px; padding: 25px;">
+        <h3 style="margin-bottom: 20px; text-align: center; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Cấu hình bài học</h3>
+        <div style="display: flex; flex-direction: column; gap: 15px; margin-bottom: 25px;">
+            <div class="switch-container">
+                <span><i class="fas fa-clone" style="width:20px;"></i> Flashcard</span>
+                <input type="checkbox" id="chk-flashcard" class="toggle-switch">
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-question-circle" style="width:20px;"></i> Trắc nghiệm</span>
+                <input type="checkbox" id="chk-quiz" class="toggle-switch">
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-keyboard" style="width:20px;"></i> Điền từ</span>
+                <input type="checkbox" id="chk-fill" class="toggle-switch">
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-sort-amount-down" style="width:20px;"></i> Sắp xếp câu</span>
+                <input type="checkbox" id="chk-sentence" class="toggle-switch">
+            </div>
+            <div class="switch-container">
+                <span><i class="fas fa-font" style="width:20px;"></i> Chính tả</span>
+                <input type="checkbox" id="chk-spelling" class="toggle-switch">
+            </div>
+             <div class="switch-container">
+                <span><i class="fas fa-puzzle-piece" style="width:20px;"></i> Ghép thẻ</span>
+                <input type="checkbox" id="chk-matching" class="toggle-switch">
+            </div>
+        </div>
+        <button class="btn-primary" onclick="window.saveGameConfig()">Lưu cấu hình</button>
+        <button onclick="window.closeGameConfig()" style="margin-top: 10px; width: 100%; background: transparent; border: none; color: rgba(255,255,255,0.6); padding: 10px; font-weight: 600;">Đóng</button>
+    </div>
 </div>
 
 <div id="gameOverlay">
@@ -1112,6 +1100,27 @@ const imageCache = {}; // Cache for images to prevent reload
 // --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING ---
 const ttsPlayer = new Audio();
 let ttsUnlocked = false;
+
+// --- NEW HELPER: STOP GLOBAL AUDIO ---
+function stopGlobalAudio() {
+    // Stop Browser Native TTS
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    
+    // Stop Google TTS Audio Object
+    if (ttsPlayer) {
+        ttsPlayer.pause();
+        ttsPlayer.currentTime = 0;
+        // Reset src to stop background loading
+        ttsPlayer.removeAttribute('src'); 
+        ttsPlayer.load(); 
+        ttsPlayer.onended = null;
+        ttsPlayer.onerror = null;
+    }
+}
+
+// --- GLOBAL VARIABLES (Session & Hints) ---
+window.isSessionActive = false; // Flag for offline-first sync optimization
+window.currentHintCount = 0;    // Counter for hint usage penalty
 
 // --- NEW GLOBALS ---
 // Language config is loaded before dailyTracking to ensure correct key
@@ -1330,6 +1339,9 @@ async function syncDataFromServer() {
                 if (config.brightness === undefined) config.brightness = 100;
                 if (config.voiceEngine === undefined) config.voiceEngine = 'google';
                 if (config.sfxEnabled === undefined) config.sfxEnabled = true;
+                if (config.activeGameModes === undefined) config.activeGameModes = {
+                    flashcard: true, quiz: true, fill: true, sentence: true, spelling: true, matching: true
+                };
 
                 localStorage.setItem('fp_aurora_dark', config.darkMode);
                 localStorage.setItem('fp_aurora_muted', config.muted);
@@ -1339,6 +1351,7 @@ async function syncDataFromServer() {
                 localStorage.setItem('fp_aurora_brightness', config.brightness);
                 localStorage.setItem('fp_aurora_voice_engine', config.voiceEngine);
                 localStorage.setItem('fp_aurora_sfx', config.sfxEnabled);
+                localStorage.setItem('fp_aurora_game_modes', JSON.stringify(config.activeGameModes));
                 
                 applyTheme();
                 updateMuteIcon();
@@ -1354,8 +1367,14 @@ async function syncDataFromServer() {
     }
 }
 
-async function saveProgressToCloud() {
+async function saveProgressToCloud(force = false) {
     if(!currentUser) return;
+
+    // OFFLINE FIRST CHECK: If session is active and not forced, skip sync to reduce writes
+    if (window.isSessionActive && !force) {
+        console.log("Session active: Skipping cloud sync, saved to LS only.");
+        return;
+    }
     
     // Dynamic keys based on language
     const srsKey = `srsData_${currentLang}`;
@@ -1644,8 +1663,9 @@ function playSound(sfx) {
             playTone(783.99, 'sine', 0.6, now + 0.2, 0.2);
             break;
         case SFX.WRONG:
-            playTone(150, 'sawtooth', 0.4, now, 0.15);
-            playTone(140, 'sawtooth', 0.4, now + 0.1, 0.15);
+            // UPDATED: Softer wrong sound (triangle wave, sliding down, low freq)
+            playTone(140, 'triangle', 0.3, now, 0.2);
+            playTone(100, 'triangle', 0.4, now + 0.1, 0.2);
             break;
         case SFX.FLIP:
             playTone(800, 'triangle', 0.1, now, 0.05);
@@ -1660,7 +1680,8 @@ function playSound(sfx) {
 }
 
 // --- GLOBAL STATE ---
-let allTopics = {};
+let allTopics = {}; // Acts as Cache now: {filename: {name: '...', words: []}}
+let allTopicsMetadata = []; // New: Stores the file list [{name: 'Topic.json', download_url: '...'}, ...]
 // State is now dependent on currentLang
 let currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
 let srsData = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_srs')) || '{}'); 
@@ -1679,7 +1700,8 @@ let config = {
     ecoMode: localStorage.getItem('fp_aurora_eco') !== 'false', // Default true if not explicitly 'false'
     brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100'),
     voiceEngine: localStorage.getItem('fp_aurora_voice_engine') || 'google',
-    sfxEnabled: localStorage.getItem('fp_aurora_sfx') !== 'false' // Default true
+    sfxEnabled: localStorage.getItem('fp_aurora_sfx') !== 'false', // Default true
+    activeGameModes: JSON.parse(localStorage.getItem('fp_aurora_game_modes') || '{"flashcard":true,"quiz":true,"fill":true,"sentence":true,"spelling":true,"matching":true}')
 };
 
 let sessionQueue = []; 
@@ -1760,6 +1782,34 @@ function preloadImages() {
             const img = new Image();
             img.src = url;
         });
+    }
+}
+
+// --- NEW HELPER: PRELOAD UPCOMING TOPICS ---
+async function preloadUpcomingTopics() {
+    if(!allTopicsMetadata || allTopicsMetadata.length === 0) return;
+    
+    const currentIdx = allTopicsMetadata.findIndex(f => f.name === currentTopicKey);
+    
+    // Load Next 3
+    for(let i=1; i<=3; i++) {
+        if(currentIdx + i < allTopicsMetadata.length) {
+            const meta = allTopicsMetadata[currentIdx + i];
+            if(!allTopics[meta.name]) {
+                console.log("Preloading next:", meta.name);
+                loadTopicData(meta.name);
+            }
+        }
+    }
+    
+    // Load 2 Random
+    for(let i=0; i<2; i++) {
+        const rnd = Math.floor(Math.random() * allTopicsMetadata.length);
+        const meta = allTopicsMetadata[rnd];
+        if(meta && !allTopics[meta.name]) {
+            console.log("Preloading random:", meta.name);
+            loadTopicData(meta.name);
+        }
     }
 }
 
@@ -2037,7 +2087,42 @@ window.toggleCalendarView = function() {
 }
 
 
-// --- DATA & SYNC ---
+// --- DATA & SYNC (LAZY LOADING) ---
+
+// Helper: Fetch a single topic's JSON and add to cache
+async function loadTopicData(filename) {
+    if (allTopics[filename]) return allTopics[filename]; // Return cached if exists
+
+    // Find the file in metadata to get the URL
+    const meta = allTopicsMetadata.find(f => f.name === filename);
+    if (!meta) {
+        console.warn(`Topic ${filename} not found in metadata`);
+        return null;
+    }
+
+    try {
+        const res = await fetch(meta.download_url);
+        const data = await res.json();
+        
+        // Process data format
+        const words = Array.isArray(data) ? data : (data.words || []);
+        if (words.length) {
+            const topicObj = {
+                name: (data.name || filename.replace('.json','')).replace(/_/g,' '),
+                words: words
+            };
+            allTopics[filename] = topicObj; // Store in global cache
+            return topicObj;
+        }
+        return null;
+    } catch (e) {
+        console.error(`Failed to load topic ${filename}`, e);
+        showToast("Lỗi tải chủ đề: " + filename, "error");
+        return null;
+    }
+}
+
+// Main fetch function: Get Manifest Only
 window.fetchTopics = async function(manual = false) {
     const status = document.getElementById('status-msg');
     
@@ -2067,50 +2152,40 @@ window.fetchTopics = async function(manual = false) {
         if(!res.ok) throw new Error("Kết nối thất bại");
         
         const files = await res.json();
-        const jsonFiles = files.filter(f => f.name.endsWith('.json'));
-        
-        allTopics = {};
-        
-        // --- OPTIMIZATION: CONCURRENT FETCHING ---
-        // Fetch all topic files in parallel instead of sequential await
-        const fetchPromises = jsonFiles.map(f => 
-            fetch(f.download_url)
-                .then(r => r.json())
-                .then(data => ({ name: f.name, data: data }))
-                .catch(err => {
-                    console.warn(`Failed to fetch topic ${f.name}`, err);
-                    return null;
-                })
-        );
+        let jsonFiles = files.filter(f => f.name.endsWith('.json'));
 
-        const results = await Promise.all(fetchPromises);
+        // --- NATURAL SORT ---
+        const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+        jsonFiles.sort((a, b) => collator.compare(a.name, b.name));
 
-        results.forEach(result => {
-            if (!result) return;
-            const { name, data } = result;
-            const words = Array.isArray(data) ? data : (data.words || []);
-            if(words.length) {
-                allTopics[name] = {
-                    name: (data.name || name.replace('.json','')).replace(/_/g,' '),
-                    words: words
-                };
-            }
-        });
-        // ------------------------------------------
+        // Store metadata globally
+        allTopicsMetadata = jsonFiles;
         
+        // Reset cache if repo changed (handled by setRepo, but good to be safe)
+        // Note: We don't wipe allTopics here to allow cache persistence within session if just refreshing list,
+        // unless it's a hard reload. For now, we keep cache.
+
         status.innerText = "Aurora Rank Master • Ready";
-        // Ensure topic logic respects the saved key, only fallback if invalid
-        if(!currentTopicKey || !allTopics[currentTopicKey]) {
-            if(allTopics[currentTopicKey]) {
-                // Key is valid, keep it
-            } else {
-                currentTopicKey = Object.keys(allTopics)[0] || '';
-                localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-            }
+
+        // Determine current topic or default to first
+        if (!currentTopicKey || !allTopicsMetadata.find(f => f.name === currentTopicKey)) {
+             if (allTopicsMetadata.length > 0) {
+                 currentTopicKey = allTopicsMetadata[0].name;
+                 localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+             }
         }
         
-        if(manual) showToast("Đồng bộ thành công!", "success");
+        // Lazy Load CURRENT topic
+        if (currentTopicKey) {
+            await loadTopicData(currentTopicKey);
+        }
+
+        if(manual) showToast("Đồng bộ danh sách thành công!", "success");
         renderDashboard();
+
+        // --- TRIGGER PRELOAD (2S DELAY) ---
+        setTimeout(preloadUpcomingTopics, 2000);
+
     } catch(e) {
         console.error(e);
         status.innerText = "Offline Mode / Error";
@@ -2122,8 +2197,56 @@ function getWordKey(w) {
     return (w.english + '_' + (w.vietnamese || '').substring(0,3)).toLowerCase().replace(/\s/g,'');
 }
 
+// --- GAME CONFIG LOGIC ---
+window.openGameConfig = function() {
+    // Populate checkboxes from config
+    const modes = config.activeGameModes || {
+        flashcard: true, quiz: true, fill: true, sentence: true, spelling: true, matching: true
+    };
+    document.getElementById('chk-flashcard').checked = modes.flashcard;
+    document.getElementById('chk-quiz').checked = modes.quiz;
+    document.getElementById('chk-fill').checked = modes.fill;
+    document.getElementById('chk-sentence').checked = modes.sentence;
+    document.getElementById('chk-spelling').checked = modes.spelling;
+    document.getElementById('chk-matching').checked = modes.matching;
+
+    document.getElementById('gameConfigOverlay').style.display = 'flex';
+    playSound(SFX.POP);
+}
+
+window.closeGameConfig = function() {
+    document.getElementById('gameConfigOverlay').style.display = 'none';
+}
+
+window.saveGameConfig = function() {
+    const newModes = {
+        flashcard: document.getElementById('chk-flashcard').checked,
+        quiz: document.getElementById('chk-quiz').checked,
+        fill: document.getElementById('chk-fill').checked,
+        sentence: document.getElementById('chk-sentence').checked,
+        spelling: document.getElementById('chk-spelling').checked,
+        matching: document.getElementById('chk-matching').checked
+    };
+
+    // Validation: At least one mode must be active
+    if (!Object.values(newModes).includes(true)) {
+        showToast("Phải chọn ít nhất một chế độ!", "error");
+        playSound(SFX.WRONG);
+        return;
+    }
+
+    config.activeGameModes = newModes;
+    localStorage.setItem('fp_aurora_game_modes', JSON.stringify(config.activeGameModes));
+    saveProgressToCloud(); // Sync new config
+    
+    showToast("Đã lưu cấu hình bài học!", "success");
+    playSound(SFX.CORRECT);
+    window.closeGameConfig();
+}
+
 // --- GAME LOGIC START ---
-window.startSmartSession = function(isExtra = false) {
+// Updated to handle Async Topic Loading
+window.startSmartSession = async function(isExtra = false) {
     // 1. Validation (Login/Trial)
     if(!currentUser) {
         if(trialCount > 3) {
@@ -2141,17 +2264,26 @@ window.startSmartSession = function(isExtra = false) {
         audioCtx.resume();
     }
 
+    // --- OFFLINE FIRST FLAG ---
+    window.isSessionActive = true;
+
     // Reset Global Flag
     window.isGlobalReviewSession = false;
 
-    // 2. Sort Topics Alphabetically
-    const topicKeys = Object.keys(allTopics).sort(); 
+    // Verify currentTopicKey exists in metadata
+    if (!allTopicsMetadata.find(f => f.name === currentTopicKey)) {
+         if (allTopicsMetadata.length > 0) {
+             currentTopicKey = allTopicsMetadata[0].name;
+             localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+         } else {
+             return showToast("Không có dữ liệu chủ đề!", "error");
+         }
+    }
     
-    // Verify currentTopicKey exists, if not fallback to first
+    // Ensure data is loaded
     if (!allTopics[currentTopicKey]) {
-        currentTopicKey = topicKeys[0];
-        if (!currentTopicKey) return showToast("Không có dữ liệu chủ đề!", "error");
-        localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+        showToast("Đang tải dữ liệu...", "info");
+        await loadTopicData(currentTopicKey);
     }
 
     // 3. Reset Session Streak
@@ -2179,6 +2311,8 @@ window.startSmartSession = function(isExtra = false) {
 
     // 5. Gather Words from Current Topic
     let currentTopicData = allTopics[currentTopicKey];
+    if (!currentTopicData) return showToast("Lỗi dữ liệu chủ đề", "error");
+
     let allWordsCurrent = currentTopicData.words;
 
     // Filter New Candidates from Current Topic
@@ -2199,33 +2333,45 @@ window.startSmartSession = function(isExtra = false) {
         const deficit = maxNewToAdd - batchNew.length;
 
         if (deficit > 0) {
-            // Find Next Topic
-            const currentIdx = topicKeys.indexOf(currentTopicKey);
-            if (currentIdx !== -1 && currentIdx < topicKeys.length - 1) {
-                const nextKey = topicKeys[currentIdx + 1];
+            // Find Next Topic based on Metadata Index
+            const currentIdx = allTopicsMetadata.findIndex(f => f.name === currentTopicKey);
+            
+            if (currentIdx !== -1 && currentIdx < allTopicsMetadata.length - 1) {
+                const nextMeta = allTopicsMetadata[currentIdx + 1];
+                const nextKey = nextMeta.name;
+                
+                // --- ASYNC LOAD NEXT TOPIC ---
+                // Check cache, if not present, fetch it
+                if (!allTopics[nextKey]) {
+                    showToast(`Đang tải chủ đề tiếp theo: ${nextMeta.name}...`, "info");
+                    await loadTopicData(nextKey);
+                }
+
                 const nextTopicData = allTopics[nextKey];
                 
-                // Get words from next topic
-                const allWordsNext = nextTopicData.words;
-                const candidatesNewNext = allWordsNext.filter(w => {
-                    const k = getWordKey(w);
-                    return !masteredWords[k] && !srsData[k];
-                });
+                if (nextTopicData) {
+                    // Get words from next topic
+                    const allWordsNext = nextTopicData.words;
+                    const candidatesNewNext = allWordsNext.filter(w => {
+                        const k = getWordKey(w);
+                        return !masteredWords[k] && !srsData[k];
+                    });
 
-                if (candidatesNewNext.length > 0) {
-                    // Take needed amount
-                    const nextTakeCount = Math.min(deficit, candidatesNewNext.length);
-                    const batchNext = candidatesNewNext.slice(0, nextTakeCount);
-                    
-                    batchNew = [...batchNew, ...batchNext];
+                    if (candidatesNewNext.length > 0) {
+                        // Take needed amount
+                        const nextTakeCount = Math.min(deficit, candidatesNewNext.length);
+                        const batchNext = candidatesNewNext.slice(0, nextTakeCount);
+                        
+                        batchNew = [...batchNew, ...batchNext];
 
-                    // UPDATE CURRENT TOPIC KEY
-                    currentTopicKey = nextKey;
-                    localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-                    saveProgressToCloud();
-                    
-                    showToast(`Đã học hết chủ đề cũ, đang chuyển sang: ${nextTopicData.name}`, "success");
-                    renderDashboard(); // Update UI
+                        // UPDATE CURRENT TOPIC KEY
+                        currentTopicKey = nextKey;
+                        localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+                        saveProgressToCloud();
+                        
+                        showToast(`Đã chuyển sang chủ đề: ${nextTopicData.name}`, "success");
+                        renderDashboard(); // Update UI
+                    }
                 }
             }
         }
@@ -2234,9 +2380,6 @@ window.startSmartSession = function(isExtra = false) {
     // 7. Get Review Words (From the original current topic logic usually, or globally)
     // Here we stick to filtering from `allWordsCurrent` to keep it simple for this session,
     // as SRS data is keyed globally anyway.
-    // If we switched topics, next session will pull reviews from new topic context if strictly scoped, 
-    // but usually SRS should be global. In this code structure, `allLearning` comes from `allWordsCurrent`.
-    // Let's keep it as is.
     let allLearningCurrent = allWordsCurrent.filter(w => {
         const k = getWordKey(w);
         return !masteredWords[k] && srsData[k];
@@ -2246,9 +2389,6 @@ window.startSmartSession = function(isExtra = false) {
     
     // 8. Check if Empty
     if(batchNew.length === 0 && batchReview.length === 0) {
-        // Edge case: if we are here, it means even after trying to switch, we found nothing.
-        // Or limits are hit and no reviews pending.
-        
         if(!isExtra && !config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
         showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
@@ -2280,12 +2420,16 @@ window.startSmartSession = function(isExtra = false) {
     decideSmartRender();
 }
 
-// --- NEW FEATURE: GLOBAL REVIEW ---
+// --- NEW FEATURE: GLOBAL REVIEW (OPTIMIZED FOR LAZY LOADING) ---
 window.startGlobalReview = function() {
-    // 1. Scan all topics for due words
+    // --- OFFLINE FIRST FLAG ---
+    window.isSessionActive = true;
+
+    // 1. Scan ONLY LOADED topics for due words to avoid crashing old devices
     let globalDueWords = [];
     const now = Date.now();
     
+    // Iterate keys of cache (allTopics), not metadata
     Object.keys(allTopics).forEach(topicKey => {
         const topic = allTopics[topicKey];
         topic.words.forEach(w => {
@@ -2302,14 +2446,28 @@ window.startGlobalReview = function() {
     if(globalDueWords.length === 0) {
         if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
-        showToast('Bạn đã ôn sạch sẽ tất cả các chủ đề!', 'success');
+        showToast('Bạn đã ôn sạch sẽ các chủ đề đã tải!', 'success');
         return;
     }
 
-    // 2. Shuffle
+    // --- REFACTORED LOGIC ---
+    // 2. Sort by Urgency (Most overdue first)
+    globalDueWords.sort((a, b) => {
+        const tA = srsData[getWordKey(a)].nextReview;
+        const tB = srsData[getWordKey(b)].nextReview;
+        return tA - tB;
+    });
+
+    // 3. Slice to Limit
+    const limit = config.reviewLimit || 20;
+    if (globalDueWords.length > limit) {
+        globalDueWords = globalDueWords.slice(0, limit);
+    }
+
+    // 4. Shuffle result
     globalDueWords.sort(() => Math.random() - 0.5);
 
-    // 3. Set Queue
+    // 5. Set Queue
     sessionQueue = globalDueWords;
     sessionIndex = 0;
     currentMode = 'smart';
@@ -2331,13 +2489,29 @@ function decideSmartRender() {
     if(isNew) {
         renderFlashcard();
     } else {
-        const modes = ['flashcard', 'quiz', 'fill', 'spelling', 'sentence'];
-        const randomMode = modes[Math.floor(Math.random() * modes.length)];
+        // Retrieve enabled modes from config, default to all if undefined (though it should be defined in init)
+        const allowed = config.activeGameModes || {
+            flashcard: true, quiz: true, fill: true, sentence: true, spelling: true, matching: true
+        };
+
+        const availableModes = [];
+        if(allowed.flashcard) availableModes.push('flashcard');
+        if(allowed.quiz) availableModes.push('quiz');
+        if(allowed.fill) availableModes.push('fill');
+        if(allowed.spelling) availableModes.push('spelling');
+        if(allowed.sentence) availableModes.push('sentence');
+        if(allowed.matching) availableModes.push('matching');
+        
+        // Fallback if user somehow disabled everything or list is empty
+        if (availableModes.length === 0) availableModes.push('flashcard');
+
+        const randomMode = availableModes[Math.floor(Math.random() * availableModes.length)];
         
         if(randomMode === 'flashcard') renderFlashcard();
         else if(randomMode === 'quiz') setupQuiz();
         else if(randomMode === 'fill') renderFill();
         else if(randomMode === 'sentence') renderSentence();
+        else if(randomMode === 'matching') setupMatching();
         else renderSpelling();
     }
 }
@@ -2407,8 +2581,20 @@ window.processResult = function(isCorrect, skipNext = false) {
         window.sessionCorrectStreak = 0;
 
         playSound(SFX.WRONG);
-        data.level = 0;
-        data.interval = 0;
+        
+        // --- REFACTORED SOFT PUNISHMENT LOGIC ---
+        if (data.level > 1) {
+            // Decrease level by 2, keep interval at 40%
+            data.level = data.level - 2;
+            data.interval = Math.ceil(data.interval * 0.4);
+            if (data.interval < 1) data.interval = 1; // Minimum 1 day for next correct review
+        } else {
+            // Hard reset for low levels
+            data.level = 0;
+            data.interval = 0;
+        }
+
+        // Review immediately
         data.nextReview = Date.now(); 
         
         // --- LOGIC MỚI: Đếm số lần sai liên tiếp ---
@@ -2488,6 +2674,7 @@ function updateProgress() {
 }
 
 window.nextStep = function() {
+    stopGlobalAudio(); // STOP PREVIOUS AUDIO
     nextStep();
 }
 
@@ -2522,9 +2709,27 @@ function injectSilentWords(count) {
     
     // Update progress bar to reflect new total
     updateProgress();
+
+    // --- REFACTORED UX FEEDBACK ---
+    // 1. Visual Pulse
+    const bar = document.getElementById('gameProgressBar');
+    if(bar) {
+        bar.classList.add('animate__animated', 'animate__pulse');
+        // Clean up class after animation
+        setTimeout(() => {
+            bar.classList.remove('animate__animated', 'animate__pulse');
+        }, 1000);
+    }
+    
+    // 2. Toast
+    showToast(`Thưởng nóng: Thêm ${toAdd.length} từ mới vào bài!`, "success");
+    playSound(SFX.POP); 
 }
 
 function nextStep() {
+    // RESET HINT COUNT ON NEW STEP
+    window.currentHintCount = 0;
+
     if(sessionIndex < sessionQueue.length - 1) {
         const content = document.getElementById('gameContent');
         content.classList.add('slide-out-left');
@@ -2539,7 +2744,7 @@ function nextStep() {
                  if(window.sessionCorrectStreak >= 3) {
                      injectSilentWords(3); // Add 3 words
                      window.isReviewOnlySession = false; // Disable flag so it only happens once
-                     showToast("Bạn đang học rất tốt! Đã thêm 3 từ mới.", "success");
+                     // Toast moved inside injectSilentWords
                  }
             }
             // ------------------------------
@@ -2573,6 +2778,10 @@ function nextStep() {
 }
 
 function renderSessionEnd() {
+    // OFFLINE FIRST SYNC: Session ended, reset flag and force sync
+    window.isSessionActive = false;
+    saveProgressToCloud(true);
+
     document.getElementById('gameContent').innerHTML = `
         <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; max-width:400px; text-align:center;">
             <i class="fas fa-flag-checkered" style="font-size:3rem; color:#fbbf24; margin-bottom:15px;"></i>
@@ -2586,7 +2795,7 @@ function renderSessionEnd() {
     `;
 }
 
-// --- CARD RENDERER (UPDATED SKELETON LOADING) ---
+// --- CARD RENDERER (UPDATED ASYNC PEXELS) ---
 function renderFlashcard() {
     const w = sessionQueue[sessionIndex];
     isFlipped = false;
@@ -2597,9 +2806,11 @@ function renderFlashcard() {
 
     const exampleId = `ex-trans-${sessionIndex}`;
     const imgId = `fc-img-${sessionIndex}`;
-    const skeletonId = `skel-${sessionIndex}`;
+    const loadingSrc = "https://placehold.co/600x400/1e293b/94a3b8?text=Finding+Image...";
     
-    // Skeleton logic added in HTML
+    const isReviewMode = (currentMode === 'smart');
+    const labelLang = LANG_CONFIG[currentLang].label;
+
     const html = `
         <div class="scene">
             <div class="card" id="flashcardObj" onclick="window.flipCard()">
@@ -2608,13 +2819,7 @@ function renderFlashcard() {
                     <div class="word-en">${w.english}</div>
                     <div class="ipa">${w.ipa || ''}</div>
                     
-                    <div class="flashcard-img-container">
-                        <div id="${skeletonId}" class="skeleton-loader"></div>
-                        <img id="${imgId}" class="flashcard-img" alt="${w.english}" 
-                             onload="document.getElementById('${skeletonId}').style.display='none'; this.style.display='block'; this.classList.add('animate__animated', 'animate__fadeIn');"
-                             onerror="this.style.display='none'; document.getElementById('${skeletonId}').style.display='none';"
-                        />
-                    </div>
+                    <img src="${loadingSrc}" id="${imgId}" class="flashcard-img" alt="${w.english}" onerror="this.style.display='none'" />
                     
                     <div style="font-size:0.8rem; opacity:0.7; margin-bottom:5px;">Ví dụ mẫu:</div>
                     <div class="example-box">"${w.example || ''}"</div>
@@ -2651,7 +2856,7 @@ function renderFlashcard() {
     `;
     document.getElementById('gameContent').innerHTML = html;
     
-    // Fetch Image Async - Skeleton will show until this resolves and onload fires
+    // Fetch Image Async
     fetchPexelsImage(w.english).then(url => {
         const img = document.getElementById(imgId);
         // Ensure image element still exists and belongs to current word
@@ -2688,9 +2893,24 @@ window.flipCard = function() {
     playSound(SFX.FLIP);
 }
 
+// --- HELPER: PENALTY LOGIC ---
+function applyHintPenalty(key) {
+    let data = srsData[key];
+    if (data && data.level > 0) {
+        data.level = Math.max(0, data.level - 1);
+        data.interval = Math.ceil(data.interval / 2);
+        srsData[key] = data;
+        localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+        showToast("Dùng 2 gợi ý: Đã bị trừ điểm quen thuộc!", "error");
+        // Note: No cloud save here because isSessionActive is likely true, so it hits LS only.
+    }
+}
+
 // --- SPELLING MODE ---
 function renderSpelling() {
     isProcessing = false;
+    window.currentHintCount = 0; // Explicit Reset
+
     const w = sessionQueue[sessionIndex];
     const target = w.english.trim();
     
@@ -2749,6 +2969,15 @@ function renderSpelling() {
 
 window.revealSpellingHint = function() {
     if(isProcessing) return;
+
+    // Hint Penalty Logic
+    window.currentHintCount++;
+    if(window.currentHintCount === 2) {
+        const w = sessionQueue[sessionIndex];
+        const key = getWordKey(w);
+        applyHintPenalty(key);
+    }
+
     const target = window.spellingTarget;
     let idx = window.spellingIdx;
     
@@ -3020,6 +3249,8 @@ window.checkSentence = function(correctSentence) {
 
 function renderFill() {
     isProcessing = false;
+    window.currentHintCount = 0; // Explicit Reset
+
     const w = sessionQueue[sessionIndex];
     const sentence = w.example || `The word is ${w.english}`;
     const hidden = sentence.replace(new RegExp(w.english, 'gi'), '_____');
@@ -3045,6 +3276,14 @@ function renderFill() {
 }
 
 window.showHint = function(ans) {
+    // Hint Penalty Logic
+    window.currentHintCount++;
+    if(window.currentHintCount === 2) {
+        const w = sessionQueue[sessionIndex];
+        const key = getWordKey(w);
+        applyHintPenalty(key);
+    }
+
     const inp = document.getElementById('fillInp');
     const currentVal = inp.value;
     if (currentVal.length < ans.length) {
@@ -3202,7 +3441,7 @@ window.handleQuiz = function(el, isCorrect) {
 }
 
 // --- UTILITIES ---
-window.startGame = function(mode) {
+window.startGame = async function(mode) {
     if(!currentUser) {
         if(trialCount > 3) {
              showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
@@ -3217,6 +3456,17 @@ window.startGame = function(mode) {
     if(audioCtx.state === 'suspended') {
         audioCtx.resume();
     }
+
+    // --- OFFLINE FIRST FLAG ---
+    window.isSessionActive = true;
+
+    // Lazy load check
+    if (!allTopics[currentTopicKey]) {
+        showToast("Đang tải dữ liệu...", "info");
+        await loadTopicData(currentTopicKey);
+    }
+    
+    if (!allTopics[currentTopicKey]) return showToast("Không tải được dữ liệu chủ đề!", "error");
 
     playSound(SFX.POP);
     const allWords = allTopics[currentTopicKey].words;
@@ -3276,64 +3526,50 @@ function renderDashboard() {
 
     document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
     updateUserPointsUI();
-    if(!currentTopicKey || !allTopics[currentTopicKey]) return;
+    
+    // Safety check for metadata/current topic
+    if(!currentTopicKey || !allTopicsMetadata.length) return;
+    
+    // Find name from metadata if content not loaded, else use content
+    let topicName = "(Đang tải...)";
+    const meta = allTopicsMetadata.find(f => f.name === currentTopicKey);
+    if(meta) {
+        topicName = meta.name.replace('.json','').replace(/_/g,' ');
+    }
+    if (allTopics[currentTopicKey]) {
+        topicName = allTopics[currentTopicKey].name;
+    }
+    document.getElementById('currentTopicName').innerText = topicName;
+    
+    // Stats calc: only works if data is loaded. If not loaded, stats are 0 or cached?
+    // For now, we only show stats for loaded topic or 0.
     const topic = allTopics[currentTopicKey];
-    document.getElementById('currentTopicName').innerText = topic.name;
     
     let cntNew=0, cntDue=0, cntMaster=0, cntLearned=0;
     const now = Date.now();
     
-    topic.words.forEach(w => {
-        const key = getWordKey(w);
-        if(masteredWords[key]) {
-            cntMaster++;
-            cntLearned++;
-        }
-        else if(srsData[key]) {
-            if(srsData[key].nextReview <= now) cntDue++;
-            cntLearned++;
-        } else {
-            cntNew++;
-        }
-    });
+    if (topic) {
+        topic.words.forEach(w => {
+            const key = getWordKey(w);
+            if(masteredWords[key]) {
+                cntMaster++;
+                cntLearned++;
+            }
+            else if(srsData[key]) {
+                if(srsData[key].nextReview <= now) cntDue++;
+                cntLearned++;
+            } else {
+                cntNew++;
+            }
+        });
+    }
     
     animateValue("statNew", parseInt(document.getElementById('statNew').innerText), cntNew, 1000);
     animateValue("statDue", parseInt(document.getElementById('statDue').innerText), cntDue, 1000);
     animateValue("statLearned", parseInt(document.getElementById('statLearned').innerText), cntLearned, 1000);
     animateValue("statMastered", parseInt(document.getElementById('statMastered').innerText), cntMaster, 1000);
 
-    // --- ACTIVITY CHART GENERATION ---
-    // Generate 7 day chart based on streakHistory
-    let chartHtml = '<div class="activity-chart animate__animated animate__fadeInUp">';
-    for(let i=6; i>=0; i--) {
-        const d = new Date();
-        d.setDate(d.getDate() - i);
-        const isoKey = d.toISOString().split('T')[0]; // Matches streakHistory format
-        const isActive = streakHistory.includes(isoKey);
-        // Ensure visual feedback if user just learned today
-        const isToday = (i === 0);
-        const activeBar = isActive || (isToday && dailyTracking.count > 0);
-        
-        const h = activeBar ? '50px' : '15px';
-        const op = activeBar ? '1' : '0.2';
-        const col = activeBar ? '#4ade80' : '#fff';
-        const shadow = activeBar ? '0 0 10px rgba(74, 222, 128, 0.4)' : 'none';
-        
-        // Short day name (M, T, W...)
-        const dayLabel = d.toLocaleDateString(currentLang === 'vi' ? 'vi-VN' : 'en-US', {weekday: 'narrow'}); 
-        
-        chartHtml += `
-            <div class="chart-col">
-                <div class="chart-bar" style="height:${h}; background:${col}; opacity:${op}; box-shadow:${shadow}"></div>
-                <div class="chart-day">${dayLabel}</div>
-            </div>
-        `;
-    }
-    chartHtml += '</div>';
-    document.getElementById('activityChartArea').innerHTML = chartHtml;
-    // ---------------------------------
-
-    // --- GLOBAL DUE CHECK ---
+    // --- GLOBAL DUE CHECK (Only check loaded topics) ---
     let globalDueCount = 0;
     Object.keys(allTopics).forEach(k => {
         allTopics[k].words.forEach(w => {
@@ -3367,10 +3603,16 @@ function renderDashboard() {
             }
         }
 
+        // Updated Layout for Config Button
         actionArea.innerHTML = `
-            <button class="btn-primary animate__animated animate__pulse animate__infinite" style="animation-duration: 2s;" onclick="${actionFn}">
-                <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
-            </button>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="flex: 1; animation-duration: 2s;" onclick="${actionFn}">
+                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+                </button>
+                <button class="btn-primary" style="width: 60px; padding: 0; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); box-shadow: none;" onclick="window.openGameConfig()">
+                    <i class="fas fa-cog" style="font-size: 1.2rem;"></i>
+                </button>
+            </div>
             <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
                 <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
             </div>
@@ -3379,9 +3621,17 @@ function renderDashboard() {
 }
 
 // --- NEW FUNCTION: WORD LIST POPUP ---
-window.openWordList = function(type) {
-    if(!currentTopicKey || !allTopics[currentTopicKey]) return;
+window.openWordList = async function(type) {
+    if(!currentTopicKey) return;
+    
+    // Ensure data loaded
+    if (!allTopics[currentTopicKey]) {
+        await loadTopicData(currentTopicKey);
+    }
+    
     const topic = allTopics[currentTopicKey];
+    if(!topic) return;
+
     const now = Date.now();
     
     let wordsToShow = [];
@@ -3479,6 +3729,8 @@ window.unmarkMastered = function(wordEn) {
 }
 
 window.speakText = function(text, onEnd) {
+    stopGlobalAudio(); // Stop any previous sound immediately
+
     if(config.muted) {
         if(onEnd) setTimeout(onEnd, 500); 
         return;
@@ -3536,7 +3788,7 @@ window.speakText = function(text, onEnd) {
                 window.speakFallback(text, onEnd);
             } else {
                  if(onEnd) onEnd();
-            }
+        }
         });
     }
 }
@@ -3580,6 +3832,7 @@ function animateValue(id, start, end, duration) {
     }, Math.max(stepTime, 50));
 }
 
+// Render Topic List based on Metadata
 function renderTopicList() {
     const list = document.getElementById('topicList');
     list.innerHTML = '';
@@ -3594,7 +3847,7 @@ function renderTopicList() {
         repoControls.style.display = 'none';
     }
 
-    // Calculate Global Repository Stats
+    // Calculate Global Repository Stats (Only for LOADED topics)
     let totalRepoWords = 0;
     let totalRepoLearned = 0;
 
@@ -3610,19 +3863,31 @@ function renderTopicList() {
     const repoPercent = totalRepoWords > 0 ? Math.floor((totalRepoLearned / totalRepoWords) * 100) : 0;
     
     // Update Stats UI
-    animateValue("repoTotalWords", parseInt(document.getElementById('repoTotalWords').innerText), totalRepoWords, 800);
-    animateValue("repoLearned", parseInt(document.getElementById('repoLearned').innerText), totalRepoLearned, 800);
-    animateValue("repoPercent", parseInt(document.getElementById('repoPercent').innerText), repoPercent, 800);
+    animateValue("repoTotalWords", parseInt(document.getElementById('repoTotalWords').innerText) || 0, totalRepoWords, 800);
+    animateValue("repoLearned", parseInt(document.getElementById('repoLearned').innerText) || 0, totalRepoLearned, 800);
+    animateValue("repoPercent", parseInt(document.getElementById('repoPercent').innerText) || 0, repoPercent, 800);
 
-    Object.keys(allTopics).forEach(key => {
-        const t = allTopics[key];
+    // Iterate Metadata to show full list
+    allTopicsMetadata.forEach(meta => {
+        const key = meta.name;
+        const isLoaded = !!allTopics[key];
+        const topicName = meta.name.replace('.json','').replace(/_/g,' ');
         
-        let learnedCount = 0;
-        t.words.forEach(w => {
-            const k = getWordKey(w);
-            if(masteredWords[k] || srsData[k]) learnedCount++;
-        });
-        const pct = t.words.length > 0 ? Math.floor((learnedCount / t.words.length) * 100) : 0;
+        let subText = "Chạm để tải về";
+        let pct = 0;
+        let progressWidth = 0;
+
+        if (isLoaded) {
+            const t = allTopics[key];
+            let learnedCount = 0;
+            t.words.forEach(w => {
+                const k = getWordKey(w);
+                if(masteredWords[k] || srsData[k]) learnedCount++;
+            });
+            pct = t.words.length > 0 ? Math.floor((learnedCount / t.words.length) * 100) : 0;
+            subText = `${t.words.length} thẻ &bull; Đã học ${pct}%`;
+            progressWidth = pct;
+        }
 
         const el = document.createElement('div');
         el.className = `glass-panel ${key===currentTopicKey ? 'animate__animated animate__pulse':''}`;
@@ -3633,23 +3898,33 @@ function renderTopicList() {
         el.innerHTML = `
             <div style="width:100%">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div style="font-weight:700; font-size:1.1rem;">${t.name}</div>
+                    <div style="font-weight:700; font-size:1.1rem;">
+                        ${topicName} 
+                        ${!isLoaded ? '<i class="fas fa-cloud-download-alt" style="opacity:0.5; font-size:0.9rem; margin-left:5px;"></i>' : ''}
+                    </div>
                     ${key===currentTopicKey ? '<i class="fas fa-check-circle" style="color:var(--success-color); font-size:1.2rem;"></i>' : ''}
                 </div>
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; opacity:0.7; margin-top:2px;">
-                    <span>${t.words.length} thẻ</span>
-                    <span>Đã học ${pct}%</span>
+                    <span>${subText}</span>
                 </div>
                 <div class="topic-progress-bg">
-                    <div class="topic-progress-fill" style="width:${pct}%"></div>
+                    <div class="topic-progress-fill" style="width:${progressWidth}%"></div>
                 </div>
             </div>
         `;
-        el.onclick = () => {
+        
+        // ASYNC Click Handler
+        el.onclick = async () => {
+            if (!isLoaded) {
+                showToast("Đang tải dữ liệu...", "info");
+                const loaded = await loadTopicData(key);
+                if (!loaded) return;
+            }
+            
             currentTopicKey = key;
             localStorage.setItem(getDataKey('fp_aurora_topic'), key);
             playSound(SFX.POP);
-            showToast("Đã chọn: " + t.name);
+            showToast("Đã chọn: " + topicName);
             saveProgressToCloud(); 
             window.navTo('view-home');
         };
@@ -3802,6 +4077,5 @@ function updateConfigUI() {
         .floating-home-btn { padding: 12px; border-radius: 50%; }
     }
 </style>
-<script type="module" src="/index.tsx"></script>
 </body>
 </html>
