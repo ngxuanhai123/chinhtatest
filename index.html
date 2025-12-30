@@ -1097,9 +1097,14 @@ let unsubscribeLeaderboard = null;
 let currentLbTab = 'week';
 const imageCache = {}; // Cache for images to prevent reload
 
-// --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING ---
+// --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING & IOS SILENT BYPASS ---
 const ttsPlayer = new Audio();
 let ttsUnlocked = false;
+
+// Create a very short silent audio buffer (base64 MP3)
+// This is critical for iOS to "unlock" audio playback on user interaction
+const silentAudioSrc = "data:audio/mp3;base64,SUQzBAAAAAAAI1RTS1UAAAAOAAADTGF2ZjU4LjI5LjEwMAAAAAAAAAAAAAAA//OEAAAAAAAAAAAAAAAAAAAAAAAASW5mbwAAAA8AAAAEAAABIADAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMD//////////////////////////////////////////////////////////////////wAAAAAAMAaaaABkAAAAAAAAAAAAAAAB//OEAAAAAAAAAAAAAAAAAAAAAAAAbGF2YzU4LjU0AAAAAAAAAAAAAAAAAAAAAAAAAAAACCAAAAAAAAAAAAAA//OEMAAAAAAAABiAAAAAAAAAAABIHgJcAAAAAAAAAAAAAA==";
+const silentPlayer = new Audio(silentAudioSrc);
 
 // --- NEW HELPER: STOP GLOBAL AUDIO ---
 function stopGlobalAudio() {
@@ -1594,21 +1599,25 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let audioUnlocked = false; // Flag to track status
 
-// UPDATED: Robust Mobile Audio Unlock Function
-function unlockAudio() {
+// UPDATED: Robust Mobile Audio Unlock Function (Async)
+async function unlockAudio() {
     if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try {
+            await audioCtx.resume();
+        } catch(e) { console.warn("Resume failed", e); }
     }
-    // Play a silent buffer to wake up the audio engine on iOS
-    const buffer = audioCtx.createBuffer(1, 1, 22050);
-    const source = audioCtx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(audioCtx.destination);
-    source.start(0);
+    
+    // Play a silent buffer via HTML Audio to wake up the engine on iOS
+    // iOS often respects the physical mute switch for Web Audio API but not for HTML5 Audio elements
+    // By playing this, we signal the OS that we are "media playback" not just system sounds
+    silentPlayer.play().catch(e => {
+        // Autoplay policy might block this if not triggered directly by user event
+        console.log("Silent player prevented", e);
+    });
     
     // Unlock Google TTS global audio by loading/playing a tiny segment
     if(typeof ttsPlayer !== 'undefined') {
-         ttsPlayer.load(); // Required for iOS Safari to acknowledge the element
+         ttsPlayer.load(); 
     }
     
     audioUnlocked = true;
@@ -1648,13 +1657,14 @@ function playTone(freq, type, duration, startTime, vol=0.1) {
     } catch(e) { console.warn("Audio Error", e); }
 }
 
-function playSound(sfx) {
+// UPDATED: Async playSound to ensure context is awake
+async function playSound(sfx) {
     if(config.muted) return;
-    if(!config.sfxEnabled) return; // New Check for specific SFX toggle
+    if(!config.sfxEnabled) return; 
     
     // Check resume immediately before playing
     if(audioCtx.state === 'suspended') {
-        audioCtx.resume().catch(e => {});
+        try { await audioCtx.resume(); } catch(e) {}
     }
 
     initAudio(); 
@@ -1963,6 +1973,8 @@ window.navTo = function(viewId) {
     target.style.display = 'block';
     target.classList.remove('animate__fadeIn');
     void target.offsetWidth; 
+    
+    // Optimized animation: Only add if not eco mode or use simple fade
     target.classList.add('animate__fadeIn');
     
     document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
@@ -2282,7 +2294,7 @@ window.startSmartSession = async function(isExtra = false) {
 
     // FIX: Ensure AudioContext is running when user clicks "Start"
     if(audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try { await audioCtx.resume(); } catch(e) {}
     }
 
     // --- OFFLINE FIRST FLAG ---
@@ -2411,7 +2423,7 @@ window.startSmartSession = async function(isExtra = false) {
     
     // 8. Check if Empty
     if(batchNew.length === 0 && batchReview.length === 0) {
-        if(!isExtra && !config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+        if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
         showToast("Tuyệt vời! Bạn đã hoàn thành tất cả!", "success");
         return;
@@ -2672,7 +2684,9 @@ window.processResult = function(isCorrect, skipNext = false) {
 // --- UI RENDERING & ANIMATIONS ---
 function openGameOverlay() {
     document.getElementById('gameOverlay').style.display = 'flex';
-    document.getElementById('gameOverlay').classList.add('animate__animated', 'animate__fadeIn');
+    if(!config.ecoMode) {
+        document.getElementById('gameOverlay').classList.add('animate__animated', 'animate__fadeIn');
+    }
     updateProgress();
     startTimer(); 
 }
@@ -2747,7 +2761,7 @@ function injectSilentWords(count) {
     // --- REFACTORED UX FEEDBACK ---
     // 1. Visual Pulse
     const bar = document.getElementById('gameProgressBar');
-    if(bar) {
+    if(bar && !config.ecoMode) {
         bar.classList.add('animate__animated', 'animate__pulse');
         // Clean up class after animation
         setTimeout(() => {
@@ -2766,7 +2780,8 @@ function nextStep() {
 
     if(sessionIndex < sessionQueue.length - 1) {
         const content = document.getElementById('gameContent');
-        content.classList.add('slide-out-left');
+        if(!config.ecoMode) content.classList.add('slide-out-left');
+        else content.style.opacity = 0; // Simple fade for eco
         
         setTimeout(() => {
             sessionIndex++;
@@ -2800,10 +2815,12 @@ function nextStep() {
                 else if(currentMode === 'sentence') renderSentence();
             }
             
-            content.classList.add('slide-in-right');
-            setTimeout(() => content.classList.remove('slide-in-right'), 400);
+            if(!config.ecoMode) {
+                content.classList.add('slide-in-right');
+                setTimeout(() => content.classList.remove('slide-in-right'), 400);
+            }
             content.style.opacity = 1;
-        }, 350);
+        }, config.ecoMode ? 100 : 350);
     } else {
         playSound(SFX.WIN);
         if(!config.ecoMode) confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
@@ -2819,16 +2836,30 @@ function renderSessionEnd() {
 
     document.getElementById('gameContent').innerHTML = `
         <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; max-width:400px; text-align:center;">
-            <i class="fas fa-flag-checkered" style="font-size:3rem; color:#fbbf24; margin-bottom:15px;"></i>
-            <div style="font-size:1.5rem; font-weight:800; margin-bottom:10px;">Tuyệt vời!</div>
-            <div style="opacity:0.8; margin-bottom:25px;">Bạn đã hoàn thành bài học.</div>
+            <div style="margin-bottom:20px;">
+                <i class="fas fa-trophy" style="font-size:3.5rem; color:#fbbf24; filter:drop-shadow(0 0 15px rgba(251, 191, 36, 0.5));"></i>
+            </div>
             
-            <div style="display:flex; gap:10px; flex-direction:column;">
-                <button class="btn-primary" onclick="window.startSmartSession(true)">
-                    <i class="fas fa-redo"></i> Học tiếp
+            <div style="font-size:1.6rem; font-weight:800; margin-bottom:5px; background:linear-gradient(to right, #4ade80, #3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent;">TUYỆT VỜI!</div>
+            <div style="opacity:0.8; font-size:0.95rem; margin-bottom:25px;">Bạn đã hoàn thành bài học hôm nay.</div>
+            
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:25px;">
+                 <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:15px;">
+                     <div style="font-size:0.8rem; opacity:0.7;">Điểm</div>
+                     <div style="font-size:1.2rem; font-weight:700; color:#fbbf24;">+${sessionPoints || 0}</div>
+                 </div>
+                 <div style="background:rgba(255,255,255,0.05); padding:10px; border-radius:15px;">
+                     <div style="font-size:0.8rem; opacity:0.7;">Số từ</div>
+                     <div style="font-size:1.2rem; font-weight:700; color:#4ade80;">${sessionQueue.length}</div>
+                 </div>
+            </div>
+
+            <div style="display:flex; gap:12px; flex-direction:column;">
+                <button class="btn-primary" onclick="window.startSmartSession(true)" style="font-size:1rem; padding:15px;">
+                    <i class="fas fa-redo"></i> &nbsp; Học thêm bài nữa
                 </button>
-                <button class="action-btn" style="width:100%; height:50px; background:transparent; border:1px solid rgba(255,255,255,0.2);" onclick="window.closeGame()">
-                    <i class="fas fa-home"></i> Về trang chủ
+                <button class="action-btn" style="width:100%; height:55px; background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); font-size:0.95rem;" onclick="window.closeGame()">
+                    <i class="fas fa-home"></i> &nbsp; Về trang chủ
                 </button>
             </div>
         </div>
@@ -2923,7 +2954,7 @@ window.flipCard = function() {
     
     // FIX: Ensure context is resumed on card click interaction
     if(audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try { audioCtx.resume(); } catch(e) {}
     }
 
     const card = document.getElementById('flashcardObj');
@@ -3506,7 +3537,7 @@ window.startGame = async function(mode) {
     
     // FIX: Ensure AudioContext is running immediately on button click
     if(audioCtx.state === 'suspended') {
-        audioCtx.resume();
+        try { await audioCtx.resume(); } catch(e) {}
     }
 
     // --- OFFLINE FIRST FLAG ---
@@ -3581,7 +3612,8 @@ function renderDashboard() {
     updateUserPointsUI();
     
     // Safety check for metadata/current topic
-    if(!currentTopicKey || !allTopicsMetadata.length) return;
+    // UPDATED LOGIC: Removed !allTopicsMetadata.length check to allow cached data rendering
+    if(!currentTopicKey) return; 
     
     // Find name from metadata if content not loaded, else use content
     let topicName = "(Đang tải...)";
@@ -3604,7 +3636,7 @@ function renderDashboard() {
     if (topic) {
         topic.words.forEach(w => {
             const key = getWordKey(w);
-            if(masteredWords[k]) {
+            if(masteredWords[key]) { // Fix typo: was k
                 cntMaster++;
                 cntLearned++;
             }
@@ -3655,21 +3687,30 @@ function renderDashboard() {
                 actionFn = "window.startSmartSession(true)";
             }
         }
-
-        // Updated Layout for Config Button
-        actionArea.innerHTML = `
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <button class="btn-primary animate__animated animate__pulse animate__infinite" style="flex: 1; animation-duration: 2s;" onclick="${actionFn}">
-                    <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+        
+        // UPDATED: Always show button if topic data exists
+        if(allTopics[currentTopicKey]) {
+            actionArea.innerHTML = `
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <button class="btn-primary ${(!config.ecoMode)?'animate__animated animate__pulse animate__infinite':''}" style="flex: 1; animation-duration: 2s;" onclick="${actionFn}">
+                        <i class="fas fa-brain"></i> &nbsp; HỌC NGAY
+                    </button>
+                    <button class="btn-primary" style="width: 60px; padding: 0; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); box-shadow: none;" onclick="window.openGameConfig()">
+                        <i class="fas fa-cog" style="font-size: 1.2rem;"></i>
+                    </button>
+                </div>
+                <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
+                    <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
+                </div>
+            `;
+        } else {
+            // Show "Select Topic" if no topic loaded
+             actionArea.innerHTML = `
+                <button class="btn-primary" onclick="window.navTo('view-topics')">
+                    <i class="fas fa-list"></i> &nbsp; Chọn Chủ Đề
                 </button>
-                <button class="btn-primary" style="width: 60px; padding: 0; background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); box-shadow: none;" onclick="window.openGameConfig()">
-                    <i class="fas fa-cog" style="font-size: 1.2rem;"></i>
-                </button>
-            </div>
-            <div style="font-size:0.75rem; opacity:0.9; text-align:center; margin-top:12px; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">
-                <i class="fas fa-random"></i> Xáo trộn các Game + Khoa học não bộ
-            </div>
-        `;
+            `;
+        }
     }
 }
 
@@ -3943,7 +3984,7 @@ function renderTopicList() {
         }
 
         const el = document.createElement('div');
-        el.className = `glass-panel ${key===currentTopicKey ? 'animate__animated animate__pulse':''}`;
+        el.className = `glass-panel ${(!config.ecoMode && key===currentTopicKey) ? 'animate__animated animate__pulse':''}`;
         el.style.padding = '20px';
         el.style.marginBottom = '15px';
         el.style.cursor = 'pointer';
@@ -4024,6 +4065,10 @@ window.resetProgress = function() {
     masteredWords = {};
     accumulatedPoints = 0;
     accumulatedTime = 0;
+    
+    // UPDATED: Correctly reset trial count logic
+    trialCount = 0;
+    localStorage.setItem('fp_aurora_trial_access', '0');
     
     localStorage.removeItem(getDataKey('fp_aurora_srs'));
     localStorage.removeItem(getDataKey('fp_aurora_mastered'));
