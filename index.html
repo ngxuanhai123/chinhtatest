@@ -1224,6 +1224,7 @@ window.logoutGoogle = () => {
             accumulatedPoints = 0; 
             weekPoints = 0;
             monthPoints = 0;
+            sessionPoints = 0;
             updateUserPointsUI();
             // Let onAuthStateChanged handle UI
         });
@@ -1392,6 +1393,15 @@ async function saveProgressToCloud(force = false) {
     // Calculate learned count
     const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
 
+    // COMMIT SESSION POINTS TO TOTALS
+    accumulatedPoints += sessionPoints;
+    weekPoints += sessionPoints;
+    monthPoints += sessionPoints;
+    sessionPoints = 0; // Reset session points
+
+    // Update LocalStorage for persistence
+    localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+
     try {
         await setDoc(doc(db, "leaderboard", currentUser.uid), {
             displayName: currentUser.displayName,
@@ -1411,6 +1421,8 @@ async function saveProgressToCloud(force = false) {
             config: config,
             [topicKey]: currentTopicKey
         }, { merge: true });
+        
+        updateUserPointsUI(); // Refresh UI to ensure display is correct
     } catch(e) {
         console.error("Error saving progress to cloud", e);
     }
@@ -1531,14 +1543,14 @@ window.initLeaderboardListener = () => {
         // Real-time listener on query limit(20) won't return them.
         // We can just append a row manually if we have their data and they weren't found.
         if(currentUser && !currentUserFound) {
-            // We know our own score from local variables
+            // We know our own score from local variables (including session points for display)
             let myScore = 0;
-            if(currentLbTab === 'week') myScore = weekPoints;
-            else if(currentLbTab === 'month') myScore = monthPoints;
-            else myScore = accumulatedPoints;
+            if(currentLbTab === 'week') myScore = weekPoints + sessionPoints;
+            else if(currentLbTab === 'month') myScore = monthPoints + sessionPoints;
+            else myScore = accumulatedPoints + sessionPoints;
 
             if(myScore > 0) { // Only show if we have score
-                const rankObj = getRankInfo(accumulatedPoints);
+                const rankObj = getRankInfo(accumulatedPoints + sessionPoints);
                 const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
                 listHTML += `
                     <div style="text-align:center; padding:10px; opacity:0.5;">...</div>
@@ -1584,34 +1596,40 @@ let audioUnlocked = false; // Flag to track status
 
 // 1. Refactored Unlock Mechanism
 function unlockAudioContext() {
-    if (audioCtx.state !== 'suspended') return;
-    
     // Function to play a silent buffer (Critical for iOS)
     const playSilentBuffer = () => {
+        if (audioCtx.state === 'suspended') {
+             audioCtx.resume();
+        }
         const buffer = audioCtx.createBuffer(1, 1, 22050);
         const source = audioCtx.createBufferSource();
         source.buffer = buffer;
         source.connect(audioCtx.destination);
         source.start(0);
+        console.log("Audio Context Unlocked via Interaction");
     };
 
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume().then(() => {
-            playSilentBuffer();
-            audioUnlocked = true;
-            console.log("Audio Context Unlocked & Resumed");
-            // Do not remove listeners immediately to ensure persistence across reloads/backgrounding
-        }).catch(e => console.error("Audio unlock failed", e));
-    } else {
-        playSilentBuffer();
-        audioUnlocked = true;
+    playSilentBuffer();
+    audioUnlocked = true;
+
+    // Also unlock Google TTS global audio by playing it muted momentarily
+    if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
+         // Create a promise to handle the play attempt
+         const playPromise = ttsPlayer.play();
+         if (playPromise !== undefined) {
+             playPromise.then(() => {
+                 ttsPlayer.pause();
+                 ttsUnlocked = true;
+             }).catch(error => {
+                 console.log("TTS Unlock failed (will retry): " + error);
+             });
+         }
     }
     
-    // Also unlock Google TTS global audio
-    if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
-         ttsPlayer.play().then(() => ttsPlayer.pause()).catch(e=>{});
-         ttsUnlocked = true;
-    }
+    // Remove listeners once unlocked to avoid overhead
+    ['click', 'touchstart', 'keydown'].forEach(evt => 
+        document.removeEventListener(evt, unlockAudioContext, { capture: true })
+    );
 }
 
 // Attach listeners immediately (Passive for better performance)
@@ -1691,6 +1709,8 @@ let accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${curren
 // Volatile points for session tracking (Week/Month) - normally should load from server but simplified here
 let weekPoints = 0;
 let monthPoints = 0;
+// NEW: Temporary session points (not saved until session end)
+let sessionPoints = 0;
 
 let config = {
     newLimit: parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5),
@@ -1833,6 +1853,9 @@ window.initApp = function() {
     updateLangUI();
     window.fetchTopics(); 
     document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
+    
+    // Reset session points on load
+    sessionPoints = 0;
     updateUserPointsUI();
     
     if (window.speechSynthesis.onvoiceschanged !== undefined) {
@@ -1866,6 +1889,7 @@ window.switchLanguage = function(lang) {
     
     // Switch Points Context
     accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${currentLang}`) || 0);
+    sessionPoints = 0;
     updateUserPointsUI();
     
     // RELOAD DAILY TRACKING FOR NEW LANG (ISOLATION FIX)
@@ -1921,19 +1945,16 @@ function startSnow() {
 }
 
 function updateUserPointsUI() {
-    document.getElementById('userPointsDisplay').innerText = accumulatedPoints.toLocaleString();
+    // Show accumulated + current session points
+    document.getElementById('userPointsDisplay').innerText = (accumulatedPoints + sessionPoints).toLocaleString();
 }
 
 function addPoints(amount) {
-    accumulatedPoints += amount;
-    localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+    // UPDATED: Only add to temporary session points, don't save to Cloud yet
+    sessionPoints += amount;
     
-    // Update week/month scores
-    weekPoints += amount;
-    monthPoints += amount;
-
+    // Update visual UI only
     updateUserPointsUI();
-    saveProgressToCloud(); 
 }
 
 function createParticles() {
@@ -2266,6 +2287,7 @@ window.startSmartSession = async function(isExtra = false) {
 
     // --- OFFLINE FIRST FLAG ---
     window.isSessionActive = true;
+    sessionPoints = 0; // Reset session points
 
     // Reset Global Flag
     window.isGlobalReviewSession = false;
@@ -2367,7 +2389,7 @@ window.startSmartSession = async function(isExtra = false) {
                         // UPDATE CURRENT TOPIC KEY
                         currentTopicKey = nextKey;
                         localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-                        saveProgressToCloud();
+                        // Save to cloud is deferred to end of session
                         
                         showToast(`Đã chuyển sang chủ đề: ${nextTopicData.name}`, "success");
                         renderDashboard(); // Update UI
@@ -2421,15 +2443,27 @@ window.startSmartSession = async function(isExtra = false) {
 }
 
 // --- NEW FEATURE: GLOBAL REVIEW (OPTIMIZED FOR LAZY LOADING) ---
-window.startGlobalReview = function() {
+window.startGlobalReview = async function() {
     // --- OFFLINE FIRST FLAG ---
     window.isSessionActive = true;
+    sessionPoints = 0; // Reset session points
 
-    // 1. Scan ONLY LOADED topics for due words to avoid crashing old devices
+    // 1. UPDATED: Ensure ALL topics are loaded
+    showToast("Đang tải toàn bộ dữ liệu...", "info");
+    
+    // Identify which topics are not yet loaded
+    const missingTopics = allTopicsMetadata.filter(meta => !allTopics[meta.name]);
+    
+    // Load missing topics concurrently
+    if(missingTopics.length > 0) {
+        const loadPromises = missingTopics.map(meta => loadTopicData(meta.name));
+        await Promise.all(loadPromises);
+    }
+    
+    // 2. Scan ALL topics for due words
     let globalDueWords = [];
     const now = Date.now();
     
-    // Iterate keys of cache (allTopics), not metadata
     Object.keys(allTopics).forEach(topicKey => {
         const topic = allTopics[topicKey];
         topic.words.forEach(w => {
@@ -2446,28 +2480,28 @@ window.startGlobalReview = function() {
     if(globalDueWords.length === 0) {
         if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
-        showToast('Bạn đã ôn sạch sẽ các chủ đề đã tải!', 'success');
+        showToast('Bạn đã ôn sạch sẽ tất cả chủ đề!', 'success');
         return;
     }
 
     // --- REFACTORED LOGIC ---
-    // 2. Sort by Urgency (Most overdue first)
+    // 3. Sort by Urgency (Most overdue first)
     globalDueWords.sort((a, b) => {
         const tA = srsData[getWordKey(a)].nextReview;
         const tB = srsData[getWordKey(b)].nextReview;
         return tA - tB;
     });
 
-    // 3. Slice to Limit
+    // 4. Slice to Limit
     const limit = config.reviewLimit || 20;
     if (globalDueWords.length > limit) {
         globalDueWords = globalDueWords.slice(0, limit);
     }
 
-    // 4. Shuffle result
+    // 5. Shuffle result
     globalDueWords.sort(() => Math.random() - 0.5);
 
-    // 5. Set Queue
+    // 6. Set Queue
     sessionQueue = globalDueWords;
     sessionIndex = 0;
     currentMode = 'smart';
@@ -2570,7 +2604,7 @@ window.processResult = function(isCorrect, skipNext = false) {
         
         srsData[key] = data;
         localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
-        saveProgressToCloud(); 
+        // Save cloud removed here, only at end of session
 
         if(!skipNext) {
             setTimeout(() => { isProcessing = false; nextStep(); }, 600);
@@ -2611,7 +2645,7 @@ window.processResult = function(isCorrect, skipNext = false) {
 
         srsData[key] = data;
         localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
-        saveProgressToCloud(); 
+        // Save cloud removed here, only at end of session
 
         if(currentMode === 'smart') {
             const reInsertIdx = sessionIndex + 3;
@@ -3275,6 +3309,7 @@ function renderFill() {
     setTimeout(() => document.getElementById('fillInp').focus(), 100);
 }
 
+// --- UPDATED SMART HINT LOGIC ---
 window.showHint = function(ans) {
     // Hint Penalty Logic
     window.currentHintCount++;
@@ -3285,13 +3320,24 @@ window.showHint = function(ans) {
     }
 
     const inp = document.getElementById('fillInp');
-    const currentVal = inp.value;
-    if (currentVal.length < ans.length) {
-        inp.value = ans.substring(0, currentVal.length + 1);
-        playSound(SFX.POP);
-        inp.focus();
-        window.checkAutoFill(inp, ans);
+    const val = inp.value;
+    
+    // Find first deviation
+    let correctPrefix = "";
+    for(let i=0; i<ans.length; i++) {
+        if (val[i] && val[i].toLowerCase() === ans[i].toLowerCase()) {
+            correctPrefix += ans[i]; // Use casing from answer
+        } else {
+            // Found deviation or end of input
+            correctPrefix += ans[i]; // Add the hint char
+            break;
+        }
     }
+    
+    inp.value = correctPrefix;
+    playSound(SFX.POP);
+    inp.focus();
+    window.checkAutoFill(inp, ans);
 }
 
 window.checkAutoFill = function(el, ans) {
@@ -3459,6 +3505,7 @@ window.startGame = async function(mode) {
 
     // --- OFFLINE FIRST FLAG ---
     window.isSessionActive = true;
+    sessionPoints = 0; // Reset session points
 
     // Lazy load check
     if (!allTopics[currentTopicKey]) {
@@ -3551,7 +3598,7 @@ function renderDashboard() {
     if (topic) {
         topic.words.forEach(w => {
             const key = getWordKey(w);
-            if(masteredWords[key]) {
+            if(masteredWords[k]) {
                 cntMaster++;
                 cntLearned++;
             }
@@ -3957,7 +4004,8 @@ window.markMastered = function() {
     localStorage.setItem(getDataKey('fp_aurora_mastered'), JSON.stringify(masteredWords));
     
     addPoints(100); 
-    saveProgressToCloud(); 
+    // Cloud save deferred
+    
     playSound(SFX.WIN);
     showToast("Đã chuyển vào kho Tinh thông!", "success");
     nextStep();
