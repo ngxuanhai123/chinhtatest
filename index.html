@@ -1594,48 +1594,34 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let audioUnlocked = false; // Flag to track status
 
-// 1. Refactored Unlock Mechanism
-function unlockAudioContext() {
-    // Function to play a silent buffer (Critical for iOS)
-    const playSilentBuffer = () => {
-        if (audioCtx.state === 'suspended') {
-             audioCtx.resume();
-        }
-        const buffer = audioCtx.createBuffer(1, 1, 22050);
-        const source = audioCtx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(audioCtx.destination);
-        source.start(0);
-        console.log("Audio Context Unlocked via Interaction");
-    };
-
-    playSilentBuffer();
-    audioUnlocked = true;
-
-    // Also unlock Google TTS global audio by playing it muted momentarily
-    if(typeof ttsPlayer !== 'undefined' && !ttsUnlocked) {
-         // Create a promise to handle the play attempt
-         const playPromise = ttsPlayer.play();
-         if (playPromise !== undefined) {
-             playPromise.then(() => {
-                 ttsPlayer.pause();
-                 ttsUnlocked = true;
-             }).catch(error => {
-                 console.log("TTS Unlock failed (will retry): " + error);
-             });
-         }
+// UPDATED: Robust Mobile Audio Unlock Function
+function unlockAudio() {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    // Play a silent buffer to wake up the audio engine on iOS
+    const buffer = audioCtx.createBuffer(1, 1, 22050);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioCtx.destination);
+    source.start(0);
+    
+    // Unlock Google TTS global audio by loading/playing a tiny segment
+    if(typeof ttsPlayer !== 'undefined') {
+         ttsPlayer.load(); // Required for iOS Safari to acknowledge the element
     }
     
-    // Remove listeners once unlocked to avoid overhead
-    ['click', 'touchstart', 'keydown'].forEach(evt => 
-        document.removeEventListener(evt, unlockAudioContext, { capture: true })
-    );
+    audioUnlocked = true;
+    console.log("Audio Context Unlocked via Interaction");
+    
+    // Remove listeners once unlocked
+    document.removeEventListener('touchstart', unlockAudio);
+    document.removeEventListener('click', unlockAudio);
 }
 
-// Attach listeners immediately (Passive for better performance)
-['click', 'touchstart', 'keydown'].forEach(evt => 
-    document.addEventListener(evt, unlockAudioContext, { passive: true, capture: true })
-);
+// Attach listeners immediately with {once: true}
+document.addEventListener('touchstart', unlockAudio, { once: true });
+document.addEventListener('click', unlockAudio, { once: true });
 
 function initAudio() {
     if(!masterGain) {
@@ -1666,7 +1652,7 @@ function playSound(sfx) {
     if(config.muted) return;
     if(!config.sfxEnabled) return; // New Check for specific SFX toggle
     
-    // 2. Check resume immediately before playing (Double safety)
+    // Check resume immediately before playing
     if(audioCtx.state === 'suspended') {
         audioCtx.resume().catch(e => {});
     }
@@ -1835,9 +1821,6 @@ async function preloadUpcomingTopics() {
 
 // --- INITIALIZATION ---
 window.initApp = function() {
-    // 3. Removed old event listeners for click/touchstart with {once:true} 
-    // New persistent listeners are attached in the Global Scope above.
-
     // TRIAL LOGIC: Increment trial count on page access (initApp)
     // Only increment if not yet strictly blocked, to account for "first 3 accesses".
     if (!currentUser && trialCount < 5) { // <5 just to be safe, logic handles <=3
@@ -2122,7 +2105,9 @@ async function loadTopicData(filename) {
     }
 
     try {
-        const res = await fetch(meta.download_url);
+        // UPDATED: Add Cache Busting Timestamp
+        const url = `${meta.download_url}?t=${Date.now()}`;
+        const res = await fetch(url);
         const data = await res.json();
         
         // Process data format
@@ -2173,6 +2158,10 @@ window.fetchTopics = async function(manual = false) {
         if(!res.ok) throw new Error("Kết nối thất bại");
         
         const files = await res.json();
+        
+        // UPDATED: Save to LocalStorage Cache
+        localStorage.setItem(`fp_aurora_topics_cache_${currentLang}`, JSON.stringify(files));
+
         let jsonFiles = files.filter(f => f.name.endsWith('.json'));
 
         // --- NATURAL SORT ---
@@ -2182,10 +2171,6 @@ window.fetchTopics = async function(manual = false) {
         // Store metadata globally
         allTopicsMetadata = jsonFiles;
         
-        // Reset cache if repo changed (handled by setRepo, but good to be safe)
-        // Note: We don't wipe allTopics here to allow cache persistence within session if just refreshing list,
-        // unless it's a hard reload. For now, we keep cache.
-
         status.innerText = "Aurora Rank Master • Ready";
 
         // Determine current topic or default to first
@@ -2209,8 +2194,23 @@ window.fetchTopics = async function(manual = false) {
 
     } catch(e) {
         console.error(e);
-        status.innerText = "Offline Mode / Error";
-        if(manual) showToast("Lỗi: Kiểm tra mạng/GitHub", "error");
+        
+        // UPDATED: Fallback to LocalStorage
+        const cached = localStorage.getItem(`fp_aurora_topics_cache_${currentLang}`);
+        if (cached) {
+            console.log("GitHub API Limit reached. Using cached topics.");
+            const files = JSON.parse(cached);
+            let jsonFiles = files.filter(f => f.name.endsWith('.json'));
+            const collator = new Intl.Collator(undefined, {numeric: true, sensitivity: 'base'});
+            jsonFiles.sort((a, b) => collator.compare(a.name, b.name));
+            allTopicsMetadata = jsonFiles;
+            status.innerText = "Offline Mode (Cached)";
+            renderDashboard();
+            if(currentTopicKey) await loadTopicData(currentTopicKey);
+        } else {
+            status.innerText = "Offline Mode / Error";
+            if(manual) showToast("Lỗi: Kiểm tra mạng/GitHub", "error");
+        }
     }
 }
 
@@ -2811,6 +2811,7 @@ function nextStep() {
     }
 }
 
+// UPDATED: Enhanced Session End UI with Buttons
 function renderSessionEnd() {
     // OFFLINE FIRST SYNC: Session ended, reset flag and force sync
     window.isSessionActive = false;
@@ -2820,11 +2821,16 @@ function renderSessionEnd() {
         <div class="glass-panel animate__animated animate__zoomIn" style="padding:30px; width:95%; max-width:400px; text-align:center;">
             <i class="fas fa-flag-checkered" style="font-size:3rem; color:#fbbf24; margin-bottom:15px;"></i>
             <div style="font-size:1.5rem; font-weight:800; margin-bottom:10px;">Tuyệt vời!</div>
-            <div style="opacity:0.8; margin-bottom:25px;">Bạn đã hoàn thành mục tiêu.</div>
+            <div style="opacity:0.8; margin-bottom:25px;">Bạn đã hoàn thành bài học.</div>
             
-            <button class="action-btn" style="width:100%; height:50px; background:transparent; border:1px solid rgba(255,255,255,0.2);" onclick="window.closeGame()">
-                <i class="fas fa-home"></i> Về trang chủ
-            </button>
+            <div style="display:flex; gap:10px; flex-direction:column;">
+                <button class="btn-primary" onclick="window.startSmartSession(true)">
+                    <i class="fas fa-redo"></i> Học tiếp
+                </button>
+                <button class="action-btn" style="width:100%; height:50px; background:transparent; border:1px solid rgba(255,255,255,0.2);" onclick="window.closeGame()">
+                    <i class="fas fa-home"></i> Về trang chủ
+                </button>
+            </div>
         </div>
     `;
 }
