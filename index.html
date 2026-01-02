@@ -3196,7 +3196,7 @@ function renderFlashcard() {
 
     setTimeout(window.speakWord, 500);
 }
-// --- 🟢 HÀM GỌI TRỢ LÝ AI (MỚI) ---
+// --- 🟢 HÀM GỌI TRỢ LÝ AI (ĐA NGÔN NGỮ) ---
 window.askAI = async function() {
     // 1. Lấy thông tin từ đang học
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
@@ -3209,25 +3209,30 @@ window.askAI = async function() {
     // 2. Chuyển đổi giao diện sang trạng thái "Đang tải"
     btn.style.display = 'none'; // Ẩn nút
     box.style.display = 'block'; // Hiện khung chat
+    
+    // Lấy tên ngôn ngữ đang học từ Config (VD: "Tiếng Anh" hoặc "Indonesia")
+    const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
+
     content.innerHTML = `
         <div style="text-align:center; padding:10px; color:#a855f7;">
-            <i class="fas fa-magic fa-spin"></i> &nbsp; AI đang suy nghĩ câu trả lời vui nhộn...
+            <i class="fas fa-magic fa-spin"></i> &nbsp; Giáo viên ${langName} đang suy nghĩ...
         </div>
     `;
 
-    // 3. Tạo câu lệnh (Prompt) thông minh
-    // Yêu cầu AI đóng vai giáo viên hài hước
-    const prompt = `Giải thích từ tiếng Anh: "${w.english}" (nghĩa: "${w.vietnamese}") cho người Việt.
+    // 3. Tạo câu lệnh (Prompt) thông minh đa ngôn ngữ
+    // ${langName} sẽ tự thay đổi thành "Tiếng Anh" hoặc "Indonesia" tùy theo chế độ đang chọn
+    const prompt = `Bạn là giáo viên dạy ${langName} vui tính. 
+    Hãy giải thích từ vựng: "${w.english}" (nghĩa tiếng Việt: "${w.vietnamese}") cho học sinh Việt Nam.
     Yêu cầu:
     - Phong cách: Hài hước, thân thiện, dễ nhớ.
     - Nội dung: Giải thích ngắn gọn + 1 Ví dụ vui hoặc 1 Mẹo nhớ (Mnemonic).
-    - Định dạng: Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.
+    - Định dạng: Dùng thẻ <b> cho từ khóa chính, xuống dòng bằng <br>. Không dùng Markdown.
     - Độ dài: Dưới 100 từ.`;
 
     try {
         // 4. Gọi API Pollinations (Miễn phí)
         const encodedPrompt = encodeURIComponent(prompt);
-        // Thêm tham số seed ngẫu nhiên để câu trả lời đỡ bị trùng lặp cache
+        // Thêm tham số seed ngẫu nhiên để câu trả lời luôn mới mẻ
         const seed = Math.floor(Math.random() * 1000); 
         const url = `https://text.pollinations.ai/${encodedPrompt}?seed=${seed}&model=openai`; 
 
@@ -3241,7 +3246,7 @@ window.askAI = async function() {
 
     } catch (e) {
         console.error(e);
-        content.innerHTML = `<span style="color:#ef4444"><i class="fas fa-wifi"></i> Mạng yếu quá, AI không trả lời được rồi!</span>`;
+        content.innerHTML = `<span style="color:#ef4444"><i class="fas fa-wifi"></i> Mạng yếu quá, thầy giáo AI đang bị lag!</span>`;
         
         // Cho phép thử lại sau 3 giây
         setTimeout(() => {
@@ -3250,21 +3255,6 @@ window.askAI = async function() {
         }, 3000);
     }
 }
-window.flipCard = function() {
-    if(isProcessing && currentMode === 'smart') return;
-    
-    // FIX: Ensure context is resumed on card click interaction
-    if(audioCtx.state === 'suspended') {
-        try { audioCtx.resume(); } catch(e) {}
-    }
-
-    const card = document.getElementById('flashcardObj');
-    if(!card) return;
-    isFlipped = !isFlipped;
-    card.classList.toggle('is-flipped');
-    playSound(SFX.FLIP);
-}
-
 // --- HELPER: PENALTY LOGIC ---
 function applyHintPenalty(key) {
     let data = srsData[key];
