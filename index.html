@@ -3300,14 +3300,14 @@ window.askAI = async function() {
     content.innerHTML = `
         <div style="text-align:center; padding:30px; color:#a855f7;">
             <i class="fas fa-bolt fa-spin fa-2x"></i>
-            <div style="margin-top:15px; font-weight:600;"> Ai HiHi Flash đang chạy...</div>
+            <div style="margin-top:15px; font-weight:600;"> AI HiHi đang chạy...</div>
         </div>
     `;
 
     // Tạo nội dung câu hỏi (Prompt)
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
     const promptText = `Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
-    Yêu cầu: Ngắn gọn (<100 từ), hài hước, kèm 1 ví dụ hoặc mẹo nhớ, sau mỗi cái đều xuống dòng. 
+    Yêu cầu: Ngắn gọn (<100 từ) hài hước, kèm 1 ví dụ, mẹo nhớ, sau mỗi cái đều xuống dòng và -đầu dòng. 
     Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
 
     try {
