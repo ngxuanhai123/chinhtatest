@@ -4706,6 +4706,31 @@ window.silentUpdateSRS = function(w) {
         localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
     }
 }
+  // --- HÀM XOÁ CACHE AI ---
+window.clearAICache = function() {
+    // 1. Hỏi xác nhận
+    if(!confirm("Bạn có chắc muốn xoá lịch sử trả lời của AI?\n(Các câu hỏi cũ sẽ cần tải lại từ đầu)")) return;
+
+    try {
+        // 2. Xoá khỏi LocalStorage
+        localStorage.removeItem('fp_aurora_ai_cache');
+
+        // 3. Xoá biến tạm trong RAM (vì aiCache là const nên ta xoá từng key bên trong)
+        if (typeof aiCache !== 'undefined') {
+            for (const key in aiCache) {
+                delete aiCache[key];
+            }
+        }
+
+        // 4. Thông báo
+        showToast("Đã dọn dẹp bộ nhớ đệm AI!", "success");
+        playSound(SFX.POP);
+        
+    } catch (e) {
+        console.error(e);
+        showToast("Lỗi khi xoá cache", "error");
+    }
+}
   // --- KHỞI ĐỘNG ỨNG DỤNG AN TOÀN (BẮT BUỘC THÊM) ---
 // Đợi trình duyệt tải xong hết module rồi mới chạy initApp
 if (document.readyState === 'loading') {
