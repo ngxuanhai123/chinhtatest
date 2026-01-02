@@ -1999,6 +1999,26 @@ let sessionIndex = 0;
 let currentMode = '';
 let isProcessing = false;
 let isFlipped = false;
+  // --- BỔ SUNG HÀM LẬT THẺ ---
+window.flipCard = function() {
+    // Nếu đang xử lý kết quả (đúng/sai) thì chặn không cho lật để tránh lỗi
+    if (typeof isProcessing !== 'undefined' && isProcessing) return;
+    
+    const card = document.getElementById('flashcardObj');
+    if (card) {
+        card.classList.toggle('is-flipped');
+        
+        // Cập nhật trạng thái lật
+        if (typeof isFlipped !== 'undefined') {
+            isFlipped = !isFlipped;
+        } else {
+            window.isFlipped = !window.isFlipped;
+        }
+        
+        // Phát âm thanh lật thẻ
+        playSound(SFX.FLIP);
+    }
+};
 let selectedVoice = null;
 const translationCache = JSON.parse(localStorage.getItem('fp_aurora_trans_cache') || '{}');
 
