@@ -3307,7 +3307,7 @@ window.askAI = async function() {
     // Tạo nội dung câu hỏi (Prompt)
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
     const promptText = `Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
-    Yêu cầu: Ngắn gọn (<100 từ) hài hước, kèm 1 ví dụ, mẹo nhớ, sau mỗi cái đều xuống dòng và -đầu dòng. 
+    Yêu cầu: Ngắn gọn, chuyên sâu, nhiều mục chi tiết như từ điển, hài hước, kèm 1 ví dụ, mẹo nhớ, sau mỗi cái đều xuống dòng và -đầu dòng. 
     Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
 
     try {
