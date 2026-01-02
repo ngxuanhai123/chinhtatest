@@ -3267,8 +3267,7 @@ function renderFlashcard() {
 
     setTimeout(window.speakWord, 500);
 }
-// --- 🟢 HÀM GỌI TRỢ LÝ AI ---
-// --- 🟢 HÀM GỌI TRỢ LÝ AI (ĐÃ SỬA - GỌI QUA WORKER) ---
+// --- 🟢 HÀM GỌI TRỢ LÝ AI (ĐÃ SỬA CHO GROQ) ---
 window.askAI = async function() {
     // 1. Kiểm tra dữ liệu đầu vào
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
@@ -3298,34 +3297,29 @@ window.askAI = async function() {
     content.innerHTML = `
         <div style="text-align:center; padding:30px; color:#a855f7;">
             <i class="fas fa-bolt fa-spin fa-2x"></i>
-            <div style="margin-top:15px; font-weight:600;"> AI HiHi đang chạy...</div>
+            <div style="margin-top:15px; font-weight:600;"> Groq AI đang chạy...</div>
         </div>
     `;
 
     // Tạo nội dung câu hỏi (Prompt)
-    const promptText = `Đóng vai một từ điển tiếng Anh chuyên sâu, hài hước và dễ hiểu cho người Việt.
-Giải thích từ: "${w.english}" (nghĩa Việt chính: "${w.vietnamese}").
-
-Yêu cầu định dạng output:
-- Chỉ sử dụng thẻ HTML: <b> cho từ khóa quan trọng, <br> để xuống dòng.
-- Tuyệt đối KHÔNG dùng định dạng Markdown.
-- Dùng dấu "+" ở đầu dòng cho mục chính.
-
-Cấu trúc nội dung bắt buộc:
-1. Phiên âm IPA & Loại từ.
-2. Giải thích nghĩa chuyên sâu.
-3. Cách dùng & Sắc thái.
-4. Collocations phổ biến.
-5. Từ đồng nghĩa & Trái nghĩa.
-6. 1 Ví dụ song ngữ.
-7. Mẹo nhớ (Mnemonic) hài hước.
-
-Bắt đầu output bằng câu: "Hihi AI xin giải thích như sau:<br>"`;
+    const systemPrompt = `Đóng vai một từ điển tiếng Anh chuyên sâu, hài hước và dễ hiểu cho người Việt. 
+    Yêu cầu định dạng output: Chỉ sử dụng thẻ HTML cơ bản (<b>, <br>, <ul>, <li>). Không dùng Markdown.`;
+    
+    const userPrompt = `Giải thích từ: "${w.english}" (nghĩa Việt chính: "${w.vietnamese}").
+    Cấu trúc:
+    1. Phiên âm & Loại từ.
+    2. Nghĩa chuyên sâu.
+    3. Cách dùng & Sắc thái.
+    4. Collocations.
+    5. Ví dụ song ngữ.
+    6. Mẹo nhớ hài hước.
+    Bắt đầu bằng: "Hihi AI xin giải thích như sau:<br>"`;
 
     try {
-        // --- 🟢 GỌI QUA CLOUDFLARE WORKER CỦA BẠN ---
-        // Không còn lộ API Key ở đây nữa!
-        const workerUrl = "https://hihi.ngxuanhai123.workers.dev"; 
+        // --- CẤU HÌNH GỌI WORKER GROQ ---
+        // ⚠️ Thay URL này bằng link Worker Groq bạn vừa tạo ở bước trước
+        // Ví dụ: https://groq-proxy.ten-ban.workers.dev
+        const workerUrl = "https://hihi.ngxuanhai123.workers.dev/"; 
         
         const response = await fetch(workerUrl, {
             method: 'POST',
@@ -3333,28 +3327,33 @@ Bắt đầu output bằng câu: "Hihi AI xin giải thích như sau:<br>"`;
                 'Content-Type': 'application/json' 
             },
             body: JSON.stringify({
-                "contents": [
-                    {
-                        "parts": [
-                            { "text": promptText }
-                        ]
-                    }
-                ]
+                // Model bạn muốn dùng (giống code Python của bạn)
+                model: "llama-3.3-70b-versatile", 
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7
             })
         });
 
         if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || `Lỗi Server: ${response.status}`);
+            const errData = await response.text();
+            throw new Error(`Lỗi Server: ${response.status} - ${errData}`);
         }
         
         const data = await response.json();
         
-        // Lấy nội dung trả lời
+        // --- XỬ LÝ KẾT QUẢ TRẢ VỀ (Cấu trúc OpenAI/Groq) ---
         let text = "AI không trả lời được, hãy thử lại.";
-        if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
-             text = data.candidates[0].content.parts[0].text;
+        
+        // Groq trả về trong data.choices[0].message.content
+        if (data.choices && data.choices.length > 0) {
+             text = data.choices[0].message.content;
         }
+
+        // Xử lý xuống dòng nếu AI trả về \n thay vì <br>
+        text = text.replace(/\n/g, "<br>");
 
         // Lưu Cache
         if (typeof aiCache !== 'undefined') {
