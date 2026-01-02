@@ -3267,29 +3267,29 @@ function renderFlashcard() {
 
     setTimeout(window.speakWord, 500);
 }
-// --- 🟢 HÀM GỌI TRỢ LÝ AI (PHIÊN BẢN POPUP MỚI) ---
-// --- 🟢 HÀM TRỢ LÝ AI (GOOGLE GEMINI - KEY CỦA BẠN) ---
+// --- 🟢 HÀM GỌI TRỢ LÝ AI ---
 window.askAI = async function() {
-    // --- CẤU HÌNH API KEY ---
+    // 1. Cấu hình từ lệnh CURL
     const API_KEY = "AIzaSyBV3NzwdFsJLM2Rdy_gHEQeCymJMVN0Yrk"; 
-    // ------------------------
+    const MODEL = "gemini-2.0-flash"; // Model mới nhất từ lệnh curl
+    const API_VERSION = "v1beta";       // Phiên bản beta hỗ trợ 2.0
 
+    // Kiểm tra dữ liệu đầu vào
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
     const w = sessionQueue[sessionIndex];
-    // Chuẩn hóa cache key để tránh lỗi chữ hoa thường
     const cacheKey = w.english.trim().toLowerCase();
 
+    // Hiển thị giao diện Popup
     const backdrop = document.getElementById('ai-backdrop');
     const box = document.getElementById('ai-box');
     const content = document.getElementById('ai-content');
     const btn = document.getElementById('btn-ask-ai');
 
-    // Hiển thị giao diện Popup
     if(btn) btn.style.display = 'none';
     if(backdrop) backdrop.classList.add('show');
     if(box) box.classList.add('active');
 
-    // 1. Kiểm tra Cache (Nếu có rồi thì hiện luôn)
+    // Kiểm tra Cache (Nếu có rồi thì hiện luôn)
     if (typeof aiCache !== 'undefined' && aiCache[cacheKey]) {
         content.innerHTML = aiCache[cacheKey] + `
             <div style="text-align:right; margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:5px;">
@@ -3298,49 +3298,60 @@ window.askAI = async function() {
         return;
     }
 
-    const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
-    
-    // 2. Hiển thị trạng thái đang tải
+    // Hiển thị trạng thái Loading
     content.innerHTML = `
         <div style="text-align:center; padding:30px; color:#a855f7;">
             <i class="fas fa-bolt fa-spin fa-2x"></i>
-            <div style="margin-top:15px; font-weight:600;"> Ai HiHi đang phân tích...</div>
+            <div style="margin-top:15px; font-weight:600;">Gemini 2.0 Flash đang chạy...</div>
         </div>
     `;
 
-    // 3. Tạo Prompt (Câu lệnh)
-    const prompt = `Bạn là giáo viên dạy ${langName} vui tính. 
+    // Tạo nội dung câu hỏi (Prompt)
+    const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
+    const promptText = `Bạn là giáo viên dạy ${langName} vui tính. 
     Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
     Yêu cầu: Ngắn gọn (<100 từ), hài hước, kèm 1 ví dụ hoặc mẹo nhớ. 
     Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
 
     try {
-        // --- GỌI API GOOGLE GEMINI ---
-        const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;        
+        // --- GỌI API GEMINI (Chuyển đổi từ CURL sang FETCH) ---
+        // Lưu ý: Dùng key trên URL để chạy ổn định trên trình duyệt (tránh lỗi CORS header)
+        const url = `https://generativelanguage.googleapis.com/${API_VERSION}/models/${MODEL}:generateContent?key=${API_KEY}`;
+        
         const response = await fetch(url, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json' 
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                "contents": [
+                    {
+                        "parts": [
+                            { "text": promptText }
+                        ]
+                    }
+                ]
             })
         });
 
+        // Xử lý lỗi trả về
         if (!response.ok) {
             const errData = await response.json();
-            console.error("Gemini Error:", errData);
-            throw new Error('Lỗi từ Google API');
+            // Nếu lỗi 429 (Hết lượt) hoặc 404 (Sai model)
+            if (response.status === 429) throw new Error("Server đang bận (Quota Exceeded). Hãy thử lại sau 1 phút.");
+            if (response.status === 404) throw new Error("Model không tìm thấy (Kiểm tra lại tên Model).");
+            throw new Error(errData.error?.message || `Lỗi ${response.status}`);
         }
         
         const data = await response.json();
-        // Lấy nội dung trả về an toàn
-        let text = "";
+        
+        // Lấy nội dung trả lời an toàn
+        let text = "AI không trả lời được, hãy thử lại.";
         if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
              text = data.candidates[0].content.parts[0].text;
-        } else {
-             text = "AI không trả lời được từ này, hãy thử lại.";
         }
 
-        // Lưu vào Cache
+        // Lưu Cache
         if (typeof aiCache !== 'undefined') {
             aiCache[cacheKey] = text;
             localStorage.setItem('fp_aurora_ai_cache', JSON.stringify(aiCache));
@@ -3350,12 +3361,22 @@ window.askAI = async function() {
         playSound(SFX.POP);
 
     } catch (e) {
-        console.error(e);
+        console.error("Gemini Error:", e);
+        // Fallback giao diện lỗi
+        let errorMsg = "Kết nối thất bại!";
+        let hint = "Kiểm tra lại mạng hoặc API Key.";
+        
+        if (e.message.includes("Quota")) {
+            errorMsg = "Hết lượt dùng thử (429)";
+            hint = "Model 2.0 Flash giới hạn số lần gọi. Hãy chờ một chút.";
+        }
+
         content.innerHTML = `
             <div style="text-align:center; color:#ef4444; padding:20px;">
                 <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:10px;"></i><br>
-                Không thể kết nối với AI!<br>
-                <div style="font-size:0.8rem; opacity:0.8; margin-top:5px;">Kiểm tra lại kết nối mạng hoặc giới hạn tên miền.</div>
+                <b>${errorMsg}</b><br>
+                <div style="font-size:0.8rem; opacity:0.8; margin-top:5px;">${hint}</div>
+                <div style="font-size:0.7rem; margin-top:5px; opacity:0.5;">${e.message}</div>
                 <button onclick="window.askAI()" class="btn-primary" style="margin-top:15px; font-size:0.8rem; padding:8px 15px; width:auto;">Thử lại</button>
             </div>`;
     }
