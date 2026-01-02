@@ -3267,65 +3267,99 @@ function renderFlashcard() {
     setTimeout(window.speakWord, 500);
 }
 // --- 🟢 HÀM GỌI TRỢ LÝ AI (PHIÊN BẢN POPUP MỚI) ---
+// --- 🟢 HÀM TRỢ LÝ AI (GOOGLE GEMINI - KEY CỦA BẠN) ---
 window.askAI = async function() {
-    // 1. Kiểm tra dữ liệu
+    // --- CẤU HÌNH API KEY ---
+    const API_KEY = "AIzaSyBV3NzwdFsJLM2Rdy_gHEQeCymJMVN0Yrk"; 
+    // ------------------------
+
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
     const w = sessionQueue[sessionIndex];
+    // Chuẩn hóa cache key để tránh lỗi chữ hoa thường
+    const cacheKey = w.english.trim().toLowerCase();
 
     const backdrop = document.getElementById('ai-backdrop');
     const box = document.getElementById('ai-box');
     const content = document.getElementById('ai-content');
+    const btn = document.getElementById('btn-ask-ai');
 
-    // 2. Hiển thị Popup (thêm class active để chạy animation)
-    backdrop.classList.add('show');
-    box.classList.add('active');
-    
-    // Lấy tên ngôn ngữ
+    // Hiển thị giao diện Popup
+    if(btn) btn.style.display = 'none';
+    if(backdrop) backdrop.classList.add('show');
+    if(box) box.classList.add('active');
+
+    // 1. Kiểm tra Cache (Nếu có rồi thì hiện luôn)
+    if (typeof aiCache !== 'undefined' && aiCache[cacheKey]) {
+        content.innerHTML = aiCache[cacheKey] + `
+            <div style="text-align:right; margin-top:10px; border-top:1px dashed rgba(255,255,255,0.1); padding-top:5px;">
+                <span style="font-size:0.6rem; opacity:0.5;"><i class="fas fa-hdd"></i> Từ bộ nhớ</span>
+            </div>`;
+        return;
+    }
+
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
-
-    // 3. Hiển thị trạng thái Loading
+    
+    // 2. Hiển thị trạng thái đang tải
     content.innerHTML = `
         <div style="text-align:center; padding:30px; color:#a855f7;">
-            <i class="fas fa-magic fa-spin fa-2x"></i>
-            <div style="margin-top:15px; font-weight:600;">Giáo viên ${langName} đang suy nghĩ...</div>
+            <i class="fas fa-bolt fa-spin fa-2x"></i>
+            <div style="margin-top:15px; font-weight:600;"> Ai HiHi đang phân tích...</div>
         </div>
     `;
 
-    // 4. Tạo Prompt
+    // 3. Tạo Prompt (Câu lệnh)
     const prompt = `Bạn là giáo viên dạy ${langName} vui tính. 
-    Hãy giải thích từ vựng: "${w.english}" (nghĩa tiếng Việt: "${w.vietnamese}") cho học sinh Việt Nam.
-    Yêu cầu:
-    - Phong cách: Hài hước, thân thiện, dễ nhớ.
-    - Nội dung: Giải thích ngắn gọn + 1 Ví dụ vui hoặc 1 Mẹo nhớ (Mnemonic).
-    - Định dạng: Dùng thẻ <b> cho từ khóa chính, xuống dòng bằng <br>. Không dùng Markdown.
-    - Độ dài: Dưới 100 từ.`;
+    Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
+    Yêu cầu: Ngắn gọn (<100 từ), hài hước, kèm 1 ví dụ hoặc mẹo nhớ. 
+    Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
 
     try {
-        const encodedPrompt = encodeURIComponent(prompt);
-        const seed = Math.floor(Math.random() * 1000); 
-        const url = `https://text.pollinations.ai/${encodedPrompt}?seed=${seed}&model=openai`; 
+        // --- GỌI API GOOGLE GEMINI ---
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+            })
+        });
 
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Lỗi kết nối');
-        const text = await res.text();
+        if (!response.ok) {
+            const errData = await response.json();
+            console.error("Gemini Error:", errData);
+            throw new Error('Lỗi từ Google API');
+        }
+        
+        const data = await response.json();
+        // Lấy nội dung trả về an toàn
+        let text = "";
+        if (data.candidates && data.candidates.length > 0 && data.candidates[0].content) {
+             text = data.candidates[0].content.parts[0].text;
+        } else {
+             text = "AI không trả lời được từ này, hãy thử lại.";
+        }
 
-        // 5. Hiển thị kết quả
+        // Lưu vào Cache
+        if (typeof aiCache !== 'undefined') {
+            aiCache[cacheKey] = text;
+            localStorage.setItem('fp_aurora_ai_cache', JSON.stringify(aiCache));
+        }
+
         content.innerHTML = text;
-        playSound(SFX.POP); // Âm thanh tin nhắn tới
+        playSound(SFX.POP);
 
     } catch (e) {
         console.error(e);
         content.innerHTML = `
             <div style="text-align:center; color:#ef4444; padding:20px;">
-                <i class="fas fa-wifi" style="font-size:2rem; margin-bottom:10px;"></i><br>
-                Mạng yếu quá, thầy giáo AI đang bị lag!<br>
-                <button onclick="window.askAI()" class="btn-primary" style="margin-top:15px; font-size:0.8rem; padding:8px 15px; width:auto;">
-                    <i class="fas fa-redo"></i> Thử lại
-                </button>
+                <i class="fas fa-exclamation-triangle" style="font-size:2rem; margin-bottom:10px;"></i><br>
+                Không thể kết nối với AI!<br>
+                <div style="font-size:0.8rem; opacity:0.8; margin-top:5px;">Kiểm tra lại kết nối mạng hoặc giới hạn tên miền.</div>
+                <button onclick="window.askAI()" class="btn-primary" style="margin-top:15px; font-size:0.8rem; padding:8px 15px; width:auto;">Thử lại</button>
             </div>`;
     }
 }
-
 // --- HÀM MỚI: ĐÓNG CỬA SỔ AI ---
 window.closeAI = function() {
     const backdrop = document.getElementById('ai-backdrop');
