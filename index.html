@@ -3382,9 +3382,11 @@ window.askAI = async function() {
 window.closeAI = function() {
     const backdrop = document.getElementById('ai-backdrop');
     const box = document.getElementById('ai-box');
+    const btn = document.getElementById('btn-ask-ai');
     
     if(backdrop) backdrop.classList.remove('show');
     if(box) box.classList.remove('active');
+    if(btn) btn.style.display = 'flex';
 }
 // --- HELPER: PENALTY LOGIC ---
 function applyHintPenalty(key) {
