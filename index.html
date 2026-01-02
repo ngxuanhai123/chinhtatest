@@ -3306,9 +3306,24 @@ window.askAI = async function() {
 
     // Tạo nội dung câu hỏi (Prompt)
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
-    const promptText = `Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
-    Yêu cầu: Ngắn gọn, chuyên sâu, nhiều mục chi tiết như từ điển, hài hước, kèm 1 ví dụ, mẹo nhớ, sau mỗi cái đều xuống dòng và -đầu dòng. 
-    Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
+    const promptText = `Đóng vai một từ điển tiếng Anh chuyên sâu, hài hước và dễ hiểu cho người Việt.
+Giải thích từ: "${w.english}" (nghĩa Việt chính: "${w.vietnamese}").
+
+Yêu cầu định dạng output:
+- Chỉ sử dụng thẻ HTML: <b> cho từ khóa quan trọng, <br> để xuống dòng.
+- Tuyệt đối KHÔNG dùng định dạng Markdown (không dùng **, ##, -).
+- Dùng dấu "+" ở đầu dòng cho mục chính, dấu "-" lùi vào 1 khoảng trắng cho chi tiết phụ.
+
+Cấu trúc nội dung bắt buộc:
+1. Phiên âm IPA & Loại từ.
+2. Giải thích nghĩa chuyên sâu (ngắn gọn, sát nghĩa).
+3. Cách dùng & Sắc thái (Formal/Informal, tích cực/tiêu cực).
+4. Collocations phổ biến (các từ thường đi chung).
+5. Từ đồng nghĩa (Synonyms) & Trái nghĩa (Antonyms) (nếu có).
+6. 1 Ví dụ song ngữ.
+7. Mẹo nhớ (Mnemonic) sáng tạo, hài hước, dễ liên tưởng.
+
+Bắt đầu output bằng câu: "Hihi AI xin giải thích như sau:<br>"`;
 
     try {
         // --- GỌI API GEMINI (Chuyển đổi từ CURL sang FETCH) ---
