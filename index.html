@@ -1098,7 +1098,12 @@
         <input type="range" id="cfgBrightness" min="20" max="100" value="100" oninput="window.saveConfig()">
         
         <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
-
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+    <span><i class="fas fa-robot" style="color:#a855f7;"></i> Dữ liệu AI Offline</span>
+    <button class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.8rem; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5);" onclick="window.clearAICache()">
+        <i class="fas fa-broom"></i> Xoá Cache
+    </button>
+</div>
         <button class="action-btn" style="width:100%; height:55px; background:rgba(239, 68, 68, 0.2); border:1px solid rgba(239, 68, 68, 0.5); color:#ef4444; font-size:0.9rem;" onclick="window.resetProgress()">
             <i class="fas fa-trash-alt"></i> &nbsp; Xoá toàn bộ dữ liệu học
         </button>
