@@ -1223,6 +1223,7 @@ let unsubscribeLeaderboard = null;
 let currentLbTab = 'week';
 let calendarCursor = new Date();
 const imageCache = {}; // Cache for images to prevent reload
+const aiCache = JSON.parse(localStorage.getItem('fp_aurora_ai_cache') || '{}');
 
 // --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING & IOS SILENT BYPASS ---
 const ttsPlayer = new Audio();
