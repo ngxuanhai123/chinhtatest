@@ -4770,6 +4770,14 @@ window.startGlobalReview = function() {
 window.onerror = function(msg, url, line) {
     console.error("Lỗi hệ thống: " + msg);
 };
+  // --- BẮT BUỘC THÊM HÀM NÀY ĐỂ KHÔNG BỊ LỖI ---
+function stopTimer() {
+    if(typeof studyTimer !== 'undefined' && studyTimer) {
+        clearInterval(studyTimer);
+        studyTimer = null;
+    }
+}
+// ---------------------------------------------
 </script>
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
