@@ -3271,8 +3271,6 @@ function renderFlashcard() {
 window.askAI = async function() {
     // 1. Cấu hình từ lệnh CURL
     const API_KEY = "AIzaSyAuRIXN7rg1BAbEpjiJywHcVJ5dGj3URP0"; 
-    const MODEL = "gemini-2.0-flash"; // Model mới nhất từ lệnh curl
-    const API_VERSION = "v1beta";       // Phiên bản beta hỗ trợ 2.0
 
     // Kiểm tra dữ liệu đầu vào
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
@@ -3308,9 +3306,8 @@ window.askAI = async function() {
 
     // Tạo nội dung câu hỏi (Prompt)
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
-    const promptText = `Bạn là giáo viên dạy ${langName} vui tính. 
-    Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
-    Yêu cầu: Ngắn gọn (<100 từ), hài hước, kèm 1 ví dụ hoặc mẹo nhớ. 
+    const promptText = Giải thích từ: "${w.english}" (nghĩa Việt: "${w.vietnamese}") cho người Việt.
+    Yêu cầu: Ngắn gọn (<100 từ), hài hước, kèm 1 ví dụ hoặc mẹo nhớ, sau mỗi cái đều xuống dòng. 
     Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.`;
 
     try {
@@ -3368,7 +3365,7 @@ window.askAI = async function() {
         
         if (e.message.includes("Quota")) {
             errorMsg = "Hết lượt dùng thử (429)";
-            hint = "Model 2.0 Flash giới hạn số lần gọi. Hãy chờ một chút.";
+            hint = "Model giới hạn số lần gọi. Hãy chờ một chút.";
         }
 
         content.innerHTML = `
