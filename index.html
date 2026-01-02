@@ -732,10 +732,88 @@
       .word-vn { font-size: 1.5rem; margin-bottom: 5px; }
       .example-box { font-size: 0.9rem; padding: 5px; }
   }
+/* --- 🤖 AI ASSISTANT STYLES (MỚI) --- */
+.ai-section {
+    width: 100%;
+    margin: 0px auto 20px auto; /* Cách thẻ card 20px */
+    padding: 0 10px;
+    max-width: 500px; /* Giới hạn chiều rộng cho đẹp */
+}
 
+/* Nút bấm gọi AI */
+.btn-ask-ai {
+    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); /* Màu tím galaxy */
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    display: flex; 
+    align-items: center; 
+    justify-content: center; 
+    gap: 10px;
+    box-shadow: 0 4px 15px rgba(168, 85, 247, 0.4);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Hiệu ứng loé sáng khi bấm */
+.btn-ask-ai::after {
+    content: '';
+    position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: 0.5s;
+}
+.btn-ask-ai:active::after { left: 100%; }
+.btn-ask-ai:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(168, 85, 247, 0.4); }
+
+/* Khung chat hiển thị câu trả lời */
+.ai-chat-bubble {
+    background: rgba(30, 41, 59, 0.85); /* Nền tối mờ */
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(168, 85, 247, 0.5); /* Viền tím */
+    border-radius: 18px;
+    border-top-left-radius: 4px; /* Tạo dáng giống bong bóng chat */
+    padding: 20px;
+    color: #e2e8f0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    display: none; /* Mặc định ẩn */
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    animation: slideInUp 0.3s ease-out;
+    text-align: left;
+}
+
+/* Mũi tên chỉ lên trên của bong bóng chat */
+.ai-chat-bubble::before {
+    content: '';
+    position: absolute; top: -10px; left: 0;
+    border-width: 0 10px 10px 0;
+    border-style: solid;
+    border-color: transparent rgba(168, 85, 247, 0.5) transparent transparent;
+}
+
+/* Tiêu đề nhỏ "AI Teacher" */
+.ai-badge {
+    display: inline-block;
+    background: #a855f7;
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
 </style>
 </head>
-<body onload="window.initApp()">
+<body>
 
 <div id="brightness-overlay"></div>
 <div class="aurora-bg"></div>
@@ -1093,8 +1171,11 @@ const PEXELS_LOCALE_MAP = {
 let currentUser = null;
 let studyTimer = null;
 let accumulatedTime = parseInt(localStorage.getItem('fp_aurora_time') || 0);
+let weekTime = parseInt(localStorage.getItem('fp_aurora_time_week') || 0);   // Thời gian tuần
+let monthTime = parseInt(localStorage.getItem('fp_aurora_time_month') || 0); // Thời gian tháng
 let unsubscribeLeaderboard = null; 
 let currentLbTab = 'week';
+let calendarCursor = new Date();
 const imageCache = {}; // Cache for images to prevent reload
 
 // --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING & IOS SILENT BYPASS ---
@@ -1133,6 +1214,7 @@ let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
 
 // DAILY TRACKING NOW LANGUAGE SPECIFIC
 let dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+  let scoreHistory = {}; // 
 // STREAK HISTORY TRACKING (Shared or language specific? Let's make it shared for simplicity, showing general activity)
 let streakHistory = JSON.parse(localStorage.getItem('fp_aurora_streak_history') || '[]');
 
@@ -1162,7 +1244,74 @@ function getMonthKey() {
     const d = new Date();
     return `${d.getFullYear()}-${d.getMonth()+1}`;
 }
+// --- [MỚI] HELPER TÍNH TOÁN NGÀY THÁNG ---
 
+// 1. Lấy ngày hôm nay dạng "YYYY-MM-DD" (theo giờ máy tính người dùng)
+function getTodayDateString() {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+// 2. Lấy danh sách tất cả các ngày trong Tuần hiện tại (Thứ 2 -> Chủ nhật)
+function getDaysInCurrentWeek() {
+    const d = new Date();
+    const currentDay = d.getDay(); // 0 là CN, 1 là T2...
+    
+    // Tính khoảng cách về ngày Thứ 2 gần nhất
+    // Nếu là CN (0) thì lùi 6 ngày. Nếu là thứ khác thì lùi (currentDay - 1) ngày.
+    const distanceToMonday = currentDay === 0 ? 6 : currentDay - 1;
+    
+    const monday = new Date(d);
+    monday.setDate(d.getDate() - distanceToMonday);
+    
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+        const temp = new Date(monday);
+        temp.setDate(monday.getDate() + i);
+        
+        const y = temp.getFullYear();
+        const m = String(temp.getMonth() + 1).padStart(2, '0');
+        const dayStr = String(temp.getDate()).padStart(2, '0');
+        days.push(`${y}-${m}-${dayStr}`);
+    }
+    return days; // Trả về mảng: ['2024-06-10', '2024-06-11', ...]
+}
+
+// 3. Hàm tính tổng điểm dựa trên lịch sử
+function calculateAggregatedStats(historyData) {
+    const todayStr = getTodayDateString();
+    const currentMonthPrefix = todayStr.substring(0, 7); // Ví dụ: "2024-06"
+    const weekDays = getDaysInCurrentWeek(); // Lấy danh sách ngày tuần này
+
+    let totalAllTime = 0;
+    let totalWeek = 0;
+    let totalMonth = 0;
+
+    // Duyệt qua từng ngày đã lưu trong lịch sử
+    if (historyData) {
+        Object.keys(historyData).forEach(dateStr => {
+            const val = parseInt(historyData[dateStr] || 0);
+            
+            // Cộng tổng toàn thời gian
+            totalAllTime += val;
+
+            // Nếu ngày này nằm trong danh sách tuần hiện tại -> Cộng điểm tuần
+            if (weekDays.includes(dateStr)) {
+                totalWeek += val;
+            }
+
+            // Nếu ngày này có tháng trùng tháng hiện tại -> Cộng điểm tháng
+            if (dateStr.startsWith(currentMonthPrefix)) {
+                totalMonth += val;
+            }
+        });
+    }
+
+    return { totalAllTime, totalWeek, totalMonth };
+}
 // --- HELPER: FORMAT TIME ---
 function formatTime(seconds) {
     if(seconds < 60) return seconds + 's';
@@ -1288,29 +1437,68 @@ async function syncDataFromServer() {
         if (docSnap.exists()) {
             const data = docSnap.data();
             
-            // Score handling: Load language specific score
-            const scoreKey = `score_${currentLang}`;
-            if (data[scoreKey]) {
-                accumulatedPoints = data[scoreKey];
-                localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+            // -----------------------------------------------------------
+            // 1. XỬ LÝ ĐIỂM SỐ (DÙNG LOGIC LỊCH SỬ MỚI)
+            // -----------------------------------------------------------
+            const historyKey = `history_score_${currentLang}`;
+            
+            // Load lịch sử chi tiết từ server về
+            if (data[historyKey]) {
+                scoreHistory = JSON.parse(data[historyKey]);
+                localStorage.setItem(`fp_aurora_score_history_${currentLang}`, data[historyKey]);
             } else {
-                accumulatedPoints = 0;
+                // Nếu server chưa có history (người dùng cũ), thử fallback về điểm tổng hiện có
+                // Hoặc khởi tạo rỗng để bắt đầu ghi từ hôm nay
+                scoreHistory = {}; 
+                // (Mẹo: Có thể gán điểm hiện tại vào ngày hôm nay để không mất điểm cũ, 
+                // nhưng để chuẩn chỉnh thì nên bắt đầu lại history từ 0 hoặc giữ score cũ làm base)
             }
 
-            // Sync Week/Month Scores
+            // TÍNH TOÁN LẠI (Re-calculate)
+            // Code sẽ tự cộng tổng các ngày trong tuần/tháng này. 
+            // Nếu tuần cũ đã qua, hàm này sẽ trả về 0 -> Tự động Reset.
+            const stats = calculateAggregatedStats(scoreHistory);
+
+            accumulatedPoints = stats.totalAllTime;
+            weekPoints = stats.totalWeek;
+            monthPoints = stats.totalMonth;
+
+            // Nếu điểm tổng trên server lớn hơn (do đồng bộ thiết bị khác), ưu tiên server
+            const scoreKey = `score_${currentLang}`;
+            if (data[scoreKey] && data[scoreKey] > accumulatedPoints) {
+                accumulatedPoints = data[scoreKey];
+            }
+            
+            localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+
+            // -----------------------------------------------------------
+            // 2. XỬ LÝ THỜI GIAN (TIME) - GIỮ NGUYÊN LOGIC CŨ CỦA BẠN
+            // -----------------------------------------------------------
             const curWKey = getWeekKey();
             const curMKey = getMonthKey();
-            const scoreWKey = `score_week_${currentLang}`;
-            const scoreMKey = `score_month_${currentLang}`;
+            
+            // Logic cũ: Reset thời gian nếu key khác nhau
+            if(data.weekKey === curWKey) {
+                weekTime = data.time_week || 0;
+            } else {
+                weekTime = 0; 
+            }
 
-            // Reset if keys don't match stored keys, otherwise load
-            if(data.weekKey === curWKey && data[scoreWKey]) weekPoints = data[scoreWKey];
-            else weekPoints = 0;
-
-            if(data.monthKey === curMKey && data[scoreMKey]) monthPoints = data[scoreMKey];
-            else monthPoints = 0;
+            if(data.monthKey === curMKey) {
+                monthTime = data.time_month || 0;
+            } else {
+                monthTime = 0; 
+            }
 
             if (data.studyTime > accumulatedTime) accumulatedTime = data.studyTime;
+            
+            localStorage.setItem('fp_aurora_time_week', weekTime);
+            localStorage.setItem('fp_aurora_time_month', monthTime);
+            localStorage.setItem('fp_aurora_time', accumulatedTime);
+
+            // -----------------------------------------------------------
+            // 3. CÁC DỮ LIỆU KHÁC (STREAK, SRS, CONFIG...) - GIỮ NGUYÊN
+            // -----------------------------------------------------------
             
             // Sync Streak History
             if (data.streakHistory) {
@@ -1338,10 +1526,11 @@ async function syncDataFromServer() {
                 localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
             }
 
+            // Sync Config
             if(data.config) {
                 config = data.config;
-                // Merge fallback defaults for new keys
-                if (config.ecoMode === undefined) config.ecoMode = true; // Default to true
+                // Merge fallback defaults
+                if (config.ecoMode === undefined) config.ecoMode = true;
                 if (config.brightness === undefined) config.brightness = 100;
                 if (config.voiceEngine === undefined) config.voiceEngine = 'google';
                 if (config.sfxEnabled === undefined) config.sfxEnabled = true;
@@ -1364,7 +1553,6 @@ async function syncDataFromServer() {
                 updateConfigUI();
             }
 
-            localStorage.setItem('fp_aurora_time', accumulatedTime);
             updateUserPointsUI();
             renderDashboard();
         }
@@ -1372,67 +1560,92 @@ async function syncDataFromServer() {
         console.error("Error syncing from server:", e);
     }
 }
-
 async function saveProgressToCloud(force = false) {
     if(!currentUser) return;
 
-    // OFFLINE FIRST CHECK: If session is active and not forced, skip sync to reduce writes
+    // Nếu đang học dở và chưa kết thúc (chưa bấm nút Finish hoặc force save) thì chưa lưu lên Cloud vội để tiết kiệm
     if (window.isSessionActive && !force) {
-        console.log("Session active: Skipping cloud sync, saved to LS only.");
         return;
     }
     
-    // Dynamic keys based on language
+    // 1. CẬP NHẬT LỊCH SỬ ĐIỂM SỐ
+    const todayStr = getTodayDateString();
+    
+    // Lấy điểm cũ của ngày hôm nay + điểm vừa đạt được trong session
+    const currentScoreToday = scoreHistory[todayStr] || 0;
+    scoreHistory[todayStr] = currentScoreToday + sessionPoints;
+    
+    // Reset điểm session tạm thời về 0 vì đã cộng vào lịch sử rồi
+    sessionPoints = 0;
+
+    // 2. TÍNH TOÁN LẠI TỔNG (TUẦN/THÁNG/ALL) TỪ LỊCH SỬ
+    // Hàm này sẽ tự động loại bỏ điểm của tuần trước/tháng trước ra khỏi tổng tuần/tháng hiện tại
+    const stats = calculateAggregatedStats(scoreHistory);
+    
+    accumulatedPoints = stats.totalAllTime;
+    weekPoints = stats.totalWeek;
+    monthPoints = stats.totalMonth;
+
+    // 3. LƯU LOCALSTORAGE (Để dùng offline)
+    localStorage.setItem(`fp_aurora_score_history_${currentLang}`, JSON.stringify(scoreHistory));
+    localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
+    
+    // Lưu thêm Time vào LS
+    localStorage.setItem('fp_aurora_time_week', weekTime);
+    localStorage.setItem('fp_aurora_time_month', monthTime);
+
+    // Chuẩn bị Key để lưu lên Firebase
     const srsKey = `srsData_${currentLang}`;
     const masterKey = `masteredWords_${currentLang}`;
     const topicKey = `currentTopicKey_${currentLang}`;
-    const scoreKey = `score_${currentLang}`;
     
-    // Week/Month Keys
+    const scoreKey = `score_${currentLang}`;       // Tổng All Time
+    const scoreWKey = `score_week_${currentLang}`; // Tổng Tuần
+    const scoreMKey = `score_month_${currentLang}`; // Tổng Tháng
+    const historyKey = `history_score_${currentLang}`; // [MỚI] Lưu cục lịch sử chi tiết
+    
     const curWKey = getWeekKey();
     const curMKey = getMonthKey();
-    const scoreWKey = `score_week_${currentLang}`;
-    const scoreMKey = `score_month_${currentLang}`;
     const learnedCountKey = `learnedCount_${currentLang}`;
-
-    // Calculate learned count
     const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
-
-    // COMMIT SESSION POINTS TO TOTALS
-    accumulatedPoints += sessionPoints;
-    weekPoints += sessionPoints;
-    monthPoints += sessionPoints;
-    sessionPoints = 0; // Reset session points
-
-    // Update LocalStorage for persistence
-    localStorage.setItem(`fp_aurora_points_${currentLang}`, accumulatedPoints);
 
     try {
         await setDoc(doc(db, "leaderboard", currentUser.uid), {
             displayName: currentUser.displayName,
             photoURL: currentUser.photoURL,
+            
+            // --- CÁC GIÁ TRỊ TỔNG HỢP (đã được tính chính xác từ history) ---
             [scoreKey]: accumulatedPoints,
             [scoreWKey]: weekPoints,
             [scoreMKey]: monthPoints,
-            [learnedCountKey]: learnedCount,
+            
+            // --- CỤC LỊCH SỬ CHI TIẾT (Quan trọng để đồng bộ thiết bị khác) ---
+            [historyKey]: JSON.stringify(scoreHistory),
+            
+            // Key thời gian (để client khác biết lọc hiển thị)
             weekKey: curWKey,
             monthKey: curMKey,
-            score: accumulatedPoints, // Global fallback
+
+            // Các chỉ số phụ
+            [learnedCountKey]: learnedCount,
+            score: accumulatedPoints, // Fallback
             studyTime: accumulatedTime,
+            time_week: weekTime,
+            time_month: monthTime,
+            
             streakHistory: JSON.stringify(streakHistory),
             lastUpdated: Date.now(),
-            [srsData ? srsKey : 'ignore']: JSON.stringify(srsData), // simple check to avoid undefined
+            [srsData ? srsKey : 'ignore']: JSON.stringify(srsData), 
             [masteredWords ? masterKey : 'ignore']: JSON.stringify(masteredWords),
             config: config,
             [topicKey]: currentTopicKey
         }, { merge: true });
         
-        updateUserPointsUI(); // Refresh UI to ensure display is correct
+        updateUserPointsUI(); 
     } catch(e) {
         console.error("Error saving progress to cloud", e);
     }
 }
-
 // --- NEW LEADERBOARD LOGIC (REAL-TIME SNAPSHOT) ---
 window.switchLbTab = (tab) => {
     currentLbTab = tab;
@@ -1450,9 +1663,18 @@ window.initLeaderboardListener = () => {
     
     document.getElementById('lb-lang-label').innerText = LANG_CONFIG[currentLang].label;
 
-    let sortField = `score_${currentLang}`; // Default 'all'
-    if(currentLbTab === 'week') sortField = `score_week_${currentLang}`;
-    if(currentLbTab === 'month') sortField = `score_month_${currentLang}`;
+    // --- [SỬA] LOGIC CHỌN TRƯỜNG DỮ LIỆU ĐỂ HIỂN THỊ ---
+    let sortField = `score_${currentLang}`; // Mặc định Toàn thời gian
+    let timeField = 'studyTime';            // Mặc định lấy tổng giờ
+    
+    if(currentLbTab === 'week') {
+        sortField = `score_week_${currentLang}`;
+        timeField = 'time_week'; // Lấy giờ tuần
+    }
+    if(currentLbTab === 'month') {
+        sortField = `score_month_${currentLang}`;
+        timeField = 'time_month'; // Lấy giờ tháng
+    }
     
     const q = query(collection(db, "leaderboard"), orderBy(sortField, "desc"), limit(20));
 
@@ -1461,13 +1683,16 @@ window.initLeaderboardListener = () => {
         querySnapshot.forEach(doc => {
             const d = doc.data();
             const langScore = d[sortField] || 0;
+            // --- [SỬA] LẤY GIỜ THEO TIMEFIELD ---
+            const langTime = d[timeField] || 0;
+
             // Only include if score > 0 or it's the current user
             if(langScore > 0 || (currentUser && doc.id === currentUser.uid)) {
-                users.push({ id: doc.id, ...d, displayScore: langScore });
+                // Đẩy displayTime vào object user
+                users.push({ id: doc.id, ...d, displayScore: langScore, displayTime: langTime });
             }
         });
         
-        // Sort manually just in case firestore index issues cause weirdness
         users.sort((a,b) => b.displayScore - a.displayScore);
 
         if (users.length === 0) {
@@ -1476,7 +1701,7 @@ window.initLeaderboardListener = () => {
              return;
         }
 
-        // Render Podium
+        // Render Podium (Giữ nguyên phần này)
         let podiumHTML = '';
         if(users.length > 0) {
             podiumDiv.style.display = 'flex';
@@ -1504,23 +1729,19 @@ window.initLeaderboardListener = () => {
         let listHTML = '';
         let currentUserFound = false;
         
-        // Show Top 20
         users.forEach((u, index) => {
             const rank = index + 1;
             if(currentUser && u.id === currentUser.uid) currentUserFound = true;
             
-            // SHOW ALL RANKS (Including Top 3) in the detailed list as requested
             let extraStyle = '';
             if(currentUser && u.id === currentUser.uid) {
                 extraStyle = 'background:rgba(59, 130, 246, 0.15); border-left: 3px solid #60a5fa;';
             }
-            
-            // Highlight Top 3 in list as well for details
             if(rank === 1) extraStyle += ' border-right: 3px solid #ffd700;';
             if(rank === 2) extraStyle += ' border-right: 3px solid #c0c0c0;';
             if(rank === 3) extraStyle += ' border-right: 3px solid #cd7f32;';
 
-            const rankObj = getRankInfo(u[`score_${currentLang}`] || 0); // Always base title on total score
+            const rankObj = getRankInfo(u[`score_${currentLang}`] || 0); 
             const learnedCount = u[`learnedCount_${currentLang}`] || 0;
 
             listHTML += `
@@ -1538,23 +1759,32 @@ window.initLeaderboardListener = () => {
                     </div>
                     <div class="lb-stats">
                         <div class="lb-score">${u.displayScore.toLocaleString()}</div>
-                        <div class="lb-time">${formatTime(u.studyTime || 0)}</div>
+                        <div class="lb-time">${formatTime(u.displayTime || 0)}</div>
                     </div>
                 </div>
             `;
         });
 
-        // If current user not in top 20, fetch and append them? 
-        // Real-time listener on query limit(20) won't return them.
-        // We can just append a row manually if we have their data and they weren't found.
+        // Nếu bạn không nằm trong Top 20, hiển thị dòng riêng của bạn ở dưới cùng
         if(currentUser && !currentUserFound) {
-            // We know our own score from local variables (including session points for display)
             let myScore = 0;
-            if(currentLbTab === 'week') myScore = weekPoints + sessionPoints;
-            else if(currentLbTab === 'month') myScore = monthPoints + sessionPoints;
-            else myScore = accumulatedPoints + sessionPoints;
+            let myTime = 0;
 
-            if(myScore > 0) { // Only show if we have score
+            // --- [SỬA] LẤY GIỜ CÁ NHÂN THEO TAB ---
+            if(currentLbTab === 'week') {
+                myScore = weekPoints + sessionPoints;
+                myTime = weekTime; // Biến toàn cục weekTime
+            }
+            else if(currentLbTab === 'month') {
+                myScore = monthPoints + sessionPoints;
+                myTime = monthTime; // Biến toàn cục monthTime
+            }
+            else {
+                myScore = accumulatedPoints + sessionPoints;
+                myTime = accumulatedTime; // Biến toàn cục tổng
+            }
+
+            if(myScore > 0) {
                 const rankObj = getRankInfo(accumulatedPoints + sessionPoints);
                 const learnedCount = Object.keys(masteredWords).length + Object.keys(srsData).length;
                 listHTML += `
@@ -1573,7 +1803,7 @@ window.initLeaderboardListener = () => {
                         </div>
                         <div class="lb-stats">
                             <div class="lb-score">${myScore.toLocaleString()}</div>
-                            <div class="lb-time">${formatTime(accumulatedTime)}</div>
+                            <div class="lb-time">${formatTime(myTime)}</div>
                         </div>
                     </div>
                 `;
@@ -1585,8 +1815,7 @@ window.initLeaderboardListener = () => {
     }, (error) => {
         console.error("Realtime Error:", error);
         listDiv.innerHTML = `<div style="text-align:center; color:#ff5252; font-size:0.8rem; padding:10px;">
-            Lỗi tải BXH. Vui lòng thử tab khác hoặc báo cáo Admin.<br>
-            (Missing Index: ${sortField})
+            Lỗi tải BXH. (Index: ${sortField})
         </div>`;
     });
 };
@@ -1599,7 +1828,7 @@ const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 let masterGain = null;
 let audioUnlocked = false; // Flag to track status
 
-// UPDATED: Robust Mobile Audio Unlock Function (Async)
+// UPDATED: Async playSound to ensure context is awake
 async function unlockAudio() {
     if (audioCtx.state === 'suspended') {
         try {
@@ -1657,7 +1886,6 @@ function playTone(freq, type, duration, startTime, vol=0.1) {
     } catch(e) { console.warn("Audio Error", e); }
 }
 
-// UPDATED: Async playSound to ensure context is awake
 async function playSound(sfx) {
     if(config.muted) return;
     if(!config.sfxEnabled) return; 
@@ -1727,6 +1955,21 @@ let isProcessing = false;
 let isFlipped = false;
 let selectedVoice = null;
 const translationCache = JSON.parse(localStorage.getItem('fp_aurora_trans_cache') || '{}');
+
+// --- RESOURCE CLEANUP HELPER ---
+window.spellingFocusHandler = function(e) {
+    const inp = document.getElementById('spellingInput');
+    if(inp && e.target.id !== 'spellingInput' && !e.target.classList.contains('btn-hint') && !e.target.classList.contains('btn-speak-round')) {
+        inp.focus();
+    }
+}
+
+function cleanupGameResources() {
+    // Remove spelling specific listeners
+    document.removeEventListener('click', window.spellingFocusHandler);
+    isProcessing = false;
+    window.matchState = null;
+}
 
 async function getTranslation(text) {
     if (!text) return "";
@@ -1880,20 +2123,27 @@ window.switchLanguage = function(lang) {
     localStorage.setItem('fp_aurora_lang', lang);
     updateLangUI();
     
-    // Switch Points Context
-    accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${currentLang}`) || 0);
+    // --- [SỬA] Load lại Lịch sử điểm của ngôn ngữ mới ---
+    scoreHistory = JSON.parse(localStorage.getItem(`fp_aurora_score_history_${currentLang}`) || '{}');
+    
+    // Tính lại điểm hiển thị ngay lập tức
+    const stats = calculateAggregatedStats(scoreHistory);
+    accumulatedPoints = stats.totalAllTime;
+    weekPoints = stats.totalWeek;
+    monthPoints = stats.totalMonth;
+    
     sessionPoints = 0;
     updateUserPointsUI();
     
-    // RELOAD DAILY TRACKING FOR NEW LANG (ISOLATION FIX)
+    // RELOAD DAILY TRACKING (Giữ nguyên tính năng giới hạn từ mới)
     dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
     checkDailyLimit();
 
-    // Reload TTS
+    // Reload TTS & Data
     if(window.speechSynthesis) window.speechSynthesis.cancel();
     setTimeout(setupVoice, 500);
 
-    // Reload Data for new language
+    // Reload Data
     currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
     srsData = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_srs')) || '{}'); 
     masteredWords = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_mastered')) || '{}');
@@ -1901,7 +2151,6 @@ window.switchLanguage = function(lang) {
     playSound(SFX.POP);
     window.fetchTopics(); 
     
-    // Try to sync to ensure we have latest data for this language
     syncDataFromServer();
 }
 
@@ -1989,46 +2238,90 @@ window.navTo = function(viewId) {
 }
 
 // --- CALENDAR RENDERER ---
-function renderStreakCalendar() {
-    const now = new Date();
-    // Use ISO string for today comparison to match save logic
-    const todayStr = now.toISOString().split('T')[0];
+// 2. Hàm điều hướng (Lùi/Tiến)
+window.moveCalendar = function(step) {
+    if (calendarViewMode === 'week') {
+        // Chế độ Tuần: Nhảy +/- 7 ngày
+        calendarCursor.setDate(calendarCursor.getDate() + (step * 7));
+    } else {
+        // Chế độ Tháng: Nhảy +/- 1 tháng
+        // Mẹo: Set về ngày 1 để tránh lỗi khi nhảy từ ngày 31 sang tháng chỉ có 30 ngày
+        calendarCursor.setDate(1);
+        calendarCursor.setMonth(calendarCursor.getMonth() + step);
+    }
     
-    // Header
+    playSound(SFX.POP);
+    renderStreakCalendar();
+}
+
+// 3. Hàm Vẽ Lịch (Render)
+function renderStreakCalendar() {
+    // Ngày thực tế (để tô viền ô "Hôm nay")
+    const realToday = new Date();
+    const realTodayStr = realToday.toISOString().split('T')[0];
+    
+    // Ngày đang xem (Cursor)
+    const viewDate = new Date(calendarCursor);
+    const viewYear = viewDate.getFullYear();
+    const viewMonth = viewDate.getMonth(); // 0-11
+    
+    const monthNames = ["Tháng 1", "Tháng 2", "Tháng 3", "Tháng 4", "Tháng 5", "Tháng 6", "Tháng 7", "Tháng 8", "Tháng 9", "Tháng 10", "Tháng 11", "Tháng 12"];
+    
+    // Tiêu đề hiển thị
+    let timeLabel = "";
+    if (calendarViewMode === 'week') {
+        const start = new Date(viewYear, 0, 1);
+        const diff = (viewDate - start + (start.getTimezoneOffset() - viewDate.getTimezoneOffset()) * 60000) / 86400000;
+        const weekNo = Math.ceil((diff + start.getDay() + 1) / 7);
+        timeLabel = `Tuần ${weekNo} - ${viewYear}`;
+    } else {
+        timeLabel = `${monthNames[viewMonth]} / ${viewYear}`;
+    }
+
+    // HTML HEADER (Có thêm 2 nút mũi tên < >)
     let html = `
         <div class="streak-header">
-             <div style="font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:8px;">
-                <i class="fas fa-fire" style="color:#fbbf24"></i> 
-                ${calendarViewMode === 'week' ? 'Tuần này' : 'Lịch sử tháng'}
+             <div style="display:flex; align-items:center; gap:5px;">
+                <button onclick="window.moveCalendar(-1)" style="background:rgba(255,255,255,0.1); border:none; color:white; width:28px; height:28px; border-radius:50%; cursor:pointer;"><i class="fas fa-chevron-left"></i></button>
+                
+                <div style="font-size:0.9rem; font-weight:700; display:flex; align-items:center; gap:6px; min-width:120px; justify-content:center;">
+                    <i class="fas fa-calendar-day" style="color:#fbbf24"></i> 
+                    ${timeLabel}
+                </div>
+                
+                <button onclick="window.moveCalendar(1)" style="background:rgba(255,255,255,0.1); border:none; color:white; width:28px; height:28px; border-radius:50%; cursor:pointer;"><i class="fas fa-chevron-right"></i></button>
              </div>
+
              <div style="display:flex; align-items:center; gap:10px;">
-                 <span class="streak-count" id="streakDisplay" style="font-size:1rem;">0 ngày</span>
-                 <button onclick="window.toggleCalendarView()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:white; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;">
-                    ${calendarViewMode === 'week' ? '<i class="fas fa-calendar-alt"></i>' : '<i class="fas fa-minus"></i>'}
+                 <span class="streak-count" id="streakDisplay" style="font-size:0.9rem;">...</span>
+                 <button onclick="window.toggleCalendarView()" style="background:rgba(255,255,255,0.15); border:1px solid rgba(255,255,255,0.2); color:white; width:30px; height:30px; border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:0.2s;" title="Đổi chế độ">
+                    ${calendarViewMode === 'week' ? '<i class="fas fa-expand"></i>' : '<i class="fas fa-compress"></i>'}
                  </button>
              </div>
         </div>
         <div class="calendar-grid">
-            <div class="cal-day-name">T2</div><div class="cal-day-name">T3</div><div class="cal-day-name">T4</div><div class="cal-day-name">T5</div><div class="cal-day-name">T6</div><div class="cal-day-name">T7</div><div class="cal-day-name">CN</div>
+            <div class="cal-day-name">T2</div><div class="cal-day-name">T3</div><div class="cal-day-name">T4</div><div class="cal-day-name">T5</div><div class="cal-day-name">T6</div><div class="cal-day-name">T7</div><div class="cal-day-name" style="color:#ef4444">CN</div>
     `;
 
+    // LOGIC VẼ LƯỚI NGÀY
     if (calendarViewMode === 'month') {
-        const year = now.getFullYear();
-        const month = now.getMonth();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDayIndex = new Date(year, month, 1).getDay(); 
+        const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+        let firstDayIndex = new Date(viewYear, viewMonth, 1).getDay(); 
+        // Chuyển đổi: CN(0) thành 6, T2(1) thành 0 để khớp giao diện T2 đầu tuần
+        firstDayIndex = (firstDayIndex === 0) ? 6 : firstDayIndex - 1;
         
-        let startSlot = (firstDayIndex + 6) % 7; 
-        for(let i=0; i<startSlot; i++) html += `<div></div>`;
+        // Vẽ ô trống đầu tháng
+        for(let i=0; i<firstDayIndex; i++) html += `<div></div>`;
         
-        const currentMonthPrefix = `${year}-${String(month+1).padStart(2,'0')}`;
+        const currentMonthPrefix = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
         
         for(let d=1; d<=daysInMonth; d++) {
-            // Replicating original logic exactly for month view string construction
             const dateStr = `${currentMonthPrefix}-${String(d).padStart(2,'0')}`;
+            // Kiểm tra Active từ lịch sử
             const isActive = streakHistory.includes(dateStr);
-            const isToday = (dateStr === todayStr); 
+            const isToday = (dateStr === realTodayStr);
             
+            // Giữ nguyên class để CSS cũ vẫn hoạt động
             let classes = 'cal-day';
             if(isActive) classes += ' active';
             if(isToday) classes += ' today';
@@ -2036,105 +2329,135 @@ function renderStreakCalendar() {
             html += `<div class="${classes}">${d}</div>`;
         }
     } else {
-        // Week View
-        // Let's try to find the "Monday" of the current week in Local time.
-        const currentDay = now.getDay(); // 0-6 (Sun-Sat)
-        const distanceToMon = (currentDay + 6) % 7;
-        const mondayDate = new Date(now);
-        mondayDate.setDate(now.getDate() - distanceToMon);
+        // CHẾ ĐỘ TUẦN (WEEK VIEW)
+        const currentDay = viewDate.getDay(); 
+        const distanceToMon = (currentDay === 0) ? 6 : currentDay - 1;
+        
+        const mondayDate = new Date(viewDate);
+        mondayDate.setDate(viewDate.getDate() - distanceToMon);
         
         for(let i=0; i<7; i++) {
             const d = new Date(mondayDate);
             d.setDate(mondayDate.getDate() + i);
             
-            // Generate display number (Local)
-            const dayNum = d.getDate();
-            // Generate comparison string (ISO UTC cut) - This matches how data is saved: new Date().toISOString().split('T')[0]
-            const dateStr = d.toISOString().split('T')[0];
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dayNum = String(d.getDate()).padStart(2, '0');
+            const dateStr = `${y}-${m}-${dayNum}`; // Định dạng YYYY-MM-DD
             
             const isActive = streakHistory.includes(dateStr);
-            const isToday = (dateStr === todayStr);
+            const isToday = (dateStr === realTodayStr);
 
             let classes = 'cal-day';
             if(isActive) classes += ' active';
             if(isToday) classes += ' today';
             
-            html += `<div class="${classes}">${dayNum}</div>`;
+            html += `<div class="${classes}">${d.getDate()}</div>`;
         }
     }
     
     html += `</div>`;
     document.getElementById('calendarContainer').innerHTML = html;
     
-    // Streak Calculation
-    const sorted = [...new Set(streakHistory)].sort();
-    let streak = 0;
-    const todayISO = new Date().toISOString().split('T')[0];
-    const yesterdayISO = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    
-    if (sorted.includes(todayISO)) {
-        streak = 1;
-        let d = new Date();
-        while(true) {
-            d.setDate(d.getDate() - 1);
-            const s = d.toISOString().split('T')[0];
-            if(sorted.includes(s)) streak++;
-            else break;
-        }
-    } else if (sorted.includes(yesterdayISO)) {
-        streak = 1;
-        let d = new Date(Date.now() - 86400000);
-        while(true) {
-            d.setDate(d.getDate() - 1);
-            const s = d.toISOString().split('T')[0];
-            if(sorted.includes(s)) streak++;
-            else break;
-        }
-    }
-    
-    document.getElementById('streakDisplay').innerText = `${streak} ngày`;
+    // Cập nhật số ngày Streak tổng cộng
+    const totalDays = [...new Set(streakHistory)].length;
+    document.getElementById('streakDisplay').innerText = `${totalDays} ngày`;
 }
 
-// And add toggle function
+// 4. Hàm Chuyển đổi chế độ (Cập nhật Reset Cursor)
 window.toggleCalendarView = function() {
     calendarViewMode = calendarViewMode === 'week' ? 'month' : 'week';
-    playSound(SFX.POP); // Add sound effect for polish
+    // Reset về hôm nay để người dùng không bị lạc khi đổi chế độ
+    calendarCursor = new Date(); 
+    playSound(SFX.POP); 
     renderStreakCalendar();
 }
 
-
 // --- DATA & SYNC (LAZY LOADING) ---
 
-// Helper: Fetch a single topic's JSON and add to cache
+// Helper: Fetch a single topic's JSON and add to cache (Optimized with LocalStorage)
 async function loadTopicData(filename) {
-    if (allTopics[filename]) return allTopics[filename]; // Return cached if exists
+    // 1. Kiểm tra biến toàn cục (RAM) trước
+    if (allTopics[filename]) return allTopics[filename];
 
-    // Find the file in metadata to get the URL
+    // Tìm metadata để lấy URL và mã SHA (phiên bản file)
     const meta = allTopicsMetadata.find(f => f.name === filename);
     if (!meta) {
         console.warn(`Topic ${filename} not found in metadata`);
         return null;
     }
 
+    // Key để lưu vào LocalStorage (phân biệt theo ngôn ngữ và tên file)
+    const cacheKey = `fp_aurora_topic_content_${currentLang}_${filename}`;
+
+    // 2. Kiểm tra LocalStorage (Ổ cứng)
+    const cachedRaw = localStorage.getItem(cacheKey);
+    if (cachedRaw) {
+        try {
+            const cachedObj = JSON.parse(cachedRaw);
+            // SO SÁNH SHA: Nếu SHA trên GitHub khớp với SHA đã lưu -> Dùng cache
+            if (cachedObj.sha === meta.sha) {
+                console.log(`[Cache Hit] Loaded ${filename} from storage.`);
+                allTopics[filename] = cachedObj.data; // Đưa vào RAM để dùng nhanh lần sau
+                return cachedObj.data;
+            } else {
+                console.log(`[Cache Outdated] New version detected for ${filename}. Re-fetching...`);
+            }
+        } catch (e) {
+            console.error("Cache parse error", e);
+            // Nếu lỗi parse JSON thì coi như không có cache
+        }
+    }
+
+    // 3. Nếu không có cache hoặc cache cũ -> Tải mới từ GitHub
     try {
-        // UPDATED: Add Cache Busting Timestamp
-        const url = `${meta.download_url}?t=${Date.now()}`;
+        console.log(`[Network] Downloading ${filename}...`);
+        // Bỏ tham số ?t=Date.now() để tận dụng cache của trình duyệt/CDN nếu có
+        const url = meta.download_url; 
         const res = await fetch(url);
+        if (!res.ok) throw new Error("HTTP Error");
+        
         const data = await res.json();
         
-        // Process data format
+        // Chuẩn hóa dữ liệu
         const words = Array.isArray(data) ? data : (data.words || []);
         if (words.length) {
             const topicObj = {
                 name: (data.name || filename.replace('.json','')).replace(/_/g,' '),
                 words: words
             };
-            allTopics[filename] = topicObj; // Store in global cache
+
+            // 4. Lưu dữ liệu mới + SHA vào LocalStorage
+            try {
+                const cacheEntry = {
+                    sha: meta.sha, // Lưu phiên bản hiện tại
+                    timestamp: Date.now(),
+                    data: topicObj
+                };
+                localStorage.setItem(cacheKey, JSON.stringify(cacheEntry));
+            } catch (storageErr) {
+                console.warn("LocalStorage Full? Could not cache topic.", storageErr);
+                // Nếu bộ nhớ đầy, có thể xóa bớt cache cũ ở đây (nâng cao)
+            }
+
+            allTopics[filename] = topicObj; // Lưu vào RAM
             return topicObj;
         }
         return null;
     } catch (e) {
         console.error(`Failed to load topic ${filename}`, e);
+        
+        // Fallback: Nếu mất mạng và tải thất bại, cố gắng dùng cache cũ (nếu có) dù lệch version
+        if (cachedRaw) {
+            try {
+                console.log("Network failed. Using outdated cache fallback.");
+                const cachedObj = JSON.parse(cachedRaw);
+                allTopics[filename] = cachedObj.data;
+                showToast(`Đang dùng bản lưu cũ của ${filename}`, "info");
+                return cachedObj.data;
+            } catch(ex) {}
+        }
+
         showToast("Lỗi tải chủ đề: " + filename, "error");
         return null;
     }
@@ -2278,150 +2601,145 @@ window.saveGameConfig = function() {
 }
 
 // --- GAME LOGIC START ---
-// Updated to handle Async Topic Loading
 window.startSmartSession = async function(isExtra = false) {
-    // 1. Validation (Login/Trial)
-    if(!currentUser) {
-        if(trialCount > 3) {
-             showToast("Hết phiên dùng thử (3/3). Vui lòng đăng nhập!", "error");
-             document.getElementById('requireLoginMsg').style.display = 'block';
-             document.getElementById('dashboardContent').style.display = 'none';
-             return;
-        }
+    cleanupGameResources();
+
+    // FIX: Đảm bảo AudioContext luôn chạy
+    if(audioCtx.state === 'suspended') { try { await audioCtx.resume(); } catch(e) {} }
+
+    // --- 1. Kiểm tra dữ liệu & Đăng nhập ---
+    if (!allTopicsMetadata || allTopicsMetadata.length === 0) {
+        showToast("Dữ liệu chưa tải xong. Vui lòng thử lại!", "error");
+        return;
     }
 
-    if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
-
-    // FIX: Ensure AudioContext is running when user clicks "Start"
-    if(audioCtx.state === 'suspended') {
-        try { await audioCtx.resume(); } catch(e) {}
+    if(!currentUser && trialCount > 3) {
+         showToast("Hết phiên dùng thử. Vui lòng đăng nhập!", "error");
+         document.getElementById('requireLoginMsg').style.display = 'block';
+         document.getElementById('dashboardContent').style.display = 'none';
+         return;
     }
 
-    // --- OFFLINE FIRST FLAG ---
     window.isSessionActive = true;
-    sessionPoints = 0; // Reset session points
-
-    // Reset Global Flag
+    sessionPoints = 0;
     window.isGlobalReviewSession = false;
 
-    // Verify currentTopicKey exists in metadata
-    if (!allTopicsMetadata.find(f => f.name === currentTopicKey)) {
-         if (allTopicsMetadata.length > 0) {
-             currentTopicKey = allTopicsMetadata[0].name;
-             localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-         } else {
-             return showToast("Không có dữ liệu chủ đề!", "error");
-         }
+    // --- 2. Kiểm tra Chủ đề hiện tại ---
+    if (!currentTopicKey && allTopicsMetadata.length > 0) {
+         currentTopicKey = allTopicsMetadata[0].name;
+         localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
     }
     
-    // Ensure data is loaded
     if (!allTopics[currentTopicKey]) {
         showToast("Đang tải dữ liệu...", "info");
         await loadTopicData(currentTopicKey);
     }
-
-    // 3. Reset Session Streak
-    window.sessionCorrectStreak = 0;
     
+    // --- 3. Reset Session Streak ---
+    window.sessionCorrectStreak = 0;
     config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5);
     config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20);
 
-    // 4. Daily Limit Logic
+    // --- 4. Logic Giới hạn Hằng ngày (Daily Limit) ---
     checkDailyLimit();
     let limitNew = config.newLimit;
     let learnedToday = dailyTracking.count;
-    let maxNewToAdd = 0;
+    let remainingQuota = Math.max(0, limitNew - learnedToday);
 
-    if (learnedToday >= limitNew) {
-        // If limit reached, only allow more if user explicitly clicked 'Learn More' (override)
-        if(isExtra) maxNewToAdd = Math.ceil(limitNew * 0.5);
-        else maxNewToAdd = 0;
-    } else {
-        // If limit not reached, allow remaining.
-        maxNewToAdd = limitNew - learnedToday;
-        // If user explicitly clicked 'Learn More', add extra buffer
-        if(isExtra) maxNewToAdd += Math.ceil(limitNew * 0.5);
-    }
-
-    // 5. Gather Words from Current Topic
+    // --- 5. Gom từ vựng từ chủ đề hiện tại (TỪ MỚI) ---
     let currentTopicData = allTopics[currentTopicKey];
     if (!currentTopicData) return showToast("Lỗi dữ liệu chủ đề", "error");
 
-    let allWordsCurrent = currentTopicData.words;
-
-    // Filter New Candidates from Current Topic
-    let candidatesNewCurrent = allWordsCurrent.filter(w => {
+    let candidatesNewCurrent = currentTopicData.words.filter(w => {
         const k = getWordKey(w);
         return !masteredWords[k] && !srsData[k];
     });
 
-    // 6. Logic for Fetching New Words (Auto-Advance)
+    // --- 6. Gom bài ôn tập (Reviews) - [ĐÃ SỬA ĐỂ LẤY CẢ TỪ CHƯA ĐẾN HẠN] ---
+    let allLearnedWords = [];
+    const now = Date.now();
+
+    // Duyệt qua tất cả chủ đề để tìm từ đã học
+    Object.keys(allTopics).forEach(topicKey => {
+        const topic = allTopics[topicKey];
+        topic.words.forEach(w => {
+            const k = getWordKey(w);
+            // Chỉ cần có data SRS và chưa Mastered là lấy hết
+            if (srsData[k] && !masteredWords[k]) {
+                allLearnedWords.push(w);
+            }
+        });
+    });
+
+    // Sắp xếp: Ưu tiên từ quá hạn (nextReview nhỏ) trước, sau đó đến từ sắp đến hạn
+    allLearnedWords.sort((a,b) => srsData[getWordKey(a)].nextReview - srsData[getWordKey(b)].nextReview);
+    
+    // Cắt lấy đúng số lượng Review Limit (VD: 20 từ)
+    // Kể cả chưa đến hạn cũng lấy cho đủ danh sách
+    const batchReview = allLearnedWords.slice(0, config.reviewLimit);
+
+    // --- 7. DRIP FEED LOGIC (Quyết định số từ mới) ---
+    let maxNewToAdd = 0;
+    
+    if (batchReview.length > 0) {
+        // Nếu danh sách ôn tập đã đầy (do mình ép lấy đủ limit),
+        // Ta vẫn cho học thêm tối đa 2 từ mới nếu còn quota (để không bị ngợp)
+        maxNewToAdd = Math.min(2, remainingQuota);
+        
+        // Tuy nhiên, nếu batchReview toàn là từ "chưa đến hạn" (tức là người dùng rảnh),
+        // và người dùng muốn học thêm (isExtra) hoặc quota còn nhiều, ta có thể tăng từ mới lên.
+        // Nhưng logic đơn giản nhất: Giữ nguyên logic cũ.
+    } else {
+        // Nếu hoàn toàn không có từ nào để ôn (người mới chơi), học full từ mới
+        maxNewToAdd = Math.min(config.newLimit, remainingQuota);
+    }
+    
+    // Nếu quota hết nhưng người dùng bấm "Học thêm" (isExtra) -> Du di cho 2 từ
+    if (maxNewToAdd === 0 && isExtra) maxNewToAdd = 2;
+
+    // --- 8. Lấy từ mới (Có tự động sang Topic tiếp theo) ---
     let batchNew = [];
     
     if (candidatesNewCurrent.length >= maxNewToAdd) {
-        // Current topic has enough
         batchNew = candidatesNewCurrent.slice(0, maxNewToAdd);
     } else {
-        // Current topic has some, but not enough (or zero)
-        batchNew = [...candidatesNewCurrent]; // Take all remaining
+        batchNew = [...candidatesNewCurrent]; 
         const deficit = maxNewToAdd - batchNew.length;
 
         if (deficit > 0) {
-            // Find Next Topic based on Metadata Index
             const currentIdx = allTopicsMetadata.findIndex(f => f.name === currentTopicKey);
             
             if (currentIdx !== -1 && currentIdx < allTopicsMetadata.length - 1) {
                 const nextMeta = allTopicsMetadata[currentIdx + 1];
                 const nextKey = nextMeta.name;
                 
-                // --- ASYNC LOAD NEXT TOPIC ---
-                // Check cache, if not present, fetch it
                 if (!allTopics[nextKey]) {
-                    showToast(`Đang tải chủ đề tiếp theo: ${nextMeta.name}...`, "info");
+                    showToast(`Đang mở rộng sang chủ đề: ${nextMeta.name}...`, "info");
                     await loadTopicData(nextKey);
                 }
 
                 const nextTopicData = allTopics[nextKey];
-                
                 if (nextTopicData) {
-                    // Get words from next topic
-                    const allWordsNext = nextTopicData.words;
-                    const candidatesNewNext = allWordsNext.filter(w => {
+                    const candidatesNewNext = nextTopicData.words.filter(w => {
                         const k = getWordKey(w);
                         return !masteredWords[k] && !srsData[k];
                     });
 
                     if (candidatesNewNext.length > 0) {
-                        // Take needed amount
                         const nextTakeCount = Math.min(deficit, candidatesNewNext.length);
-                        const batchNext = candidatesNewNext.slice(0, nextTakeCount);
-                        
-                        batchNew = [...batchNew, ...batchNext];
+                        batchNew = [...batchNew, ...candidatesNewNext.slice(0, nextTakeCount)];
 
-                        // UPDATE CURRENT TOPIC KEY
                         currentTopicKey = nextKey;
                         localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
-                        // Save to cloud is deferred to end of session
-                        
-                        showToast(`Đã chuyển sang chủ đề: ${nextTopicData.name}`, "success");
-                        renderDashboard(); // Update UI
+                        showToast(`Đã chuyển sang: ${nextTopicData.name}`, "success");
+                        renderDashboard(); 
                     }
                 }
             }
         }
     }
-
-    // 7. Get Review Words (From the original current topic logic usually, or globally)
-    // Here we stick to filtering from `allWordsCurrent` to keep it simple for this session,
-    // as SRS data is keyed globally anyway.
-    let allLearningCurrent = allWordsCurrent.filter(w => {
-        const k = getWordKey(w);
-        return !masteredWords[k] && srsData[k];
-    });
-    allLearningCurrent.sort((a,b) => srsData[getWordKey(a)].nextReview - srsData[getWordKey(b)].nextReview);
-    const batchReview = allLearningCurrent.slice(0, config.reviewLimit);
     
-    // 8. Check if Empty
+    // --- 9. Kiểm tra xem có trống không ---
     if(batchNew.length === 0 && batchReview.length === 0) {
         if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         playSound(SFX.WIN);
@@ -2429,16 +2747,28 @@ window.startSmartSession = async function(isExtra = false) {
         return;
     }
 
-    // 9. Construct Queue
-    window.isReviewOnlySession = (batchNew.length === 0 && batchReview.length > 0);
-
-    showToast(`Bắt đầu: ${batchNew.length} từ mới + ${batchReview.length} ôn tập`, "info");
+    // --- 10. Tạo hàng đợi bài học (Trộn bài) ---
+    window.isReviewOnlySession = (batchNew.length === 0);
+    
+    // Tính số lượng thực tế để thông báo
+    // (Đếm số từ review thực sự đến hạn để hiển thị cho vui, còn thực tế học là batchReview.length)
+    const realDueCount = batchReview.filter(w => srsData[getWordKey(w)].nextReview <= now).length;
+    const earlyReviewCount = batchReview.length - realDueCount;
+    
+    let msg = `Bắt đầu: ${batchNew.length} từ mới`;
+    if(batchReview.length > 0) {
+        msg += ` + ${batchReview.length} ôn tập`;
+        if(earlyReviewCount > 0) msg += ` (gồm ${earlyReviewCount} ôn sớm)`;
+    }
+    
+    showToast(msg, "info");
     playSound(SFX.POP);
     
     let interleaved = [];
     let r = [...batchReview];
     let n = [...batchNew];
     
+    // Thuật toán trộn: 1 Mới kẹp 2 Cũ
     while(n.length > 0 || r.length > 0) {
         if(n.length > 0) interleaved.push(n.shift()); 
         if(r.length > 0) interleaved.push(r.shift()); 
@@ -2454,117 +2784,13 @@ window.startSmartSession = async function(isExtra = false) {
     decideSmartRender();
 }
 
-// --- NEW FEATURE: GLOBAL REVIEW (OPTIMIZED FOR LAZY LOADING) ---
-window.startGlobalReview = async function() {
-    // --- OFFLINE FIRST FLAG ---
-    window.isSessionActive = true;
-    sessionPoints = 0; // Reset session points
-
-    // 1. UPDATED: Ensure ALL topics are loaded
-    showToast("Đang tải toàn bộ dữ liệu...", "info");
-    
-    // Identify which topics are not yet loaded
-    const missingTopics = allTopicsMetadata.filter(meta => !allTopics[meta.name]);
-    
-    // Load missing topics concurrently
-    if(missingTopics.length > 0) {
-        const loadPromises = missingTopics.map(meta => loadTopicData(meta.name));
-        await Promise.all(loadPromises);
-    }
-    
-    // 2. Scan ALL topics for due words
-    let globalDueWords = [];
-    const now = Date.now();
-    
-    Object.keys(allTopics).forEach(topicKey => {
-        const topic = allTopics[topicKey];
-        topic.words.forEach(w => {
-            const key = getWordKey(w);
-            // Check SRS data
-            if(srsData[key] && !masteredWords[key]) {
-                if(srsData[key].nextReview <= now) {
-                    globalDueWords.push(w);
-                }
-            }
-        });
-    });
-
-    if(globalDueWords.length === 0) {
-        if(!config.ecoMode) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-        playSound(SFX.WIN);
-        showToast('Bạn đã ôn sạch sẽ tất cả chủ đề!', 'success');
-        return;
-    }
-
-    // --- REFACTORED LOGIC ---
-    // 3. Sort by Urgency (Most overdue first)
-    globalDueWords.sort((a, b) => {
-        const tA = srsData[getWordKey(a)].nextReview;
-        const tB = srsData[getWordKey(b)].nextReview;
-        return tA - tB;
-    });
-
-    // 4. Slice to Limit
-    const limit = config.reviewLimit || 20;
-    if (globalDueWords.length > limit) {
-        globalDueWords = globalDueWords.slice(0, limit);
-    }
-
-    // 5. Shuffle result
-    globalDueWords.sort(() => Math.random() - 0.5);
-
-    // 6. Set Queue
-    sessionQueue = globalDueWords;
-    sessionIndex = 0;
-    currentMode = 'smart';
-    window.isGlobalReviewSession = true; // Flag to prevent new word injection
-
-    showToast(`Ôn tập tổng hợp: ${sessionQueue.length} từ`, "info");
-    playSound(SFX.POP);
-    
-    openGameOverlay();
-    preloadImages();
-    decideSmartRender();
-}
-
-function decideSmartRender() {
-    const w = sessionQueue[sessionIndex];
-    const key = getWordKey(w);
-    const isNew = !srsData[key] && !masteredWords[key];
-    
-    if(isNew) {
-        renderFlashcard();
-    } else {
-        // Retrieve enabled modes from config, default to all if undefined (though it should be defined in init)
-        const allowed = config.activeGameModes || {
-            flashcard: true, quiz: true, fill: true, sentence: true, spelling: true, matching: true
-        };
-
-        const availableModes = [];
-        if(allowed.flashcard) availableModes.push('flashcard');
-        if(allowed.quiz) availableModes.push('quiz');
-        if(allowed.fill) availableModes.push('fill');
-        if(allowed.spelling) availableModes.push('spelling');
-        if(allowed.sentence) availableModes.push('sentence');
-        if(allowed.matching) availableModes.push('matching');
-        
-        // Fallback if user somehow disabled everything or list is empty
-        if (availableModes.length === 0) availableModes.push('flashcard');
-
-        const randomMode = availableModes[Math.floor(Math.random() * availableModes.length)];
-        
-        if(randomMode === 'flashcard') renderFlashcard();
-        else if(randomMode === 'quiz') setupQuiz();
-        else if(randomMode === 'fill') renderFill();
-        else if(randomMode === 'sentence') renderSentence();
-        else if(randomMode === 'matching') setupMatching();
-        else renderSpelling();
-    }
-}
-
 
 window.processResult = function(isCorrect, skipNext = false) {
     if(isProcessing) return;
+    
+    // SAFETY CHECK: Ensure game is still active
+    if (document.getElementById('gameOverlay').style.display === 'none') return;
+    
     isProcessing = true;
     
     const w = sessionQueue[sessionIndex];
@@ -2619,7 +2845,12 @@ window.processResult = function(isCorrect, skipNext = false) {
         // Save cloud removed here, only at end of session
 
         if(!skipNext) {
-            setTimeout(() => { isProcessing = false; nextStep(); }, 600);
+            setTimeout(() => { 
+                 // Extra check inside timeout
+                 if(document.getElementById('gameOverlay').style.display === 'none') return;
+                 isProcessing = false; 
+                 nextStep(); 
+            }, 600);
         }
         
     } else {
@@ -2675,8 +2906,9 @@ window.processResult = function(isCorrect, skipNext = false) {
         }
         
         setTimeout(() => { 
-            isProcessing = false; 
-            nextStep();
+             if(document.getElementById('gameOverlay').style.display === 'none') return;
+             isProcessing = false; 
+             nextStep();
         }, 2500);
     }
 }
@@ -2692,6 +2924,7 @@ function openGameOverlay() {
 }
 
 window.closeGame = function() {
+    cleanupGameResources(); // Important cleanup
     document.getElementById('gameOverlay').style.display = 'none';
     window.speechSynthesis.cancel();
     stopTimer(); 
@@ -2702,18 +2935,20 @@ window.closeGame = function() {
 function startTimer() {
     if(studyTimer) clearInterval(studyTimer);
     studyTimer = setInterval(() => {
+        // Tăng cả 3 biến đếm
         accumulatedTime++;
+        weekTime++;
+        monthTime++;
+
+        // Lưu vào LocalStorage liên tục để không mất khi F5
         localStorage.setItem('fp_aurora_time', accumulatedTime);
+        localStorage.setItem('fp_aurora_time_week', weekTime);
+        localStorage.setItem('fp_aurora_time_month', monthTime);
+
         if(accumulatedTime % 60 === 0) {
             addPoints(5); 
         }
     }, 1000);
-}
-
-function stopTimer() {
-    if(studyTimer) clearInterval(studyTimer);
-    studyTimer = null;
-    localStorage.setItem('fp_aurora_time', accumulatedTime);
 }
 
 function updateProgress() {
@@ -2721,9 +2956,66 @@ function updateProgress() {
     document.getElementById('gameProgressBar').style.width = `${pct}%`;
 }
 
+// FIXED: Infinite Loop Logic in NextStep
 window.nextStep = function() {
+    cleanupGameResources(); // Ensure clean slate for listeners
     stopGlobalAudio(); // STOP PREVIOUS AUDIO
-    nextStep();
+    
+    // RESET HINT COUNT ON NEW STEP
+    window.currentHintCount = 0;
+
+    if(sessionIndex < sessionQueue.length - 1) {
+        const content = document.getElementById('gameContent');
+        if(!config.ecoMode) content.classList.add('slide-out-left');
+        else content.style.opacity = 0; // Simple fade for eco
+        
+        setTimeout(() => {
+            if (document.getElementById('gameOverlay').style.display === 'none') return;
+
+            // --- DRIP FEED INJECTION START (Logic mới) ---
+            if (window.sessionCorrectStreak > 0 && window.sessionCorrectStreak % 3 === 0) {
+                let currentDailyCount = dailyTracking.count; // Số từ đã học hôm nay
+                let dailyGoal = config.newLimit;
+                
+                // Chỉ thêm nếu chưa đạt mục tiêu (hoặc nới lỏng nếu muốn)
+                if (currentDailyCount < dailyGoal) {
+                    injectSilentWords(1); 
+                    // Toast thông báo đã có trong injectSilentWords
+                }
+            }
+            // --- DRIP FEED INJECTION END ---
+
+            sessionIndex++;
+            updateProgress();
+            preloadImages(); // Preload next images
+            
+            content.classList.remove('slide-out-left');
+            content.style.opacity = 0;
+            
+            // LOGIC CHUYỂN BÀI MỚI
+            if(currentMode === 'smart') {
+                decideSmartRender();
+            } else {
+                // Ensure specific mode renderers are called
+                if(currentMode === 'flashcard_all') renderFlashcard(); 
+                else if(currentMode === 'fill') renderFill();
+                else if(currentMode === 'quiz') setupQuiz();
+                else if(currentMode === 'spelling') renderSpelling();
+                else if(currentMode === 'sentence') renderSentence();
+                else if(currentMode === 'matching') setupMatching();
+            }
+            
+            if(!config.ecoMode) {
+                content.classList.add('slide-in-right');
+                setTimeout(() => content.classList.remove('slide-in-right'), 400);
+            }
+            content.style.opacity = 1;
+        }, config.ecoMode ? 100 : 350);
+    } else {
+        playSound(SFX.WIN);
+        if(!config.ecoMode) confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
+        renderSessionEnd();
+    }
 }
 
 function injectSilentWords(count) {
@@ -2774,60 +3066,6 @@ function injectSilentWords(count) {
     playSound(SFX.POP); 
 }
 
-function nextStep() {
-    // RESET HINT COUNT ON NEW STEP
-    window.currentHintCount = 0;
-
-    if(sessionIndex < sessionQueue.length - 1) {
-        const content = document.getElementById('gameContent');
-        if(!config.ecoMode) content.classList.add('slide-out-left');
-        else content.style.opacity = 0; // Simple fade for eco
-        
-        setTimeout(() => {
-            sessionIndex++;
-            
-            // --- SILENT INJECTION LOGIC ---
-            // New Condition: Inject if streak of 3 correct answers in a review-only session
-            // Prevent injection if global review session
-            if(currentMode === 'smart' && window.isReviewOnlySession && !window.isGlobalReviewSession && sessionIndex === 3) {
-                 if(window.sessionCorrectStreak >= 3) {
-                     injectSilentWords(3); // Add 3 words
-                     window.isReviewOnlySession = false; // Disable flag so it only happens once
-                     // Toast moved inside injectSilentWords
-                 }
-            }
-            // ------------------------------
-            
-            updateProgress();
-            preloadImages(); // Preload next images
-            
-            content.classList.remove('slide-out-left');
-            content.style.opacity = 0;
-            
-            // LOGIC CHUYỂN BÀI MỚI
-            if(currentMode === 'smart') {
-                decideSmartRender();
-            } else {
-                if(currentMode === 'flashcard_all') renderFlashcard(); 
-                else if(currentMode === 'fill') renderFill();
-                else if(currentMode === 'quiz') setupQuiz();
-                else if(currentMode === 'spelling') renderSpelling();
-                else if(currentMode === 'sentence') renderSentence();
-            }
-            
-            if(!config.ecoMode) {
-                content.classList.add('slide-in-right');
-                setTimeout(() => content.classList.remove('slide-in-right'), 400);
-            }
-            content.style.opacity = 1;
-        }, config.ecoMode ? 100 : 350);
-    } else {
-        playSound(SFX.WIN);
-        if(!config.ecoMode) confetti({ particleCount: 300, spread: 100, origin: { y: 0.6 } });
-        renderSessionEnd();
-    }
-}
-
 // UPDATED: Enhanced Session End UI with Buttons
 function renderSessionEnd() {
     // OFFLINE FIRST SYNC: Session ended, reset flag and force sync
@@ -2868,9 +3106,9 @@ function renderSessionEnd() {
 
 // --- CARD RENDERER (UPDATED ASYNC PEXELS) ---
 function renderFlashcard() {
+    isProcessing = false;
     const w = sessionQueue[sessionIndex];
     isFlipped = false;
-    isProcessing = false;
     
     const isRelearn = sessionQueue.filter(x => x === w).length > 1;
     const badge = isRelearn ? '<div style="position:absolute; top:-10px; right:-10px; background:#f59e0b; color:white; padding:5px 10px; border-radius:10px; font-size:0.7rem; font-weight:bold; box-shadow:0 5px 10px rgba(0,0,0,0.2);">HỌC LẠI</div>' : '';
@@ -2911,6 +3149,16 @@ function renderFlashcard() {
             </div>
         </div>
         
+        <div class="ai-section animate__animated animate__fadeInUp">
+            <div id="btn-ask-ai" class="btn-ask-ai" onclick="window.askAI()">
+                <i class="fas fa-robot"></i> Giải thích & Mẹo nhớ (AI)
+            </div>
+            
+            <div id="ai-box" class="ai-chat-bubble">
+                <div class="ai-badge"><i class="fas fa-graduation-cap"></i> AI Teacher</div>
+                <div id="ai-content"></div>
+            </div>
+        </div>
         <div class="control-row">
             <button class="action-btn btn-wrong" onclick="window.processResult(false)">
                 <i class="fas fa-times"></i> &nbsp;Chưa thuộc
@@ -2948,7 +3196,60 @@ function renderFlashcard() {
 
     setTimeout(window.speakWord, 500);
 }
+// --- 🟢 HÀM GỌI TRỢ LÝ AI (MỚI) ---
+window.askAI = async function() {
+    // 1. Lấy thông tin từ đang học
+    if (!sessionQueue || !sessionQueue[sessionIndex]) return;
+    const w = sessionQueue[sessionIndex];
 
+    const btn = document.getElementById('btn-ask-ai');
+    const box = document.getElementById('ai-box');
+    const content = document.getElementById('ai-content');
+
+    // 2. Chuyển đổi giao diện sang trạng thái "Đang tải"
+    btn.style.display = 'none'; // Ẩn nút
+    box.style.display = 'block'; // Hiện khung chat
+    content.innerHTML = `
+        <div style="text-align:center; padding:10px; color:#a855f7;">
+            <i class="fas fa-magic fa-spin"></i> &nbsp; AI đang suy nghĩ câu trả lời vui nhộn...
+        </div>
+    `;
+
+    // 3. Tạo câu lệnh (Prompt) thông minh
+    // Yêu cầu AI đóng vai giáo viên hài hước
+    const prompt = `Giải thích từ tiếng Anh: "${w.english}" (nghĩa: "${w.vietnamese}") cho người Việt.
+    Yêu cầu:
+    - Phong cách: Hài hước, thân thiện, dễ nhớ.
+    - Nội dung: Giải thích ngắn gọn + 1 Ví dụ vui hoặc 1 Mẹo nhớ (Mnemonic).
+    - Định dạng: Dùng thẻ <b> cho từ khóa, xuống dòng bằng <br>. Không dùng Markdown.
+    - Độ dài: Dưới 100 từ.`;
+
+    try {
+        // 4. Gọi API Pollinations (Miễn phí)
+        const encodedPrompt = encodeURIComponent(prompt);
+        // Thêm tham số seed ngẫu nhiên để câu trả lời đỡ bị trùng lặp cache
+        const seed = Math.floor(Math.random() * 1000); 
+        const url = `https://text.pollinations.ai/${encodedPrompt}?seed=${seed}&model=openai`; 
+
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Lỗi kết nối');
+        const text = await res.text();
+
+        // 5. Hiển thị kết quả
+        content.innerHTML = text;
+        playSound(SFX.POP); // Âm thanh tin nhắn tới
+
+    } catch (e) {
+        console.error(e);
+        content.innerHTML = `<span style="color:#ef4444"><i class="fas fa-wifi"></i> Mạng yếu quá, AI không trả lời được rồi!</span>`;
+        
+        // Cho phép thử lại sau 3 giây
+        setTimeout(() => {
+            btn.style.display = 'flex';
+            box.style.display = 'none';
+        }, 3000);
+    }
+}
 window.flipCard = function() {
     if(isProcessing && currentMode === 'smart') return;
     
@@ -3022,7 +3323,8 @@ function renderSpelling() {
     
     const inp = document.getElementById('spellingInput');
     
-    document.addEventListener('click', () => { if(document.getElementById('spellingInput')) document.getElementById('spellingInput').focus(); });
+    // Add specific listener for this mode
+    document.addEventListener('click', window.spellingFocusHandler);
     inp.focus();
 
     checkSpellingChar(''); 
@@ -3408,12 +3710,41 @@ window.checkFill = function(ans) {
 }
 
 function setupMatching() {
-    const subset = sessionQueue.slice(0, 4);
-    if(subset.length < 2) { showToast("Cần tối thiểu 2 từ!", "error"); window.closeGame(); return; }
-    sessionQueue = subset;
+    isProcessing = false;
+    
+    // Logic look-ahead (Fix 1: Avoid Duplicates)
+    const remaining = sessionQueue.length - sessionIndex;
+    
+    // Fallback standard
+    if (remaining < 2) {
+        renderFlashcard();
+        return;
+    }
+
+    // Look ahead to find unique words
+    const lookAhead = Math.min(remaining, 8);
+    const subsetRaw = sessionQueue.slice(sessionIndex, sessionIndex + lookAhead);
+    
+    const subset = [];
+    const seen = new Set();
+    
+    for (const w of subsetRaw) {
+        const k = getWordKey(w);
+        if (!seen.has(k) && subset.length < 4) {
+            seen.add(k);
+            subset.push(w);
+        }
+    }
+
+    // Check if we have enough unique words
+    if (subset.length < 2) {
+        renderFlashcard();
+        return;
+    }
     
     let items = [];
     subset.forEach((w, i) => {
+        // i represents the index in the subset (0..3), used as ID to match
         items.push({ txt: w.english, id: i, type: 'en' });
         items.push({ txt: w.vietnamese, id: i, type: 'vn' });
     });
@@ -3424,8 +3755,15 @@ function setupMatching() {
         html += `<div class="match-card" id="m-${idx}" onclick="window.matchClick(${idx}, ${item.id})">${item.txt}</div>`;
     });
     html += `</div>`;
+    
     document.getElementById('gameContent').innerHTML = html;
-    window.matchState = { selected: null, solved: 0, total: subset.length };
+    
+    window.matchState = { 
+        selected: null, 
+        solved: 0, 
+        total: subset.length,
+        wordsInGame: subset 
+    };
 }
 
 window.matchClick = function(idx, id) {
@@ -3433,6 +3771,8 @@ window.matchClick = function(idx, id) {
     if(el.classList.contains('correct')) return;
     
     const state = window.matchState;
+    if(!state) return;
+
     playSound(SFX.POP);
     
     if(state.selected === null) {
@@ -3446,6 +3786,7 @@ window.matchClick = function(idx, id) {
         }
         
         if(state.selected.id === id) { 
+            // --- ĐÚNG ---
             playSound(SFX.CORRECT);
             el.classList.add('correct');
             state.selected.el.classList.add('correct');
@@ -3453,10 +3794,40 @@ window.matchClick = function(idx, id) {
             state.selected = null;
             addPoints(5); 
             
+            // --- KIỂM TRA THẮNG GAME ---
             if(state.solved === state.total) {
-                setTimeout(() => { showToast("Hoàn thành xuất sắc!", "success"); window.closeGame(); }, 1000);
+                
+                // LOGIC PHỐI HỢP VỚI SMART MODE
+                if (currentMode === 'smart') {
+                    showToast("Hoàn thành xuất sắc!", "success");
+                    
+                    // 1. Cập nhật SRS cho tất cả các từ trong lô này
+                    state.wordsInGame.forEach(w => {
+                        // Gọi hàm cập nhật ngầm
+                        window.silentUpdateSRS(w);
+                    });
+                    
+                    // 2. Nhảy cóc Index
+                    // Ví dụ: Chơi 4 từ. Ta cần nhảy qua 3 từ tiếp theo 
+                    // (vì hàm nextStep sẽ tự cộng thêm 1)
+                    sessionIndex += (state.total - 1);
+                    
+                    // 3. Chuyển sang bài tiếp theo sau 1s
+                    setTimeout(() => {
+                        isProcessing = false;
+                        nextStep(); // Tự động sang từ mới tiếp theo
+                    }, 1000);
+
+                } else {
+                    // Chế độ chơi Game thường (từ Menu) -> Đóng game
+                    setTimeout(() => { 
+                        showToast("Hoàn thành xuất sắc!", "success"); 
+                        window.closeGame(); 
+                    }, 1000);
+                }
             }
         } else {
+            // --- SAI ---
             playSound(SFX.WRONG);
             el.classList.add('wrong');
             state.selected.el.classList.add('wrong');
@@ -3525,6 +3896,9 @@ window.handleQuiz = function(el, isCorrect) {
 
 // --- UTILITIES ---
 window.startGame = async function(mode) {
+    cleanupGameResources();
+
+    // 1. Kiểm tra đăng nhập và dùng thử
     if(!currentUser) {
         if(trialCount > 3) {
              showToast("Hết phiên dùng thử. Đăng nhập để chơi!", "error");
@@ -3533,70 +3907,104 @@ window.startGame = async function(mode) {
              return;
         }
     }
-    if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
     
-    // FIX: Ensure AudioContext is running immediately on button click
+    // 2. Kích hoạt AudioContext (Fix lỗi mất tiếng trên iOS/Chrome)
     if(audioCtx.state === 'suspended') {
         try { await audioCtx.resume(); } catch(e) {}
     }
 
-    // --- OFFLINE FIRST FLAG ---
+    // --- CỜ OFFLINE FIRST ---
     window.isSessionActive = true;
-    sessionPoints = 0; // Reset session points
+    sessionPoints = 0; 
 
-    // Lazy load check
-    if (!allTopics[currentTopicKey]) {
-        showToast("Đang tải dữ liệu...", "info");
-        await loadTopicData(currentTopicKey);
+    // 3. Tải dữ liệu chủ đề
+    // Nếu là Flashcard: Chỉ cần tải chủ đề hiện tại
+    if (mode === 'flashcard_all') {
+        if (currentTopicKey && !allTopics[currentTopicKey]) {
+            showToast("Đang tải dữ liệu...", "info");
+            await loadTopicData(currentTopicKey);
+        }
+        if (currentTopicKey && !allTopics[currentTopicKey]) return showToast("Không tải được dữ liệu chủ đề!", "error");
+    } 
+    // Nếu là Game (Matching, Quiz...): Tự động tải bù tất cả chủ đề cũ để có vốn từ
+    else {
+        // Tìm các chủ đề chưa được tải
+        const missingTopics = allTopicsMetadata.filter(meta => !allTopics[meta.name]);
+        if(missingTopics.length > 0) {
+            showToast(`Đang tải dữ liệu từ ${missingTopics.length} chủ đề cũ...`, "info");
+            // Tải song song tất cả
+            await Promise.all(missingTopics.map(meta => loadTopicData(meta.name)));
+        }
     }
-    
-    if (!allTopics[currentTopicKey]) return showToast("Không tải được dữ liệu chủ đề!", "error");
 
     playSound(SFX.POP);
-    const allWords = allTopics[currentTopicKey].words;
-    
+
     config.newLimit = parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5);
     config.reviewLimit = parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20);
     const totalLimit = config.newLimit + config.reviewLimit;
     
-    let candidates = [...allWords];
+    // Khởi tạo hàng đợi
+    let localQueue = [];
 
-    // --- GAME RESTRICTION: Only 'learned' words allowed for games (except flashcards) ---
-    if (mode !== 'flashcard_all') {
-        candidates = candidates.filter(w => {
-            const k = getWordKey(w);
-            return srsData[k] || masteredWords[k];
+    // --- LOGIC PHÂN LOẠI CHẾ ĐỘ ---
+    
+    // TRƯỜNG HỢP 1: Flashcard (Học bài mới) -> Lấy từ chủ đề hiện tại
+    if(mode === 'flashcard_all') {
+        if(!currentTopicKey) return showToast("Chưa chọn chủ đề!", "error");
+        localQueue = [...allTopics[currentTopicKey].words]; 
+    } 
+    // TRƯỜNG HỢP 2: Game (Ôn tập Global) -> Lấy từ đã học từ TẤT CẢ chủ đề
+    else {
+        let allLearnedCandidates = [];
+        const seenKeys = new Set(); // Set giúp lọc trùng lặp cực nhanh
+
+        // Duyệt qua tất cả chủ đề đã tải trong bộ nhớ
+        Object.values(allTopics).forEach(topic => {
+            topic.words.forEach(w => {
+                const k = getWordKey(w);
+                // Điều kiện: Đã học (có trong SRS hoặc Mastered) VÀ chưa thêm vào list
+                if ((srsData[k] || masteredWords[k]) && !seenKeys.has(k)) {
+                    allLearnedCandidates.push(w);
+                    seenKeys.add(k);
+                }
+            });
         });
-        
-        if (candidates.length === 0) {
-            showToast("Trò chơi chỉ dành cho từ đã học! Hãy học Flashcard trước.", "error");
+
+        if (allLearnedCandidates.length === 0) {
+            showToast("Bạn chưa học từ nào để chơi game này! Hãy học Flashcard trước.", "error");
             return;
         }
-    }
-    // -----------------------------------------------------------------------------------
-    
-    if(mode === 'flashcard_all') {
-        sessionQueue = [...candidates]; 
-    } else {
-        // Shuffle and take only the limit amount
-        candidates.sort(() => Math.random() - 0.5);
-        if(candidates.length > totalLimit) {
-            sessionQueue = candidates.slice(0, totalLimit);
+
+        // Validate riêng cho Matching
+        if (mode === 'matching' && allLearnedCandidates.length < 2) {
+             showToast("Cần ít nhất 2 từ đã học để chơi Ghép thẻ!", "error");
+             return;
+        }
+
+        // Xáo trộn ngẫu nhiên
+        allLearnedCandidates.sort(() => Math.random() - 0.5);
+        
+        // Giới hạn số lượng thẻ để game không quá dài
+        if(allLearnedCandidates.length > totalLimit) {
+            localQueue = allLearnedCandidates.slice(0, totalLimit);
         } else {
-            sessionQueue = candidates;
+            localQueue = allLearnedCandidates;
         }
     }
     
-    if(sessionQueue.length === 0) return showToast("Không có từ nào để học", "error");
+    if(localQueue.length === 0) return showToast("Không có từ nào khả dụng", "error");
 
-    showToast(`Bắt đầu: ${sessionQueue.length} thẻ`, "info");
+    showToast(`Bắt đầu: ${localQueue.length} thẻ`, "info");
     
+    // GÁN VÀO BIẾN GLOBAL (Quan trọng!)
+    window.sessionQueue = localQueue; 
     sessionIndex = 0;
     currentMode = mode;
-    openGameOverlay();
     
-    preloadImages(); // Preload for start
+    openGameOverlay();
+    preloadImages(); 
 
+    // Điều hướng render game
     if(mode === 'fill') renderFill();
     else if(mode === 'matching') setupMatching();
     else if(mode === 'quiz') setupQuiz();
@@ -4143,6 +4551,104 @@ function updateConfigUI() {
     document.getElementById('cfgVoiceGoogle').checked = (config.voiceEngine === 'google');
     document.getElementById('cfgSfx').checked = config.sfxEnabled;
 }
+// Hàm cập nhật SRS ngầm (cho chế độ Matching/Batch processing)
+window.silentUpdateSRS = function(w) {
+    const key = getWordKey(w);
+    
+    // --- KHẮC PHỤC: Kiểm tra xem có phải từ mới không TRƯỚC KHI gán data ---
+    const wasNew = !masteredWords[key] && !srsData[key];
+
+    let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
+    
+    // Logic tăng cấp
+    data.consecutiveWrongs = 0;
+    let multiplier = data.isHard ? 1.5 : 2.5;
+    if(data.level === 0) data.interval = 1; 
+    else if(data.level === 1) data.interval = 3; 
+    else data.interval = Math.ceil(data.interval * multiplier);
+    
+    data.isHard = false;
+    data.level++;
+    data.nextReview = Date.now() + (data.interval * 24 * 3600 * 1000);
+    
+    srsData[key] = data;
+    
+    // Lưu tạm thời
+    localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+    
+    // Tracking điểm
+    addPoints(10);
+
+    // --- KHẮC PHỤC: Tăng biến đếm ngày nếu đây là từ mới ---
+    if (wasNew) { 
+        checkDailyLimit(); 
+        dailyTracking.count++;
+        localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+    }
+}
+  // --- KHỞI ĐỘNG ỨNG DỤNG AN TOÀN (BẮT BUỘC THÊM) ---
+// Đợi trình duyệt tải xong hết module rồi mới chạy initApp
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(window.initApp, 100));
+} else {
+    setTimeout(window.initApp, 100);
+}
+// --- BỔ SUNG CÁC HÀM BỊ THIẾU ---
+
+// Hàm quyết định hiển thị game gì (Flashcard/Quiz/Spelling...) dựa trên config
+window.decideSmartRender = function() {
+    const w = sessionQueue[sessionIndex];
+    if (!w) return;
+
+    const key = getWordKey(w);
+    const data = srsData[key];
+    
+    // Nếu là từ mới (level 0 hoặc chưa có data) -> Luôn hiện Flashcard trước
+    const isNew = !data || data.level === 0;
+
+    // Lấy danh sách các chế độ game đang BẬT trong cài đặt
+    const modes = config.activeGameModes || { flashcard: true, quiz: true, fill: true, sentence: true, spelling: true, matching: true };
+    
+    if (isNew) {
+        renderFlashcard();
+        return;
+    }
+
+    // Nếu là từ ôn tập, random các game đang bật
+    let available = [];
+    if (modes.flashcard) available.push('flashcard');
+    if (modes.quiz) available.push('quiz');
+    if (modes.fill) available.push('fill');
+    if (modes.sentence) available.push('sentence');
+    if (modes.spelling) available.push('spelling');
+    // Matching chỉ khả dụng nếu còn đủ từ trong hàng đợi
+    if (modes.matching && (sessionQueue.length - sessionIndex) >= 4) available.push('matching');
+
+    if (available.length === 0) {
+        renderFlashcard();
+        return;
+    }
+
+    const nextMode = available[Math.floor(Math.random() * available.length)];
+
+    if (nextMode === 'flashcard') renderFlashcard();
+    else if (nextMode === 'quiz') setupQuiz();
+    else if (nextMode === 'fill') renderFill();
+    else if (nextMode === 'sentence') renderSentence();
+    else if (nextMode === 'spelling') renderSpelling();
+    else if (nextMode === 'matching') setupMatching();
+    else renderFlashcard();
+}
+
+// Hàm bắt đầu ôn tập toàn bộ (Global Review)
+window.startGlobalReview = function() {
+    // Tận dụng logic của Smart Session, nó sẽ tự ưu tiên các từ đến hạn (Due)
+    window.startSmartSession(false);
+}
+// Bắt lỗi toàn cục
+window.onerror = function(msg, url, line) {
+    console.error("Lỗi hệ thống: " + msg);
+};
 </script>
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
