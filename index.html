@@ -3316,7 +3316,7 @@ window.askAI = async function() {
     try {
         // --- GỌI API GEMINI (Chuyển đổi từ CURL sang FETCH) ---
         // Lưu ý: Dùng key trên URL để chạy ổn định trên trình duyệt (tránh lỗi CORS header)
-        const url = `https://generativelanguage.googleapis.com/${API_VERSION}/models/${MODEL}:generateContent?key=${API_KEY}`;
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
         
         const response = await fetch(url, {
             method: 'POST',
