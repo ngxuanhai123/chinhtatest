@@ -772,22 +772,68 @@
 .btn-ask-ai:active { transform: scale(0.96); box-shadow: 0 2px 5px rgba(168, 85, 247, 0.4); }
 
 /* Khung chat hiển thị câu trả lời */
+
+/* 1. Màn hình nền mờ (Backdrop) */
+.ai-overlay-backdrop {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.75); /* Nền tối làm nổi bật popup */
+    z-index: 9998; /* Nằm dưới popup nhưng trên mọi thứ khác */
+    backdrop-filter: blur(4px); /* Làm mờ hậu cảnh */
+    display: none; /* Mặc định ẩn */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+.ai-overlay-backdrop.show {
+    display: block;
+    opacity: 1;
+}
+
+/* 2. Khung chat AI (Giờ là Popup nổi) */
 .ai-chat-bubble {
-    background: rgba(30, 41, 59, 0.85); /* Nền tối mờ */
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    position: fixed; 
+    top: 50%; left: 50%; 
+    transform: translate(-50%, -50%) scale(0.9); /* Căn giữa màn hình */
+    width: 90%; max-width: 420px;
+    max-height: 70vh; /* Giới hạn chiều cao */
+    
+    background: rgba(15, 23, 42, 0.98); /* Nền xanh đậm đặc hơn */
     border: 1px solid rgba(168, 85, 247, 0.5); /* Viền tím */
-    border-radius: 18px;
-    border-top-left-radius: 4px; /* Tạo dáng giống bong bóng chat */
-    padding: 20px;
+    box-shadow: 0 0 50px rgba(139, 92, 246, 0.3); /* Hiệu ứng toả sáng tím */
+    border-radius: 20px;
+    padding: 25px;
+    
     color: #e2e8f0;
     font-size: 0.95rem;
     line-height: 1.6;
-    display: none; /* Mặc định ẩn */
-    position: relative;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    animation: slideInUp 0.3s ease-out;
-    text-align: left;
+    overflow-y: auto; /* Cho phép cuộn nội dung nếu dài */
+    z-index: 9999; /* Lớp cao nhất */
+    
+    display: none;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Class kích hoạt hiển thị */
+.ai-chat-bubble.active {
+    display: block;
+    transform: translate(-50%, -50%) scale(1);
+    animation: bounceIn 0.4s;
+}
+
+/* 3. Nút đóng (Dấu X) */
+.btn-close-ai {
+    position: absolute; top: 10px; right: 10px;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none; color: white;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: 0.2s;
+}
+.btn-close-ai:hover { background: rgba(239, 68, 68, 0.8); }
+
+/* Xoá mũi tên tam giác cũ */
+.ai-chat-bubble::before { display: none; }
 
 /* Mũi tên chỉ lên trên của bong bóng chat */
 .ai-chat-bubble::before {
@@ -3153,12 +3199,16 @@ function renderFlashcard() {
             <div id="btn-ask-ai" class="btn-ask-ai" onclick="window.askAI()">
                 <i class="fas fa-robot"></i> Giải thích & Mẹo nhớ (AI)
             </div>
-            
-            <div id="ai-box" class="ai-chat-bubble">
-                <div class="ai-badge"><i class="fas fa-graduation-cap"></i> AI Teacher</div>
-                <div id="ai-content"></div>
-            </div>
         </div>
+
+        <div id="ai-backdrop" class="ai-overlay-backdrop" onclick="window.closeAI()"></div>
+        
+        <div id="ai-box" class="ai-chat-bubble">
+            <button class="btn-close-ai" onclick="window.closeAI()"><i class="fas fa-times"></i></button>
+            <div class="ai-badge"><i class="fas fa-graduation-cap"></i> AI Teacher</div>
+            <div id="ai-content"></div>
+        </div>
+        
         <div class="control-row">
             <button class="action-btn btn-wrong" onclick="window.processResult(false)">
                 <i class="fas fa-times"></i> &nbsp;Chưa thuộc
@@ -3196,31 +3246,32 @@ function renderFlashcard() {
 
     setTimeout(window.speakWord, 500);
 }
-// --- 🟢 HÀM GỌI TRỢ LÝ AI (ĐA NGÔN NGỮ) ---
+// --- 🟢 HÀM GỌI TRỢ LÝ AI (PHIÊN BẢN POPUP MỚI) ---
 window.askAI = async function() {
-    // 1. Lấy thông tin từ đang học
+    // 1. Kiểm tra dữ liệu
     if (!sessionQueue || !sessionQueue[sessionIndex]) return;
     const w = sessionQueue[sessionIndex];
 
-    const btn = document.getElementById('btn-ask-ai');
+    const backdrop = document.getElementById('ai-backdrop');
     const box = document.getElementById('ai-box');
     const content = document.getElementById('ai-content');
 
-    // 2. Chuyển đổi giao diện sang trạng thái "Đang tải"
-    btn.style.display = 'none'; // Ẩn nút
-    box.style.display = 'block'; // Hiện khung chat
+    // 2. Hiển thị Popup (thêm class active để chạy animation)
+    backdrop.classList.add('show');
+    box.classList.add('active');
     
-    // Lấy tên ngôn ngữ đang học từ Config (VD: "Tiếng Anh" hoặc "Indonesia")
+    // Lấy tên ngôn ngữ
     const langName = LANG_CONFIG[currentLang] ? LANG_CONFIG[currentLang].label : 'Ngoại ngữ';
 
+    // 3. Hiển thị trạng thái Loading
     content.innerHTML = `
-        <div style="text-align:center; padding:10px; color:#a855f7;">
-            <i class="fas fa-magic fa-spin"></i> &nbsp; Giáo viên ${langName} đang suy nghĩ...
+        <div style="text-align:center; padding:30px; color:#a855f7;">
+            <i class="fas fa-magic fa-spin fa-2x"></i>
+            <div style="margin-top:15px; font-weight:600;">Giáo viên ${langName} đang suy nghĩ...</div>
         </div>
     `;
 
-    // 3. Tạo câu lệnh (Prompt) thông minh đa ngôn ngữ
-    // ${langName} sẽ tự thay đổi thành "Tiếng Anh" hoặc "Indonesia" tùy theo chế độ đang chọn
+    // 4. Tạo Prompt
     const prompt = `Bạn là giáo viên dạy ${langName} vui tính. 
     Hãy giải thích từ vựng: "${w.english}" (nghĩa tiếng Việt: "${w.vietnamese}") cho học sinh Việt Nam.
     Yêu cầu:
@@ -3230,9 +3281,7 @@ window.askAI = async function() {
     - Độ dài: Dưới 100 từ.`;
 
     try {
-        // 4. Gọi API Pollinations (Miễn phí)
         const encodedPrompt = encodeURIComponent(prompt);
-        // Thêm tham số seed ngẫu nhiên để câu trả lời luôn mới mẻ
         const seed = Math.floor(Math.random() * 1000); 
         const url = `https://text.pollinations.ai/${encodedPrompt}?seed=${seed}&model=openai`; 
 
@@ -3246,14 +3295,24 @@ window.askAI = async function() {
 
     } catch (e) {
         console.error(e);
-        content.innerHTML = `<span style="color:#ef4444"><i class="fas fa-wifi"></i> Mạng yếu quá, thầy giáo AI đang bị lag!</span>`;
-        
-        // Cho phép thử lại sau 3 giây
-        setTimeout(() => {
-            btn.style.display = 'flex';
-            box.style.display = 'none';
-        }, 3000);
+        content.innerHTML = `
+            <div style="text-align:center; color:#ef4444; padding:20px;">
+                <i class="fas fa-wifi" style="font-size:2rem; margin-bottom:10px;"></i><br>
+                Mạng yếu quá, thầy giáo AI đang bị lag!<br>
+                <button onclick="window.askAI()" class="btn-primary" style="margin-top:15px; font-size:0.8rem; padding:8px 15px; width:auto;">
+                    <i class="fas fa-redo"></i> Thử lại
+                </button>
+            </div>`;
     }
+}
+
+// --- HÀM MỚI: ĐÓNG CỬA SỔ AI ---
+window.closeAI = function() {
+    const backdrop = document.getElementById('ai-backdrop');
+    const box = document.getElementById('ai-box');
+    
+    if(backdrop) backdrop.classList.remove('show');
+    if(box) box.classList.remove('active');
 }
 // --- HELPER: PENALTY LOGIC ---
 function applyHintPenalty(key) {
