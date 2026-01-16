@@ -857,6 +857,21 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+/* --- MUSIC PLAYER STYLES (MỚI) --- */
+.track-item {
+    padding: 8px 10px; border-radius: 8px; font-size: 0.85rem;
+    cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+    transition: 0.2s; color: rgba(255,255,255,0.7);
+}
+.track-item:hover { background: rgba(255,255,255,0.1); color: white; }
+.track-item.active { 
+    background: linear-gradient(90deg, #f97316, #fb923c); color: white; 
+    font-weight: 700; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3);
+}
+.track-playing-icon { display: none; }
+.track-item.active .track-playing-icon { display: block; animation: bounce 1s infinite; }
+#bg-music-vol { -webkit-appearance: none; background: rgba(255,255,255,0.2); border-radius: 2px; }
+#bg-music-vol::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #fff; border-radius: 50%; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -971,10 +986,14 @@
                 <i class="fas fa-font"></i>
                 <span>Chính tả</span>
             </div>
-            <div class="mode-btn" onclick="window.navTo('view-topics')">
-                <i class="fas fa-layer-group"></i>
-                <span>Đổi chủ đề</span>
-            </div>
+        <div class="mode-btn" onclick="window.startListeningMode()">
+    <i class="fas fa-headphones-alt" style="color:#f97316;"></i>
+    <span>Nghe Thụ Động</span>
+</div>
+<div class="mode-btn" onclick="window.navTo('view-topics')">
+    <i class="fas fa-layer-group"></i>
+    <span>Đổi chủ đề</span>
+</div>
         </div>
     </div> 
     
@@ -1040,7 +1059,7 @@
 
     <div id="topicList"></div>
   </div>
-  
+
   <div id="view-settings" class="view-container animate__animated animate__fadeIn" style="display:none;">
     <h2 style="margin-bottom: 20px; padding-left: 10px; text-shadow: 0 2px 4px rgba(0,0,0,0.5);">Cấu hình</h2>
     <div class="glass-panel" style="padding: 24px;">
@@ -1070,22 +1089,66 @@
 
         <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
 
-        <h4 style="margin-bottom:15px; color:#A78BFA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Hiệu năng & Hiển thị</h4>
-        
-        <!-- NEW SFX TOGGLE -->
+        <h4 style="margin-bottom:15px; color:#A78BFA; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Âm thanh & Giọng đọc</h4>
+
+        <div class="glass-panel" style="background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); padding:15px; margin-bottom:20px; border-radius:16px;">
+            <div style="font-size:0.85rem; font-weight:700; color:#fbbf24; margin-bottom:15px; display:flex; align-items:center; gap:8px;">
+                <i class="fas fa-microphone-alt"></i> Giọng đọc AI (Microsoft Edge)
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <div style="font-size:0.75rem; opacity:0.8; margin-bottom:4px;">Tiếng Anh (Mỹ)</div>
+                <div style="display:flex; gap:8px;">
+                    <select id="cfgVoiceEn" class="input-glass" style="margin-bottom:0; padding:8px; font-size:0.85rem;" onchange="window.saveConfig()">
+                        <option value="Microsoft Server Speech Text to Speech Voice (en-US, ChristopherNeural)">Christopher (Nam - Trầm ấm)</option>
+                        <option value="Microsoft Server Speech Text to Speech Voice (en-US, GuyNeural)">Guy (Nam - Tự nhiên)</option>
+                        <option value="Microsoft Server Speech Text to Speech Voice (en-US, AriaNeural)">Aria (Nữ - Truyền cảm)</option>
+                        <option value="Microsoft Server Speech Text to Speech Voice (en-US, JennyNeural)">Jenny (Nữ - Mượt mà)</option>
+                    </select>
+                    <button class="btn-primary" style="width:40px; padding:0; height:42px; display:flex; align-items:center; justify-content:center;" onclick="window.testVoice('en')"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+
+            <div style="margin-bottom:15px;">
+                <div style="font-size:0.75rem; opacity:0.8; margin-bottom:4px;">Tiếng Việt</div>
+                <div style="display:flex; gap:8px;">
+                    <select id="cfgVoiceVi" class="input-glass" style="margin-bottom:0; padding:8px; font-size:0.85rem;" onchange="window.saveConfig()">
+                        <option value="Microsoft Server Speech Text to Speech Voice (vi-VN, NamMinhNeural)">Nam Minh (Nam - Truyền hình)</option>
+                        <option value="Microsoft Server Speech Text to Speech Voice (vi-VN, HoaiMyNeural)">Hoài My (Nữ - Nhẹ nhàng)</option>
+                    </select>
+                    <button class="btn-primary" style="width:40px; padding:0; height:42px; display:flex; align-items:center; justify-content:center;" onclick="window.testVoice('vi')"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+            
+            <div>
+                <div style="font-size:0.75rem; opacity:0.8; margin-bottom:4px;">Indonesia</div>
+                <div style="display:flex; gap:8px;">
+                    <select id="cfgVoiceId" class="input-glass" style="margin-bottom:0; padding:8px; font-size:0.85rem;" onchange="window.saveConfig()">
+                        <option value="Microsoft Server Speech Text to Speech Voice (id-ID, ArdiNeural)">Ardi (Nam)</option>
+                        <option value="Microsoft Server Speech Text to Speech Voice (id-ID, GadisNeural)">Gadis (Nữ)</option>
+                    </select>
+                    <button class="btn-primary" style="width:40px; padding:0; height:42px; display:flex; align-items:center; justify-content:center;" onclick="window.testVoice('id')"><i class="fas fa-play"></i></button>
+                </div>
+            </div>
+        </div>
+
         <div class="switch-container">
             <span>Hiệu ứng âm thanh (SFX)</span>
             <input type="checkbox" id="cfgSfx" class="toggle-switch" onchange="window.saveConfig()">
         </div>
 
         <div class="switch-container">
-            <span>Giọng đọc Google (Hay hơn)</span>
+            <span>Dự phòng: Google Voice</span>
             <input type="checkbox" id="cfgVoiceGoogle" class="toggle-switch" onchange="window.saveConfig()">
         </div>
-        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: -10px; margin-bottom: 15px;">
-            Tắt để dùng giọng mặc định của máy (Nhanh hơn, không cần mạng).
+        <div style="font-size: 0.75rem; opacity: 0.7; margin-top: -10px; margin-bottom: 5px;">
+            Bật nếu Edge bị lỗi. Tắt để dùng giọng máy (Native).
         </div>
-        
+
+        <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
+
+        <h4 style="margin-bottom:15px; color:#34D399; text-shadow: 0 1px 2px rgba(0,0,0,0.5);">Hệ thống</h4>
+
         <div class="switch-container">
             <span>Chế độ Tiết kiệm pin (Máy yếu)</span>
             <input type="checkbox" id="cfgEco" class="toggle-switch" onchange="window.saveConfig()">
@@ -1098,12 +1161,14 @@
         <input type="range" id="cfgBrightness" min="20" max="100" value="100" oninput="window.saveConfig()">
         
         <hr style="border:0; border-top:1px solid var(--glass-border); margin: 25px 0;">
-<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-    <span><i class="fas fa-robot" style="color:#a855f7;"></i> Dữ liệu AI Offline</span>
-    <button class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.8rem; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5);" onclick="window.clearAICache()">
-        <i class="fas fa-broom"></i> Xoá Cache
-    </button>
-</div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
+            <span><i class="fas fa-robot" style="color:#a855f7;"></i> Dữ liệu AI Offline</span>
+            <button class="btn-primary" style="width: auto; padding: 8px 16px; font-size: 0.8rem; background: rgba(168, 85, 247, 0.2); border-color: rgba(168, 85, 247, 0.5);" onclick="window.clearAICache()">
+                <i class="fas fa-broom"></i> Xoá Cache
+            </button>
+        </div>
+
         <button class="action-btn" style="width:100%; height:55px; background:rgba(239, 68, 68, 0.2); border:1px solid rgba(239, 68, 68, 0.5); color:#ef4444; font-size:0.9rem;" onclick="window.resetProgress()">
             <i class="fas fa-trash-alt"></i> &nbsp; Xoá toàn bộ dữ liệu học
         </button>
@@ -1113,8 +1178,6 @@
         </div>
     </div>
   </div>
-
-</div>
 
 <div id="wordListOverlay">
     <div class="list-header">
@@ -1172,6 +1235,91 @@
       </div>
 </div>
 
+
+<div id="listeningOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; z-index:6000; background:#0f172a; flex-direction:column;">
+    
+    <div id="listen-bg-blur" style="position:absolute; top:0; left:0; width:100%; height:100%; background-size:cover; background-position:center; opacity:0.3; filter:blur(20px); z-index:1;"></div>
+
+    <div style="position:relative; z-index:10; width:100%; padding:20px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="color:white; font-weight:700; font-size:0.9rem; opacity:0.8;">
+            <i class="fas fa-broadcast-tower"></i> Passive Learning
+        </div>
+        
+        <div style="display:flex; gap:15px; position: relative;">
+            <button onclick="window.toggleMusicPanel()" id="btn-music-toggle" style="background:rgba(255,255,255,0.1); border:1px solid rgba(255,255,255,0.2); color:white; width:35px; height:35px; border-radius:50%; cursor:pointer; z-index: 20;">
+                <i class="fas fa-music"></i>
+            </button>
+
+            <button onclick="window.closeListeningMode()" style="background:rgba(255,255,255,0.1); border:none; color:white; width:35px; height:35px; border-radius:50%; cursor:pointer; z-index: 20;">
+                <i class="fas fa-chevron-down"></i>
+            </button>
+<div onclick="window.stopBgMusic()" style="text-align:center; padding:8px; background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.5); border-radius:8px; color:#fca5a5; cursor:pointer; font-size:0.85rem; font-weight:600; margin-bottom:10px; transition:0.2s;">
+    <i class="fas fa-stop-circle"></i> Tắt nhạc nền
+</div>
+            <div id="music-panel" style="display:none; position:absolute; top:45px; right:0; width:250px; background:rgba(15, 23, 42, 0.95); backdrop-filter:blur(15px); border:1px solid rgba(255,255,255,0.2); border-radius:16px; padding:15px; z-index: 100; box-shadow: 0 10px 30px rgba(0,0,0,0.5); flex-direction: column; gap: 10px;">
+                
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                    <i class="fas fa-volume-down" style="font-size:0.8rem; opacity:0.7;"></i>
+                    <input type="range" id="bg-music-vol" min="0" max="1" step="0.1" value="0.5" style="flex:1; height:4px;" oninput="window.setBgVolume(this.value)">
+                    <i class="fas fa-volume-up" style="font-size:0.8rem; opacity:0.7;"></i>
+                </div>
+                <hr style="border:0; border-top:1px solid rgba(255,255,255,0.1); width:100%;">
+                
+                <div id="playlist-container" style="display:flex; flex-direction:column; gap:5px; max-height:150px; overflow-y:auto;">
+                    </div>
+            </div>
+        </div>
+    </div>
+
+    <audio id="passive-bg-music" loop>
+        <source src="" type="audio/mpeg">
+    </audio>
+
+    <div style="position:relative; z-index:2; flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; max-width:400px; padding:20px; margin: 0 auto;">
+        
+        <div style="width:280px; height:280px; border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.5); overflow:hidden; margin-bottom:40px; position:relative; background:#1e293b;">
+            <img id="listen-img" src="" style="width:100%; height:100%; object-fit:cover; transition:transform 10s ease;">
+        </div>
+
+        <div style="text-align:center; margin-bottom:30px; width:100%;">
+            <h2 id="listen-word" style="font-size:2.2rem; font-weight:800; color:white; margin-bottom:5px; text-shadow:0 2px 10px rgba(0,0,0,0.5);">Loading...</h2>
+            <p id="listen-meaning" style="font-size:1.1rem; color:rgba(255,255,255,0.7); font-weight:500;">...</p>
+            
+            <div id="audio-visualizer" style="display:flex; justify-content:center; gap:4px; height:20px; margin-top:15px; opacity:0;">
+                <div class="bar" style="animation-delay:0.1s"></div>
+                <div class="bar" style="animation-delay:0.2s"></div>
+                <div class="bar" style="animation-delay:0.3s"></div>
+                <div class="bar" style="animation-delay:0.4s"></div>
+                <div class="bar" style="animation-delay:0.5s"></div>
+            </div>
+        </div>
+
+        <div style="width:90%; margin-bottom:40px;">
+            <div style="width:100%; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden;">
+                <div id="listen-progress" style="width:0%; height:100%; background:#f97316; border-radius:2px; transition:width 0.3s;"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:8px; font-size:0.7rem; color:rgba(255,255,255,0.5);">
+                <span id="listen-current">0:00</span>
+                <span id="listen-total">--:--</span>
+            </div>
+        </div>
+
+        <div style="display:flex; align-items:center; gap:40px;">
+            <button onclick="window.prevListen()" style="background:none; border:none; color:white; font-size:1.8rem; opacity:0.8; cursor:pointer;"><i class="fas fa-step-backward"></i></button>
+            
+            <button onclick="window.toggleListenState()" id="btn-play-pause" style="width:70px; height:70px; border-radius:50%; background:#f97316; border:none; color:white; font-size:2rem; box-shadow:0 10px 30px rgba(249, 115, 22, 0.4); cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform 0.2s;">
+                <i class="fas fa-pause"></i>
+            </button>
+            
+            <button onclick="window.nextListen()" style="background:none; border:none; color:white; font-size:1.8rem; opacity:0.8; cursor:pointer;"><i class="fas fa-step-forward"></i></button>
+        </div>
+    </div>
+    
+    <style>
+        .bar { width: 4px; background: #f97316; border-radius: 2px; animation: soundWave 0.8s ease-in-out infinite; }
+        @keyframes soundWave { 0% { height: 5px; } 50% { height: 20px; } 100% { height: 5px; } }
+    </style>
+</div>
 <div class="tab-bar">
   <div class="tab-item active" data-target="view-home" onclick="window.navTo('view-home')">
     <i class="fas fa-home"></i> <span>Home</span>
@@ -1194,6 +1342,15 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+// --- CẤU HÌNH TTS CAO CẤP (EDGE WORKER) ---
+
+
+// Cấu hình giọng đọc chuẩn Azure (ShortName)
+const EDGE_VOICES = {
+    'vi': 'vi-VN-NamMinhNeural', 
+    'en': 'en-US-ChristopherNeural', 
+    'id': 'id-ID-ArdiNeural' 
+};
 
 const firebaseConfig = {
   apiKey: "AIzaSyDtaVYb_72YvoGzvcERJZypUGS-u3skz2M",
@@ -1224,11 +1381,34 @@ let studyTimer = null;
 let accumulatedTime = parseInt(localStorage.getItem('fp_aurora_time') || 0);
 let weekTime = parseInt(localStorage.getItem('fp_aurora_time_week') || 0);   // Thời gian tuần
 let monthTime = parseInt(localStorage.getItem('fp_aurora_time_month') || 0); // Thời gian tháng
+let currentImageRequest = null;
+let lastInjectIndex = -1;
+let lastProcessTime = 0;
 let unsubscribeLeaderboard = null; 
 let currentLbTab = 'week';
 let calendarCursor = new Date();
 const imageCache = {}; // Cache for images to prevent reload
-const aiCache = JSON.parse(localStorage.getItem('fp_aurora_ai_cache') || '{}');
+// ✅ AUTO CLEAN IMAGE CACHE MỖI 5 PHÚT
+setInterval(() => {
+    const keys = Object.keys(imageCache);
+    if (keys.length > 50) { // Giới hạn 50 ảnh trong cache
+        // Xóa 20 ảnh cũ nhất
+        keys.slice(0, 20).forEach(k => delete imageCache[k]);
+        console.log("🧹 Cleaned 20 old images from cache");
+    }
+}, 300000); // 5 phút
+// ✅ Xử lý lỗi JSON.parse để tránh crash
+let aiCache = {};
+try {
+    const cached = localStorage.getItem('fp_aurora_ai_cache');
+    if (cached) {
+        aiCache = JSON.parse(cached);
+    }
+} catch (e) {
+    console.warn("⚠️ AI Cache corrupted, resetting...", e);
+    localStorage.removeItem('fp_aurora_ai_cache');
+    aiCache = {};
+}
 
 // --- GLOBAL AUDIO FOR GOOGLE TTS UNLOCKING & IOS SILENT BYPASS ---
 const ttsPlayer = new Audio();
@@ -1241,18 +1421,27 @@ const silentPlayer = new Audio(silentAudioSrc);
 
 // --- NEW HELPER: STOP GLOBAL AUDIO ---
 function stopGlobalAudio() {
-    // Stop Browser Native TTS
-    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    // ✅ iOS Workaround: Pause TRƯỚC rồi mới cancel
+    if (window.speechSynthesis) {
+        window.speechSynthesis.pause();
+        // Delay 50ms để iOS xử lý pause
+        setTimeout(() => {
+            window.speechSynthesis.cancel();
+        }, 50);
+    }
     
     // Stop Google TTS Audio Object
     if (ttsPlayer) {
-        ttsPlayer.pause();
-        ttsPlayer.currentTime = 0;
-        // Reset src to stop background loading
-        ttsPlayer.removeAttribute('src'); 
-        ttsPlayer.load(); 
-        ttsPlayer.onended = null;
-        ttsPlayer.onerror = null;
+        try {
+            ttsPlayer.pause();
+            ttsPlayer.currentTime = 0;
+            ttsPlayer.removeAttribute('src'); 
+            ttsPlayer.load(); 
+            ttsPlayer.onended = null;
+            ttsPlayer.onerror = null;
+        } catch (e) {
+            console.warn("TTS cleanup error:", e);
+        }
     }
 }
 
@@ -1265,7 +1454,21 @@ window.currentHintCount = 0;    // Counter for hint usage penalty
 let currentLang = localStorage.getItem('fp_aurora_lang') || 'en';
 
 // DAILY TRACKING NOW LANGUAGE SPECIFIC
-let dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+let dailyTracking = JSON.parse(
+    localStorage.getItem(`fp_aurora_daily_${currentLang}`) || 
+    '{"date":"", "count":0, "learnedWords":[]}'
+);
+
+// ✅ BẮT BUỘC: Khởi tạo learnedWords cho cả data mới và cũ
+// Kiểm tra kỹ hơn: nếu không tồn tại HOẶC không phải là mảng thì reset về mảng rỗng
+if (!dailyTracking.learnedWords || !Array.isArray(dailyTracking.learnedWords)) {
+    dailyTracking.learnedWords = [];
+}
+
+// ✅ Đồng bộ count với length của mảng (phòng trường hợp data bị lệch)
+// Đây là dòng quan trọng nhất giúp sửa lỗi hiển thị sai số lượng
+dailyTracking.count = dailyTracking.learnedWords.length;
+
   let scoreHistory = {}; // 
 // STREAK HISTORY TRACKING (Shared or language specific? Let's make it shared for simplicity, showing general activity)
 let streakHistory = JSON.parse(localStorage.getItem('fp_aurora_streak_history') || '[]');
@@ -1276,9 +1479,25 @@ let calendarViewMode = 'week';
 
 function checkDailyLimit() {
     const today = new Date().toISOString().split('T')[0];
+    
+    // ✅ Validation dailyTracking trước khi dùng
+    if (!dailyTracking || typeof dailyTracking !== 'object') {
+        dailyTracking = { date: "", count: 0, learnedWords: [] };
+    }
+    
     if (dailyTracking.date !== today) {
-        dailyTracking = { date: today, count: 0 };
+        // Reset khi sang ngày mới
+        dailyTracking = { 
+            date: today, 
+            count: 0,
+            learnedWords: []
+        };
         localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+    }
+    
+    // ✅ Đảm bảo có trường learnedWords (cho data cũ)
+    if (!dailyTracking.learnedWords || !Array.isArray(dailyTracking.learnedWords)) {
+        dailyTracking.learnedWords = [];
     }
 }
 
@@ -1615,14 +1834,18 @@ async function syncDataFromServer() {
 async function saveProgressToCloud(force = false) {
     if(!currentUser) return;
 
-    // Nếu đang học dở và chưa kết thúc (chưa bấm nút Finish hoặc force save) thì chưa lưu lên Cloud vội để tiết kiệm
     if (window.isSessionActive && !force) {
         return;
     }
     
+    // ✅ VALIDATION scoreHistory trước khi dùng
+    if (!scoreHistory || typeof scoreHistory !== 'object') {
+        console.warn("⚠️ scoreHistory invalid, resetting...");
+        scoreHistory = {};
+    }
+    
     // 1. CẬP NHẬT LỊCH SỬ ĐIỂM SỐ
     const todayStr = getTodayDateString();
-    
     // Lấy điểm cũ của ngày hôm nay + điểm vừa đạt được trong session
     const currentScoreToday = scoreHistory[todayStr] || 0;
     scoreHistory[todayStr] = currentScoreToday + sessionPoints;
@@ -1888,23 +2111,22 @@ async function unlockAudio() {
         } catch(e) { console.warn("Resume failed", e); }
     }
     
-    // Play a silent buffer via HTML Audio to wake up the engine on iOS
-    // iOS often respects the physical mute switch for Web Audio API but not for HTML5 Audio elements
-    // By playing this, we signal the OS that we are "media playback" not just system sounds
-    silentPlayer.play().catch(e => {
-        // Autoplay policy might block this if not triggered directly by user event
-        console.log("Silent player prevented", e);
-    });
-    
-    // Unlock Google TTS global audio by loading/playing a tiny segment
+    // Sửa lại đoạn play silent để bắt lỗi tốt hơn
+    if (silentPlayer) {
+        silentPlayer.play().catch(e => {
+            // Lỗi này không quan trọng, chỉ là browser chặn autoplay
+            console.log("Silent unlock skipped (Autoplay policy)");
+        });
+    }
+
     if(typeof ttsPlayer !== 'undefined') {
+         // Load nhẹ cái ttsPlayer để trình duyệt nhận diện
          ttsPlayer.load(); 
     }
     
     audioUnlocked = true;
-    console.log("Audio Context Unlocked via Interaction");
     
-    // Remove listeners once unlocked
+    // Gỡ sự kiện để không gọi lại nhiều lần
     document.removeEventListener('touchstart', unlockAudio);
     document.removeEventListener('click', unlockAudio);
 }
@@ -1985,9 +2207,7 @@ let accumulatedPoints = parseInt(localStorage.getItem(`fp_aurora_points_${curren
 // Volatile points for session tracking (Week/Month) - normally should load from server but simplified here
 let weekPoints = 0;
 let monthPoints = 0;
-// NEW: Temporary session points (not saved until session end)
 let sessionPoints = 0;
-
 let config = {
     newLimit: parseInt(localStorage.getItem('fp_aurora_cfg_new') || 5),
     reviewLimit: parseInt(localStorage.getItem('fp_aurora_cfg_review') || 20),
@@ -1997,6 +2217,12 @@ let config = {
     brightness: parseInt(localStorage.getItem('fp_aurora_brightness') || '100'),
     voiceEngine: localStorage.getItem('fp_aurora_voice_engine') || 'google',
     sfxEnabled: localStorage.getItem('fp_aurora_sfx') !== 'false', // Default true
+    // THÊM DÒNG NÀY:
+    edgeVoices: JSON.parse(localStorage.getItem('fp_aurora_edge_voices') || JSON.stringify({
+        en: 'Microsoft Server Speech Text to Speech Voice (en-US, ChristopherNeural)',
+        vi: 'Microsoft Server Speech Text to Speech Voice (vi-VN, NamMinhNeural)',
+        id: 'Microsoft Server Speech Text to Speech Voice (id-ID, ArdiNeural)'
+    })),
     activeGameModes: JSON.parse(localStorage.getItem('fp_aurora_game_modes') || '{"flashcard":true,"quiz":true,"fill":true,"sentence":true,"spelling":true,"matching":true}')
 };
 
@@ -2104,18 +2330,39 @@ async function fetchPexelsImage(query) {
 function preloadImages() {
     if (!sessionQueue || sessionQueue.length === 0) return;
     const start = sessionIndex + 1;
-    const end = Math.min(start + 3, sessionQueue.length); // Load next 2-3 images
+    const end = Math.min(start + 3, sessionQueue.length);
+    
+    // ✅ CLEANUP: Hủy các request cũ trước khi tạo mới
+    if (window.preloadedImages) {
+        window.preloadedImages.forEach(img => {
+            img.src = ''; // Ngắt kết nối
+            img.onload = null;
+            img.onerror = null;
+        });
+    }
+    window.preloadedImages = [];
+    
     for (let i = start; i < end; i++) {
         const w = sessionQueue[i];
         if(!w) continue;
-        // Call fetch to cache the URL and start browser network request
         fetchPexelsImage(w.english).then(url => {
             const img = new Image();
+            img.onload = () => {
+                // ✅ Auto cleanup sau khi load xong
+                setTimeout(() => {
+                    img.src = '';
+                    img.onload = null;
+                }, 5000);
+            };
+            img.onerror = () => {
+                img.src = '';
+                img.onerror = null;
+            };
             img.src = url;
+            window.preloadedImages.push(img);
         });
     }
 }
-
 // --- NEW HELPER: PRELOAD UPCOMING TOPICS ---
 async function preloadUpcomingTopics() {
     if(!allTopicsMetadata || allTopicsMetadata.length === 0) return;
@@ -2143,7 +2390,26 @@ async function preloadUpcomingTopics() {
         }
     }
 }
+// --- HÀM TẢI TOÀN BỘ JSON CÙNG LÚC ---
+async function downloadAllTopics() {
+    if (!allTopicsMetadata || allTopicsMetadata.length === 0) return;
+    
+    // Lọc ra những chủ đề chưa có trong bộ nhớ (allTopics)
+    const missingTopics = allTopicsMetadata.filter(meta => !allTopics[meta.name]);
+    if (missingTopics.length === 0) return;
 
+    showToast(`Đang tải offline ${missingTopics.length} chủ đề...`, "info");
+    
+    try {
+        // Promise.all sẽ kích hoạt tải tất cả các file JSON song song
+        await Promise.all(missingTopics.map(meta => loadTopicData(meta.name)));
+        showToast("Đã tải xong toàn bộ dữ liệu!", "success");
+        if(typeof renderDashboard === 'function') renderDashboard();
+    } catch (e) {
+        console.error("Lỗi khi tải dữ liệu tổng:", e);
+        showToast("Có lỗi khi tải một số dữ liệu!", "error");
+    }
+}
 // --- INITIALIZATION ---
 window.initApp = function() {
     // TRIAL LOGIC: Increment trial count on page access (initApp)
@@ -2159,7 +2425,10 @@ window.initApp = function() {
     applyTheme(); // Applies dark mode, eco mode, brightness
     updateConfigUI();
     updateLangUI();
-    window.fetchTopics(); 
+  window.fetchTopics().then(() => {
+    // Thay vì tải 1 cái, ta gọi hàm tải toàn bộ đã viết ở Bước 1
+    downloadAllTopics();
+});
     document.getElementById('dashTime').innerText = formatTime(accumulatedTime);
     
     // Reset session points on load
@@ -2188,14 +2457,20 @@ function updateLangUI() {
     }
 }
 
-window.switchLanguage = function(lang) {
+window.switchLanguage = async function(lang) {
     if(currentLang === lang) return;
     
     currentLang = lang;
     localStorage.setItem('fp_aurora_lang', lang);
+    
+    // ✅ RESET data structures để tránh xung đột
+    allTopics = {};
+    allTopicsMetadata = [];
+    currentTopicKey = '';
+    
     updateLangUI();
     
-    // --- [SỬA] Load lại Lịch sử điểm của ngôn ngữ mới ---
+    // Load lại Lịch sử điểm của ngôn ngữ mới
     scoreHistory = JSON.parse(localStorage.getItem(`fp_aurora_score_history_${currentLang}`) || '{}');
     
     // Tính lại điểm hiển thị ngay lập tức
@@ -2207,23 +2482,33 @@ window.switchLanguage = function(lang) {
     sessionPoints = 0;
     updateUserPointsUI();
     
-    // RELOAD DAILY TRACKING (Giữ nguyên tính năng giới hạn từ mới)
-    dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0}');
+    // RELOAD DAILY TRACKING
+    dailyTracking = JSON.parse(localStorage.getItem(`fp_aurora_daily_${currentLang}`) || '{"date":"", "count":0, "learnedWords":[]}');
     checkDailyLimit();
 
-    // Reload TTS & Data
+    // Reload TTS
     if(window.speechSynthesis) window.speechSynthesis.cancel();
     setTimeout(setupVoice, 500);
 
-    // Reload Data
-    currentTopicKey = localStorage.getItem(getDataKey('fp_aurora_topic')) || '';
-    srsData = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_srs')) || '{}'); 
-    masteredWords = JSON.parse(localStorage.getItem(getDataKey('fp_aurora_mastered')) || '{}');
+    // ✅ ĐỢI fetch xong mới render
+    showToast("Đang chuyển ngôn ngữ...", "info");
+    await window.fetchTopics();
+    
+    // Load topic đầu tiên nếu có
+    if (allTopicsMetadata.length > 0 && !currentTopicKey) {
+        currentTopicKey = allTopicsMetadata[0].name;
+        localStorage.setItem(getDataKey('fp_aurora_topic'), currentTopicKey);
+        await loadTopicData(currentTopicKey);
+    }
     
     playSound(SFX.POP);
-    window.fetchTopics(); 
+    showToast("Đã chuyển sang " + LANG_CONFIG[lang].label, "success");
     
-    syncDataFromServer();
+    // Sync từ server
+    await syncDataFromServer();
+    
+    // Render lại UI
+    renderDashboard();
 }
 
 // --- REPO SWITCHING LOGIC ---
@@ -2750,25 +3035,39 @@ window.startSmartSession = async function(isExtra = false) {
     // Kể cả chưa đến hạn cũng lấy cho đủ danh sách
     const batchReview = allLearnedWords.slice(0, config.reviewLimit);
 
-    // --- 7. DRIP FEED LOGIC (Quyết định số từ mới) ---
+// --- 7. LOGIC "ÉP" ÔN TRƯỚC - HỌC SAU (STRICT REVIEW FIRST) ---
+    
     let maxNewToAdd = 0;
     
-    if (batchReview.length > 0) {
-        // Nếu danh sách ôn tập đã đầy (do mình ép lấy đủ limit),
-        // Ta vẫn cho học thêm tối đa 2 từ mới nếu còn quota (để không bị ngợp)
-        maxNewToAdd = Math.min(2, remainingQuota);
-        
-        // Tuy nhiên, nếu batchReview toàn là từ "chưa đến hạn" (tức là người dùng rảnh),
-        // và người dùng muốn học thêm (isExtra) hoặc quota còn nhiều, ta có thể tăng từ mới lên.
-        // Nhưng logic đơn giản nhất: Giữ nguyên logic cũ.
-    } else {
-        // Nếu hoàn toàn không có từ nào để ôn (người mới chơi), học full từ mới
-        maxNewToAdd = Math.min(config.newLimit, remainingQuota);
-    }
-    
-    // Nếu quota hết nhưng người dùng bấm "Học thêm" (isExtra) -> Du di cho 2 từ
-    if (maxNewToAdd === 0 && isExtra) maxNewToAdd = 2;
+    // Đếm số lượng bài cần ôn đang có trong hàng đợi
+    const pendingReviewCount = batchReview.length;
 
+    // 🔴 QUY TẮC CỨNG: Nếu còn bất kỳ bài ôn nào (pendingReviewCount > 0)
+    // -> BẮT BUỘC maxNewToAdd = 0 (Không cho học từ mới)
+    if (pendingReviewCount > 0) {
+        maxNewToAdd = 0;
+        
+        // Thông báo rõ ràng cho người dùng biết tại sao
+        // Chỉ hiện thông báo nếu họ vẫn còn quota từ mới (để tránh nhầm với việc hết quota)
+        if (remainingQuota > 0) {
+            // Dùng setTimeout để Toast hiện sau khi Overlay mở ra
+            setTimeout(() => {
+                showToast(`🔒 ôn tập chút trước khi học mới nha!`, "warning");
+            }, 500);
+        }
+    } 
+    else {
+        // 🟢 ĐÃ SẠCH BÀI ÔN -> CHO PHÉP HỌC TỪ MỚI
+        
+        // Logic cũ: Lấy theo giới hạn ngày hoặc quota còn lại
+        maxNewToAdd = Math.min(config.newLimit, remainingQuota);
+
+        // Logic học thêm (Force) khi hết quota (nếu bấm nút "Học thêm bài nữa")
+        if (maxNewToAdd === 0 && isExtra) {
+            maxNewToAdd = 5; // Cho phép học thêm 5 từ nếu muốn
+            showToast("Học tốt nhaaaa!", "info");
+        }
+    }
     // --- 8. Lấy từ mới (Có tự động sang Topic tiếp theo) ---
     let batchNew = [];
     
@@ -2827,10 +3126,10 @@ window.startSmartSession = async function(isExtra = false) {
     const realDueCount = batchReview.filter(w => srsData[getWordKey(w)].nextReview <= now).length;
     const earlyReviewCount = batchReview.length - realDueCount;
     
-    let msg = `Bắt đầu: ${batchNew.length} từ mới`;
+    let msg = `Letgo!!!`;
     if(batchReview.length > 0) {
-        msg += ` + ${batchReview.length} ôn tập`;
-        if(earlyReviewCount > 0) msg += ` (gồm ${earlyReviewCount} ôn sớm)`;
+        msg += ` bạn thật giỏi`;
+        if(earlyReviewCount > 0) msg += ` cố lên, tương lai là của bạn`;
     }
     
     showToast(msg, "info");
@@ -2855,113 +3154,178 @@ window.startSmartSession = async function(isExtra = false) {
     preloadImages(); 
     decideSmartRender();
 }
-
-
+// --- LOGIC XỬ LÝ KẾT QUẢ (STRICT MASTERY V2) ---
 window.processResult = function(isCorrect, skipNext = false) {
-    if(isProcessing) return;
+    // ✅ DEBOUNCE: Chặn spam click
+    const now = Date.now();
+    if (now - lastProcessTime < 300) return;
+    lastProcessTime = now;
     
-    // SAFETY CHECK: Ensure game is still active
+    if(isProcessing) return;
     if (document.getElementById('gameOverlay').style.display === 'none') return;
     
     isProcessing = true;
     
     const w = sessionQueue[sessionIndex];
     const key = getWordKey(w);
-    
-    // Check if it's a new word BEFORE we update srsData
     const isNewWord = !srsData[key];
 
-    let data = srsData[key] || { interval: 0, level: 0, nextReview: 0, consecutiveWrongs: 0 };
-    
+    // Lấy data cũ hoặc khởi tạo data mới với các trường mở rộng
+    let data = srsData[key] || { 
+        interval: 0, 
+        level: 0, 
+        nextReview: 0, 
+        consecutiveWrongs: 0, 
+        totalReviews: 0,
+        // --- CÁC TRƯỜNG MỚI CHO STRICT MODE ---
+        masteryStreak: 0,       // Chuỗi đúng liên tiếp
+        passedModes: [],        // Các mode đã vượt qua
+        firstCorrectTime: null  // Thời gian bắt đầu chuỗi đúng
+    };
+
+    // Đảm bảo dữ liệu cũ không bị lỗi (fallback)
+    if (!Array.isArray(data.passedModes)) data.passedModes = [];
+    if (typeof data.masteryStreak === 'undefined') data.masteryStreak = 0;
+
     if(isCorrect) {
-        // --- STREAK HISTORY UPDATE ---
+        // --- 1. XỬ LÝ ĐÚNG ---
+        
+        // Cập nhật Streak toàn cục (cho session này)
         const todayStr = new Date().toISOString().split('T')[0];
         if(!streakHistory.includes(todayStr)) {
             streakHistory.push(todayStr);
             localStorage.setItem('fp_aurora_streak_history', JSON.stringify(streakHistory));
         }
-        
-        // --- STREAK TRACKING ---
         window.sessionCorrectStreak = (window.sessionCorrectStreak || 0) + 1;
-
+        
         playSound(SFX.CORRECT);
         if(!config.ecoMode) confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 }, scalar: 0.7 });
-        addPoints(10); 
+        addPoints(10);
         
-        // --- DAILY TRACKING INCREMENT (LANGUAGE SPECIFIC) ---
+        // Daily Tracking
         if(isNewWord) {
-            checkDailyLimit(); // Ensure date is fresh before increment
-            dailyTracking.count++;
-            localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+            checkDailyLimit();
+            if (!dailyTracking.learnedWords) dailyTracking.learnedWords = [];
+            if (!dailyTracking.learnedWords.includes(key)) {
+                dailyTracking.learnedWords.push(key);
+                dailyTracking.count = dailyTracking.learnedWords.length;
+                localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+            }
         }
-        // --------------------------------
-
-        // Reset count wrong
+        
+        // --- LOGIC SRS CƠ BẢN ---
         data.consecutiveWrongs = 0;
-
-        // Nếu từ này từng bị đánh dấu là "Hard" (isHard), tăng interval chậm hơn
-        let multiplier = data.isHard ? 1.5 : 2.5;
-
-        if(data.level === 0) data.interval = 1; 
-        else if(data.level === 1) data.interval = 3; 
-        else data.interval = Math.ceil(data.interval * multiplier);
-        
-        // Reset hard flag
-        if(data.isHard) data.isHard = false;
-
+        data.totalReviews++;
         data.level++;
-        data.nextReview = Date.now() + (data.interval * 24 * 3600 * 1000);
         
-        srsData[key] = data;
-        localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
-        // Save cloud removed here, only at end of session
+        // Bảng interval (Fibonacci)
+        const INTERVALS = [0, 1, 3, 7, 14, 30, 60, 90];
+        if (data.level < INTERVALS.length) data.interval = INTERVALS[data.level];
+        else data.interval = 90;
+        
+        if (data.isHard) {
+            data.interval = Math.ceil(data.interval * 0.7);
+            data.isHard = false;
+        }
+        data.nextReview = Date.now() + (data.interval * 24 * 3600 * 1000);
 
+        // --- 🟢 LOGIC STRICT MASTERY (QUY TẮC CỨNG) ---
+        
+        // 1. Tăng Streak Đúng
+        data.masteryStreak++;
+
+        // 2. Ghi nhận Mode (Nếu chưa có trong list)
+        // Sử dụng biến window.activeGameType ta đã thêm ở Bước 1
+        const currentModeName = window.activeGameType || 'flashcard'; 
+        if (!data.passedModes.includes(currentModeName)) {
+            data.passedModes.push(currentModeName);
+        }
+
+        // 3. Ghi nhận thời gian bắt đầu (Nếu chưa có)
+        if (!data.firstCorrectTime) {
+            data.firstCorrectTime = Date.now();
+        }
+
+        // --- KIỂM TRA ĐIỀU KIỆN MASTERED ---
+        const STREAK_REQ = 3;   // Yêu cầu: 3 lần đúng liên tiếp
+        const MODES_REQ = 3;    // Yêu cầu: 3 loại game khác nhau
+        const TIME_REQ_MS = 2 * 24 * 60 * 60 * 1000; // Yêu cầu: 2 ngày (48 giờ)
+
+        const timeDiff = Date.now() - data.firstCorrectTime;
+        const uniqueModesCount = data.passedModes.length;
+
+        // Debug log (Bật F12 để xem tiến độ)
+        console.log(`Word: ${w.english} | Streak: ${data.masteryStreak}/${STREAK_REQ} | Modes: ${uniqueModesCount}/${MODES_REQ} | Time: ${(timeDiff/3600000).toFixed(1)}h/48h`);
+
+        if (data.masteryStreak >= STREAK_REQ && 
+            uniqueModesCount >= MODES_REQ && 
+            timeDiff >= TIME_REQ_MS) {
+            
+            // --> ĐỦ ĐIỀU KIỆN MASTERED
+            masteredWords[key] = true;
+            delete srsData[key]; // Xóa khỏi danh sách đang học
+            
+            localStorage.setItem(getDataKey('fp_aurora_mastered'), JSON.stringify(masteredWords));
+            localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData)); // Cập nhật SRS để xóa key cũ
+            
+            showToast(`🏆 TUYỆT VỜI! Đã thuộc lòng: ${w.english}`, "success");
+            playSound(SFX.WIN);
+            if(!config.ecoMode) confetti({ particleCount: 100, spread: 70 });
+
+        } else {
+            // --> CHƯA ĐỦ ĐIỀU KIỆN, LƯU SRS BÌNH THƯỜNG
+            srsData[key] = data;
+            localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
+            
+            // Thông báo động viên nếu sắp đạt
+            if (uniqueModesCount >= 2 && data.masteryStreak >= 2) {
+                // showToast("Sắp thuộc lòng rồi! Cố lên!", "info");
+            }
+        }
+        
         if(!skipNext) {
             setTimeout(() => { 
-                 // Extra check inside timeout
-                 if(document.getElementById('gameOverlay').style.display === 'none') return;
-                 isProcessing = false; 
-                 nextStep(); 
+                if(document.getElementById('gameOverlay').style.display === 'none') return;
+                isProcessing = false; 
+                nextStep(); 
             }, 600);
         }
         
-    } else {
-        // --- STREAK RESET ---
+    } else { 
+        // --- 2. XỬ LÝ SAI (RESET TIẾN ĐỘ MASTERY) ---
         window.sessionCorrectStreak = 0;
-
         playSound(SFX.WRONG);
         
-        // --- REFACTORED SOFT PUNISHMENT LOGIC ---
+        // 🔴 QUY TẮC CỨNG: SAI LÀ RESET MASTERY
+        data.masteryStreak = 0;
+        data.passedModes = []; // Xóa lịch sử mode
+        data.firstCorrectTime = null; // Reset thời gian
+        
+        // Logic SRS giảm cấp (giữ nguyên)
         if (data.level > 1) {
-            // Decrease level by 2, keep interval at 40%
-            data.level = data.level - 2;
-            data.interval = Math.ceil(data.interval * 0.4);
-            if (data.interval < 1) data.interval = 1; // Minimum 1 day for next correct review
+            data.level = Math.max(0, data.level - 1);
+            data.interval = Math.ceil(data.interval * 0.5);
+            if (data.interval < 1) data.interval = 1;
         } else {
-            // Hard reset for low levels
             data.level = 0;
             data.interval = 0;
         }
-
-        // Review immediately
-        data.nextReview = Date.now(); 
         
-        // --- LOGIC MỚI: Đếm số lần sai liên tiếp ---
+        data.nextReview = Date.now();
         data.consecutiveWrongs = (data.consecutiveWrongs || 0) + 1;
         
         if (data.consecutiveWrongs > 3) {
-            data.isHard = true; // Đánh dấu từ khó
-            showToast("Sai quá 3 lần! Từ này sẽ được ưu tiên ôn kỹ.", "error");
-            // Thêm vào hàng đợi 2 lần nữa để bắt buộc học ngay
+            data.isHard = true;
+            showToast("⚠️ Từ khó! Đã reset tiến độ Master.", "error");
             sessionQueue.push(w);
             sessionQueue.push(w);
+        } else {
+             showToast("Sai rồi! Tiến độ Master bị reset.", "error");
         }
-        // -------------------------------------------
-
+        
         srsData[key] = data;
         localStorage.setItem(getDataKey('fp_aurora_srs'), JSON.stringify(srsData));
-        // Save cloud removed here, only at end of session
-
+        
         if(currentMode === 'smart') {
             const reInsertIdx = sessionIndex + 3;
             if(reInsertIdx < sessionQueue.length) {
@@ -2969,22 +3333,19 @@ window.processResult = function(isCorrect, skipNext = false) {
             } else {
                 sessionQueue.push(w);
             }
-            if(data.consecutiveWrongs <= 3) showToast("Sẽ ôn lại từ này ngay!", "error");
         }
         
-        // Nếu đang ở Flashcard thì lật để xem đáp án
         if(document.getElementById('flashcardObj') && !isFlipped) {
             window.flipCard();
         }
         
         setTimeout(() => { 
-             if(document.getElementById('gameOverlay').style.display === 'none') return;
-             isProcessing = false; 
-             nextStep();
+            if(document.getElementById('gameOverlay').style.display === 'none') return;
+            isProcessing = false; 
+            nextStep();
         }, 2500);
     }
 }
-
 // --- UI RENDERING & ANIMATIONS ---
 function openGameOverlay() {
     document.getElementById('gameOverlay').style.display = 'flex';
@@ -2996,11 +3357,45 @@ function openGameOverlay() {
 }
 
 window.closeGame = function() {
-    cleanupGameResources(); // Important cleanup
+    cleanupGameResources();
     document.getElementById('gameOverlay').style.display = 'none';
-    window.speechSynthesis.cancel();
-    stopTimer(); 
-    saveProgressToCloud(); 
+    
+    // ✅ CRITICAL: Force cleanup toàn bộ audio
+    stopGlobalAudio();
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
+    if (typeof ttsPlayer !== 'undefined') {
+        ttsPlayer.pause();
+        ttsPlayer.currentTime = 0;
+        ttsPlayer.removeAttribute('src');
+        ttsPlayer.load();
+    }
+    
+    // ✅ Clear timers
+    if (studyTimer) {
+        clearInterval(studyTimer);
+        studyTimer = null;
+    }
+    
+    // ✅ Reset state
+    sessionQueue = [];
+    sessionIndex = 0;
+    isProcessing = false;
+    currentImageRequest = null;
+    
+    // ✅ Clear preloaded images
+    if (window.preloadedImages) {
+        window.preloadedImages.forEach(img => {
+            img.src = '';
+            img.onload = null;
+            img.onerror = null;
+        });
+        window.preloadedImages = [];
+    }
+    
+    stopTimer();
+    saveProgressToCloud();
     renderDashboard();
 }
 
@@ -3044,19 +3439,21 @@ window.nextStep = function() {
         setTimeout(() => {
             if (document.getElementById('gameOverlay').style.display === 'none') return;
 
-            // --- DRIP FEED INJECTION START (Logic mới) ---
-            if (window.sessionCorrectStreak > 0 && window.sessionCorrectStreak % 3 === 0) {
-                let currentDailyCount = dailyTracking.count; // Số từ đã học hôm nay
+            // --- DRIP FEED INJECTION START (Có chặn duplicate) ---
+            if (window.sessionCorrectStreak > 0 && 
+                window.sessionCorrectStreak % 3 === 0 &&
+                sessionIndex !== lastInjectIndex) { // ✅ Chặn inject trùng
+                
+                lastInjectIndex = sessionIndex; // Đánh dấu đã inject
+                
+                let currentDailyCount = dailyTracking.count;
                 let dailyGoal = config.newLimit;
                 
-                // Chỉ thêm nếu chưa đạt mục tiêu (hoặc nới lỏng nếu muốn)
                 if (currentDailyCount < dailyGoal) {
-                    injectSilentWords(1); 
-                    // Toast thông báo đã có trong injectSilentWords
+                    injectSilentWords(1);
                 }
             }
             // --- DRIP FEED INJECTION END ---
-
             sessionIndex++;
             updateProgress();
             preloadImages(); // Preload next images
@@ -3178,8 +3575,25 @@ function renderSessionEnd() {
 
 // --- CARD RENDERER (UPDATED ASYNC PEXELS) ---
 function renderFlashcard() {
+window.activeGameType = 'flashcard';
     isProcessing = false;
+    
+    // KIỂM TRA AN TOÀN
+    if (!sessionQueue || sessionIndex >= sessionQueue.length) {
+        console.error("Invalid session state", {sessionQueue, sessionIndex});
+        showToast("Lỗi dữ liệu game!", "error");
+        window.closeGame();
+        return;
+    }
+    
     const w = sessionQueue[sessionIndex];
+    if (!w || !w.english) {
+        console.error("Invalid word object", w);
+        showToast("Từ không hợp lệ!", "error");
+        nextStep();
+        return;
+    }
+    
     isFlipped = false;
     
     const isRelearn = sessionQueue.filter(x => x === w).length > 1;
@@ -3251,14 +3665,43 @@ function renderFlashcard() {
     `;
     document.getElementById('gameContent').innerHTML = html;
     
-    // Fetch Image Async
-    fetchPexelsImage(w.english).then(url => {
-        const img = document.getElementById(imgId);
-        // Ensure image element still exists and belongs to current word
-        if (img && sessionQueue[sessionIndex] === w) {
-            img.src = url;
-        }
-    });
+   // ✅ Cancel request ảnh cũ trước khi tạo request mới
+    // ✅ Cancel request ảnh cũ trước khi tạo request mới
+if (currentImageRequest) {
+    currentImageRequest.cancelled = true;
+}
+
+// ✅ THÊM: Clear img cũ trước
+const oldImg = document.getElementById(imgId);
+if (oldImg) {
+    oldImg.src = loadingSrc;
+    oldImg.onload = null;
+    oldImg.onerror = null;
+}
+
+const requestId = { cancelled: false };
+currentImageRequest = requestId;
+
+// Fetch Image Async
+fetchPexelsImage(w.english).then(url => {
+    if (requestId.cancelled) {
+        console.log("🚫 Image request cancelled");
+        return;
+    }
+    
+    const img = document.getElementById(imgId);
+    if (img && sessionQueue[sessionIndex] === w) {
+        img.onload = () => {
+            img.onload = null; // ✅ Cleanup
+        };
+        img.onerror = () => {
+            img.onerror = null; // ✅ Cleanup
+        };
+        img.src = url;
+    }
+}).catch(e => {
+    console.warn("Image load failed:", e);
+});
 
     if(w.example) {
         getTranslation(w.example).then(trans => {
@@ -3302,22 +3745,42 @@ window.askAI = async function() {
     content.innerHTML = `
         <div style="text-align:center; padding:30px; color:#a855f7;">
             <i class="fas fa-bolt fa-spin fa-2x"></i>
-            <div style="margin-top:15px; font-weight:600;"> Groq AI đang chạy...</div>
+            <div style="margin-top:15px; font-weight:600;"> HiHi AI đang chạy...</div>
         </div>
     `;
-
     // Tạo nội dung câu hỏi (Prompt)
-    const systemPrompt = `Đóng vai một từ điển tiếng Anh chuyên sâu, hài hước và dễ hiểu cho người Việt. 
+    const systemPrompt = `Đóng vai một từ điển tiếng anh/indonesia chuyên sâu, hài hước và dễ hiểu cho người Việt. 
     Yêu cầu định dạng output: Chỉ sử dụng thẻ HTML cơ bản (<b>, <br>, <ul>, <li>). Không dùng Markdown.`;
     
     const userPrompt = `Giải thích từ: "${w.english}" (nghĩa Việt chính: "${w.vietnamese}").
     Cấu trúc:
-    1. Phiên âm & Loại từ.
-    2. Nghĩa chuyên sâu.
-    3. Cách dùng & Sắc thái.
-    4. Collocations.
-    5. Ví dụ song ngữ.
-    6. Mẹo nhớ hài hước.
+1. Thông tin chung  
+   - Phiên âm IPA  
+   - Loại từ (Noun/Verb/Adj/Adv) ghi rõ nghĩa tiếng việt 
+2. Nghĩa chuyên sâu  
+   - Giải thích bản chất từ, ngắn gọn, sát nghĩa, dễ hiểu  
+3. Ngữ cảnh & Sắc thái  
+   - Trang trọng / Suồng sã  
+   - Tích cực / Tiêu cực / Trung tính  
+   - Văn viết / Văn nói / Học thuật  
+4. Collocations  
+   - Các cụm từ cố định đi kèm (chia theo nhóm: V+N, Adj+N...)  
+5. Ví dụ song ngữ  
+   - 2 câu ví dụ tự nhiên, ưu tiên báo chí, phim ảnh, giao tiếp  
+6. Mẹo nhớ  
+   - Cách nhớ hài hước, chơi chữ, hình ảnh liên tưởng  
+7. Gia đình từ  
+   - Các dạng khác của từ (Noun, Verb, Adj, Adv)  
+8. Đồng nghĩa & Phân biệt  
+   - 1–2 từ đồng nghĩa gần nhất + giải thích khác biệt  
+9. Lỗi thường gặp  
+   - Cảnh báo lỗi người Việt hay sai (giới từ, ngữ pháp)  
+10. Cấp độ & Độ phổ biến  
+    - Nhãn A1–C2 hoặc mức độ phổ biến (cao/thấp)  
+11. Thành ngữ / Tiếng lóng  
+    - Các cụm tự nhiên chứa từ đó  
+12. Nguồn gốc từ  
+    - Giải thích ngắn gọn nếu từ có lịch sử thú vị  
     Bắt đầu bằng: "Hihi AI xin giải thích như sau:<br>"`;
 
     try {
@@ -3363,7 +3826,23 @@ window.askAI = async function() {
         // Lưu Cache
         if (typeof aiCache !== 'undefined') {
             aiCache[cacheKey] = text;
-            localStorage.setItem('fp_aurora_ai_cache', JSON.stringify(aiCache));
+           // Thêm hàm giới hạn cache (thêm sau dòng 1997)
+function trimAICache() {
+    const keys = Object.keys(aiCache);
+    const MAX_CACHE = 100; // Giới hạn 100 từ
+    
+    if (keys.length > MAX_CACHE) {
+        // Xóa 20 entry cũ nhất
+        const toDelete = keys.slice(0, 20);
+        toDelete.forEach(k => delete aiCache[k]);
+        console.log(`🧹 Cleaned ${toDelete.length} old AI cache entries`);
+    }
+}
+
+// Trong window.askAI() sau khi lưu cache:
+aiCache[cacheKey] = text;
+trimAICache(); // ✅ Thêm dòng này
+localStorage.setItem('fp_aurora_ai_cache', JSON.stringify(aiCache));
         }
 
         content.innerHTML = text;
@@ -3405,6 +3884,7 @@ function applyHintPenalty(key) {
 
 // --- SPELLING MODE ---
 function renderSpelling() {
+   window.activeGameType = 'spelling'; 
     isProcessing = false;
     window.currentHintCount = 0; // Explicit Reset
 
@@ -3595,6 +4075,7 @@ window.revealSentenceHint = function() {
 }
 
 async function renderSentence() {
+    window.activeGameType = 'sentence';
     isProcessing = false;
     const w = sessionQueue[sessionIndex];
 
@@ -3746,6 +4227,7 @@ window.checkSentence = function(correctSentence) {
 // --- END SENTENCE MODE ---
 
 function renderFill() {
+    window.activeGameType = 'fill';
     isProcessing = false;
     window.currentHintCount = 0; // Explicit Reset
 
@@ -3835,6 +4317,7 @@ window.checkFill = function(ans) {
 }
 
 function setupMatching() {
+    window.activeGameType = 'matching';
     isProcessing = false;
     
     // Logic look-ahead (Fix 1: Avoid Duplicates)
@@ -3966,6 +4449,7 @@ window.matchClick = function(idx, id) {
 }
 
 function setupQuiz() {
+    window.activeGameType = 'quiz';
     isProcessing = false;
     const w = sessionQueue[sessionIndex];
     const all = allTopics[currentTopicKey].words;
@@ -4020,6 +4504,7 @@ window.handleQuiz = function(el, isCorrect) {
 }
 
 // --- UTILITIES ---
+
 window.startGame = async function(mode) {
     cleanupGameResources();
 
@@ -4042,25 +4527,34 @@ window.startGame = async function(mode) {
     window.isSessionActive = true;
     sessionPoints = 0; 
 
-    // 3. Tải dữ liệu chủ đề
-    // Nếu là Flashcard: Chỉ cần tải chủ đề hiện tại
+   // 3. Tải dữ liệu chủ đề - ĐẢM BẢO TẢI XONG TRƯỚC KHI CHẠY
     if (mode === 'flashcard_all') {
-        if (currentTopicKey && !allTopics[currentTopicKey]) {
-            showToast("Đang tải dữ liệu...", "info");
-            await loadTopicData(currentTopicKey);
+        // Flashcard: chỉ cần chủ đề hiện tại
+        if (!currentTopicKey) {
+            showToast("Chưa chọn chủ đề!", "error");
+            return;
         }
-        if (currentTopicKey && !allTopics[currentTopicKey]) return showToast("Không tải được dữ liệu chủ đề!", "error");
-    } 
-    // Nếu là Game (Matching, Quiz...): Tự động tải bù tất cả chủ đề cũ để có vốn từ
-    else {
-        // Tìm các chủ đề chưa được tải
+        if (!allTopics[currentTopicKey]) {
+            showToast("Đang tải dữ liệu...", "info");
+            const loaded = await loadTopicData(currentTopicKey);
+            if (!loaded) {
+                showToast("Không tải được dữ liệu chủ đề!", "error");
+                return;
+            }
+        }
+    } else {
+        // Các game khác: cần tải TẤT CẢ chủ đề
         const missingTopics = allTopicsMetadata.filter(meta => !allTopics[meta.name]);
-        if(missingTopics.length > 0) {
-            showToast(`Đang tải dữ liệu từ ${missingTopics.length} chủ đề cũ...`, "info");
-            // Tải song song tất cả
-            await Promise.all(missingTopics.map(meta => loadTopicData(meta.name)));
+      await downloadAllTopics();
+        // Kiểm tra lại có đủ dữ liệu không
+        const loadedCount = Object.keys(allTopics).length;
+        if (loadedCount === 0) {
+            showToast("Không có dữ liệu để chơi game!", "error");
+            return;
         }
     }
+    console.log("Loaded topics:", Object.keys(allTopics));
+    console.log("Current topic:", currentTopicKey, allTopics[currentTopicKey]);
 
     playSound(SFX.POP);
 
@@ -4119,12 +4613,35 @@ window.startGame = async function(mode) {
     
     if(localQueue.length === 0) return showToast("Không có từ nào khả dụng", "error");
 
+
+// Kiểm tra lại localQueue trước khi gán
+   // ✅ VALIDATION KÉP
+    if(!localQueue || localQueue.length === 0) {
+        showToast("Không có từ khả dụng!", "error");
+        window.isSessionActive = false;
+        return;
+    }
+    
     showToast(`Bắt đầu: ${localQueue.length} thẻ`, "info");
     
-    // GÁN VÀO BIẾN GLOBAL (Quan trọng!)
-    window.sessionQueue = localQueue; 
+    // ✅ Clone an toàn với validation
+    sessionQueue = Array.isArray(localQueue) ? [...localQueue] : [];
+    
+    // ✅ Double check sau khi clone
+    if (sessionQueue.length === 0) {
+        console.error("❌ Session queue empty after clone!");
+        showToast("Lỗi khởi tạo game!", "error");
+        window.isSessionActive = false;
+        return;
+    }
+    
     sessionIndex = 0;
+    console.log("✅ Session initialized:", sessionQueue.length, "words");
     currentMode = mode;
+    
+    // Kiểm tra lại sau khi gán
+    console.log("Session queue ready:", sessionQueue.length, "words");
+    console.log("First word:", sessionQueue[0]);
     
     openGameOverlay();
     preloadImages(); 
@@ -4203,7 +4720,17 @@ function renderDashboard() {
     const currentLimit = config.newLimit;
     const learnedToday = dailyTracking.count;
     const remaining = Math.max(0, currentLimit - learnedToday);
-
+// Thêm ngay sau phần tính remaining
+if (learnedToday > 0) {
+    const statusMsg = document.getElementById('status-msg');
+    if (statusMsg) {
+        statusMsg.innerHTML = `
+            <i class="fas fa-fire" style="color:#fbbf24;"></i> 
+            Hôm nay: ${learnedToday}/${currentLimit} từ mới
+            ${remaining === 0 ? ' <span style="color:#22c55e;">✓ Đạt mục tiêu!</span>' : ''}
+        `;
+    }
+}
     const actionArea = document.getElementById('actionArea');
     if(actionArea) {
         // Condition: Either new words available OR current topic review available
@@ -4353,85 +4880,6 @@ window.unmarkMastered = function(wordEn) {
         renderDashboard();
         window.openWordList('mastered'); // Refresh list
     }
-}
-
-window.speakText = function(text, onEnd) {
-    stopGlobalAudio(); // Stop any previous sound immediately
-
-    if(config.muted) {
-        if(onEnd) setTimeout(onEnd, 500); 
-        return;
-    }
-
-    // CHECK CONFIG: If user chose native, skip google
-    if (config.voiceEngine === 'native') {
-        window.speakFallback(text, onEnd);
-        return;
-    }
-
-    // Determine language code
-    let tl = 'en'; 
-    if (currentLang === 'en') tl = 'en'; 
-    else if (currentLang === 'id') tl = 'id';
-    else if (currentLang === 'vi') tl = 'vi';
-
-    // Google TTS URL
-    // Use client=gtx for standard reliable access
-    const url = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${tl}&q=${encodeURIComponent(text)}`;
-    
-    // Use global unlocked player if possible
-    ttsPlayer.src = url;
-    ttsPlayer.playbackRate = 1.0;
-    
-    // Clear previous handlers
-    ttsPlayer.onended = null;
-    ttsPlayer.onerror = null;
-
-    // Handle events
-    ttsPlayer.onended = () => {
-        if(onEnd) onEnd();
-        ttsPlayer.onended = null;
-        ttsPlayer.onerror = null;
-    };
-    
-    ttsPlayer.onerror = (e) => {
-        console.warn("Google TTS Error, trying fallback", e);
-        // Fallback to Native if Google fails
-        if ('speechSynthesis' in window) {
-            window.speakFallback(text, onEnd);
-        } else {
-             if(onEnd) onEnd();
-        }
-        ttsPlayer.onended = null;
-        ttsPlayer.onerror = null;
-    };
-
-    const playPromise = ttsPlayer.play();
-    if (playPromise !== undefined) {
-        playPromise.catch(error => {
-            console.warn("Google TTS Playback prevented:", error);
-            // Try fallback immediately
-             if ('speechSynthesis' in window) {
-                window.speakFallback(text, onEnd);
-            } else {
-                 if(onEnd) onEnd();
-        }
-        });
-    }
-}
-
-window.speakFallback = function(text, onEnd) {
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = LANG_CONFIG[currentLang].tts; 
-    u.rate = 0.85; 
-    if(selectedVoice) u.voice = selectedVoice;
-    
-    if(onEnd) {
-        u.onend = onEnd;
-        u.onerror = onEnd;
-    }
-    window.speechSynthesis.speak(u);
 }
 
 window.speakWord = function(e, onEnd) {
@@ -4632,7 +5080,32 @@ function applyTheme() {
 window.toggleTheme = function() { config.darkMode = !config.darkMode; localStorage.setItem('fp_aurora_dark', config.darkMode); applyTheme(); playSound(SFX.POP); saveProgressToCloud(); }
 window.toggleMute = function() { config.muted = !config.muted; localStorage.setItem('fp_aurora_muted', config.muted); updateMuteIcon(); saveProgressToCloud(); }
 function updateMuteIcon() { document.getElementById('muteIcon').className = config.muted ? 'fas fa-volume-mute' : 'fas fa-volume-up'; }
+window.testVoice = async function(lang) {
+    // Fake trạng thái đang nghe để Audio không bị ngắt
+    if (typeof listenState !== 'undefined') listenState.isPlaying = true;
+    
+    showToast("Đang test giọng...", "info");
+    
+    let text = "Hello, this is a test.";
+    if(lang === 'vi') text = "Xin chào, đây là giọng đọc tiếng Việt.";
+    if(lang === 'id') text = "Halo, ini adalah tes suara.";
+
+    // Lấy mã ngôn ngữ chuẩn
+    const langCode = (lang === 'vi') ? 'vi-VN' : (lang === 'id' ? 'id-ID' : 'en-US');
+    
+    try {
+        // --- SỬA LỖI TẠI ĐÂY: Dùng hàm mới processOnlineTTS ---
+        await processOnlineTTS(text, langCode);
+    } catch(e) {
+        console.error(e);
+        showToast("Lỗi test giọng: " + e.message, "error");
+    }
+    
+    // Trả lại trạng thái cũ
+    if (typeof listenState !== 'undefined') listenState.isPlaying = false;
+}
 window.saveConfig = function() {
+    // 1. Lưu các cấu hình cơ bản (giữ nguyên)
     config.newLimit = parseInt(document.getElementById('cfgNewLimit').value);
     config.reviewLimit = parseInt(document.getElementById('cfgReviewLimit').value);
     config.ecoMode = document.getElementById('cfgEco').checked;
@@ -4640,10 +5113,19 @@ window.saveConfig = function() {
     config.voiceEngine = document.getElementById('cfgVoiceGoogle').checked ? 'google' : 'native';
     config.sfxEnabled = document.getElementById('cfgSfx').checked;
     
-    // FIX: Resume AudioContext immediately if SFX enabled by user click
+    // --- [THÊM ĐOẠN NÀY ĐỂ LƯU GIỌNG ĐỌC] ---
+    config.edgeVoices = {
+        en: document.getElementById('cfgVoiceEn').value,
+        vi: document.getElementById('cfgVoiceVi').value,
+        id: document.getElementById('cfgVoiceId').value
+    };
+    // Lưu vào LocalStorage để F5 không bị mất
+    localStorage.setItem('fp_aurora_edge_voices', JSON.stringify(config.edgeVoices));
+    // ----------------------------------------
+
+    // 2. Kích hoạt lại AudioContext nếu vừa bật SFX (giữ nguyên)
     if (config.sfxEnabled && audioCtx.state === 'suspended') {
         audioCtx.resume().then(() => {
-            // Optional: Play a tiny silent oscillator to 'warm up' iOS audio
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             gain.gain.value = 0.001; 
@@ -4654,6 +5136,7 @@ window.saveConfig = function() {
         });
     }
     
+    // 3. Lưu các cấu hình khác vào LocalStorage (giữ nguyên)
     localStorage.setItem('fp_aurora_cfg_new', config.newLimit);
     localStorage.setItem('fp_aurora_cfg_review', config.reviewLimit);
     localStorage.setItem('fp_aurora_eco', config.ecoMode);
@@ -4662,8 +5145,8 @@ window.saveConfig = function() {
     localStorage.setItem('fp_aurora_sfx', config.sfxEnabled);
 
     saveProgressToCloud();
-    updateConfigUI();
-    applyTheme(); // Apply eco mode and brightness changes immediately
+    updateConfigUI(); // Hàm này sẽ cập nhật lại giao diện theo config mới
+    applyTheme();
 }
 function updateConfigUI() {
     document.getElementById('cfgNewLimit').value = config.newLimit;
@@ -4675,6 +5158,12 @@ function updateConfigUI() {
     document.getElementById('dispBrightness').innerText = config.brightness + '%';
     document.getElementById('cfgVoiceGoogle').checked = (config.voiceEngine === 'google');
     document.getElementById('cfgSfx').checked = config.sfxEnabled;
+    // --- [MỚI] Cập nhật Dropdown giọng đọc ---
+    if(config.edgeVoices) {
+        if(document.getElementById('cfgVoiceEn')) document.getElementById('cfgVoiceEn').value = config.edgeVoices.en;
+        if(document.getElementById('cfgVoiceVi')) document.getElementById('cfgVoiceVi').value = config.edgeVoices.vi;
+        if(document.getElementById('cfgVoiceId')) document.getElementById('cfgVoiceId').value = config.edgeVoices.id;
+    }
 }
 // Hàm cập nhật SRS ngầm (cho chế độ Matching/Batch processing)
 window.silentUpdateSRS = function(w) {
@@ -4704,11 +5193,19 @@ window.silentUpdateSRS = function(w) {
     // Tracking điểm
     addPoints(10);
 
-    // --- KHẮC PHỤC: Tăng biến đếm ngày nếu đây là từ mới ---
+  // ✅ Tăng biến đếm + Check duplicate
     if (wasNew) { 
-        checkDailyLimit(); 
-        dailyTracking.count++;
-        localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+        checkDailyLimit();
+        
+        // Khởi tạo nếu chưa có
+        if (!dailyTracking.learnedWords) dailyTracking.learnedWords = [];
+        
+        // Chỉ tăng nếu chưa học hôm nay
+        if (!dailyTracking.learnedWords.includes(key)) {
+            dailyTracking.learnedWords.push(key);
+            dailyTracking.count = dailyTracking.learnedWords.length;
+            localStorage.setItem(`fp_aurora_daily_${currentLang}`, JSON.stringify(dailyTracking));
+        }
     }
 }
   // --- HÀM XOÁ CACHE AI ---
@@ -4736,14 +5233,6 @@ window.clearAICache = function() {
         showToast("Lỗi khi xoá cache", "error");
     }
 }
-  // --- KHỞI ĐỘNG ỨNG DỤNG AN TOÀN (BẮT BUỘC THÊM) ---
-// Đợi trình duyệt tải xong hết module rồi mới chạy initApp
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(window.initApp, 100));
-} else {
-    setTimeout(window.initApp, 100);
-}
-// --- BỔ SUNG CÁC HÀM BỊ THIẾU ---
 
 // Hàm quyết định hiển thị game gì (Flashcard/Quiz/Spelling...) dựa trên config
 window.decideSmartRender = function() {
@@ -4799,15 +5288,577 @@ window.startGlobalReview = function() {
 window.onerror = function(msg, url, line) {
     console.error("Lỗi hệ thống: " + msg);
 };
-  // --- BẮT BUỘC THÊM HÀM NÀY ĐỂ KHÔNG BỊ LỖI ---
-function stopTimer() {
-    if(typeof studyTimer !== 'undefined' && studyTimer) {
-        clearInterval(studyTimer);
-        studyTimer = null;
+
+/* --- PASSIVE LISTENING MODE ENGINE --- */
+// --- [BẮT ĐẦU] CODE NHẠC NỀN MỚI ---
+const MUSIC_PLAYLIST = [
+{ name: "Relaxing Piano", url: "https://cdn.pixabay.com/download/audio/2022/02/16/audio_96a2d1b8a9.mp3" }, // Piano nhẹ nhàng
+{ name: "Emotional Thoughtful Piano", url: "https://cdn.pixabay.com/download/audio/2023/03/05/audio_c9d6c4a0c3.mp3" }, // Nhạc sóng não tập trung
+{ name: "Dark Sad Ambient Piano", url: "https://cdn.pixabay.com/download/audio/2022/10/13/audio_2f54f9f4b8.mp3" }, // Tiếng mưa rơi
+{ name: "Happy Piano", url: "https://cdn.pixabay.com/download/audio/2024/08/20/audio_85353d689c.mp3" }, // Lofi nhịp chậm
+{ name: "Saying Goodbye Piano", url: "https://cdn.pixabay.com/download/audio/2024/03/14/audio_38512f429d.mp3" }, // Piano không gian
+{ name: "Melodies of a Sunrise", url: "https://cdn.pixabay.com/download/audio/2022/04/20/audio_520d60932e.mp3" } // Cảm hứng học tập
+];
+let currentTrackIdx = -1;
+
+// Hàm bật tắt bảng nhạc
+window.toggleMusicPanel = function() {
+    const panel = document.getElementById('music-panel');
+    const btn = document.getElementById('btn-music-toggle');
+    if (!panel) return; // Check an toàn
+    
+    if (panel.style.display === 'none') {
+        renderPlaylist();
+        panel.style.display = 'flex';
+        panel.classList.add('animate__animated', 'animate__fadeInDown');
+        if(btn) btn.style.background = 'rgba(255,255,255,0.3)';
+    } else {
+        panel.style.display = 'none';
+        if(btn) btn.style.background = 'rgba(255,255,255,0.1)';
     }
 }
-// ---------------------------------------------
+
+// Hàm vẽ danh sách nhạc
+function renderPlaylist() {
+    const container = document.getElementById('playlist-container');
+    if(!container) return;
+    container.innerHTML = '';
+    MUSIC_PLAYLIST.forEach((track, idx) => {
+        const div = document.createElement('div');
+        div.className = `track-item ${idx === currentTrackIdx ? 'active' : ''}`;
+        div.onclick = () => window.playTrack(idx);
+        div.innerHTML = `<span>${idx + 1}. ${track.name}</span> <i class="fas fa-music track-playing-icon" style="font-size:0.7rem;"></i>`;
+        container.appendChild(div);
+    });
+}
+
+// Hàm chơi nhạc
+window.playTrack = function(idx) {
+    const bgAudio = document.getElementById('passive-bg-music');
+    if(!bgAudio) return;
+
+    if (currentTrackIdx === idx && !bgAudio.paused) {
+        bgAudio.pause();
+        currentTrackIdx = -1;
+    } else {
+        currentTrackIdx = idx;
+        bgAudio.src = MUSIC_PLAYLIST[idx].url;
+        const volSlider = document.getElementById('bg-music-vol');
+        bgAudio.volume = volSlider ? volSlider.value : 0.5;
+        bgAudio.play().catch(e => console.log("Music blocked:", e));
+    }
+    renderPlaylist();
+}
+// Hàm tắt hẳn nhạc nền
+window.stopBgMusic = function() {
+    const bgAudio = document.getElementById('passive-bg-music');
+    if(bgAudio) {
+        bgAudio.pause();
+        bgAudio.currentTime = 0; // Tua lại từ đầu
+    }
+    currentTrackIdx = -1; // Xóa trạng thái bài đang chọn
+    renderPlaylist(); // Vẽ lại danh sách (để mất màu cam)
+}
+window.setBgVolume = function(val) {
+    const bgAudio = document.getElementById('passive-bg-music');
+    if(bgAudio) bgAudio.volume = val;
+}
+// --- [KẾT THÚC] CODE NHẠC NỀN MỚI ---
+let listenState = {
+    queue: [],
+    index: 0,
+    isPlaying: false,
+    timer: null,
+    currentLangCode: 'en-US' 
+};
+
+// 1. Cập nhật startListeningMode: Đăng ký Media Session
+window.startListeningMode = async function() {
+    if(!currentTopicKey || !allTopics[currentTopicKey]) {
+        showToast("Vui lòng chọn chủ đề trước!", "error");
+        return;
+    }
+    
+    // BẮT BUỘC: Chuyển sang Google TTS khi nghe thụ động để chạy được nền
+    // Native TTS (SpeechSynthesis) sẽ bị tắt ngay khi khóa màn hình
+    if (config.voiceEngine === 'native') {
+        showToast("Đã tự động chuyển sang giọng Google để chạy nền", "info");
+    }
+
+    const langCfg = LANG_CONFIG[currentLang];
+    listenState.currentLangCode = langCfg.tts; 
+    
+    const words = [...allTopics[currentTopicKey].words];
+    if(words.length === 0) return showToast("Chủ đề trống!", "error");
+    
+    words.sort(() => Math.random() - 0.5);
+
+    listenState.queue = words;
+    listenState.index = 0;
+    listenState.isPlaying = true;
+
+    // Show UI
+    const overlay = document.getElementById('listeningOverlay');
+    overlay.style.display = 'flex';
+    overlay.classList.add('animate__animated', 'animate__fadeIn');
+    
+    // Unlock Audio Context & Setup Media Session
+    if(audioCtx.state === 'suspended') try { await audioCtx.resume(); } catch(e){}
+    setupMediaSession();
+    
+    playListenLoop();
+};
+
+// Hàm thiết lập Media Session (Để hiện thông báo ngoài màn hình khóa)
+function setupMediaSession() {
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.setActionHandler('play', () => window.toggleListenState());
+        navigator.mediaSession.setActionHandler('pause', () => window.toggleListenState());
+        navigator.mediaSession.setActionHandler('previoustrack', () => window.prevListen());
+        navigator.mediaSession.setActionHandler('nexttrack', () => window.nextListen());
+        navigator.mediaSession.playbackState = "playing";
+    }
+}
+
+window.closeListeningMode = function() {
+    // 1. Tắt nhạc nền nếu đang chạy
+    const bgAudio = document.getElementById('passive-bg-music');
+    if(bgAudio) {
+        bgAudio.pause();
+        currentTrackIdx = -1;
+    }
+    // 2. Ẩn panel nhạc
+    const panel = document.getElementById('music-panel');
+    if(panel) panel.style.display = 'none';
+
+    // 3. Logic cũ giữ nguyên
+    listenState.isPlaying = false;
+    clearTimeout(listenState.timer);
+    stopGlobalAudio();
+    document.getElementById('listeningOverlay').style.display = 'none';
+    
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.playbackState = "none";
+    }
+};
+
+window.toggleListenState = function() {
+    listenState.isPlaying = !listenState.isPlaying;
+    const btn = document.getElementById('btn-play-pause');
+    const visualizer = document.getElementById('audio-visualizer');
+    
+    if(listenState.isPlaying) {
+        btn.innerHTML = '<i class="fas fa-pause"></i>';
+        visualizer.style.opacity = '1';
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "playing";
+        playListenLoop();
+    } else {
+        btn.innerHTML = '<i class="fas fa-play"></i>';
+        visualizer.style.opacity = '0';
+        if ('mediaSession' in navigator) navigator.mediaSession.playbackState = "paused";
+        stopGlobalAudio();
+        clearTimeout(listenState.timer);
+    }
+};
+
+window.nextListen = function() {
+    stopGlobalAudio();
+    clearTimeout(listenState.timer);
+    listenState.index++;
+    if(listenState.index >= listenState.queue.length) listenState.index = 0;
+    playListenLoop();
+};
+
+window.prevListen = function() {
+    stopGlobalAudio();
+    clearTimeout(listenState.timer);
+    listenState.index--;
+    if(listenState.index < 0) listenState.index = listenState.queue.length - 1;
+    playListenLoop();
+};
+async function playListenLoop() {
+    if(!listenState.isPlaying) return;
+    
+    const w = listenState.queue[listenState.index];
+    if(!w) return;
+
+    // --- Cập nhật UI ---
+    document.getElementById('listen-word').innerText = w.english;
+    document.getElementById('listen-meaning').innerText = w.vietnamese;
+    document.getElementById('listen-current').innerText = (listenState.index + 1);
+    document.getElementById('listen-total').innerText = listenState.queue.length;
+    const pct = ((listenState.index + 1) / listenState.queue.length) * 100;
+    document.getElementById('listen-progress').style.width = pct + '%';
+    document.getElementById('audio-visualizer').style.opacity = '1';
+
+    const imgUrl = imageCache[w.english] || getImageUrl(w.english);
+    const mainImg = document.getElementById('listen-img');
+    const bgImg = document.getElementById('listen-bg-blur');
+    
+    if(mainImg) {
+        mainImg.src = imgUrl;
+        mainImg.style.transform = 'scale(1.1)';
+        setTimeout(() => mainImg.style.transform = 'scale(1)', 5000);
+    }
+    if(bgImg) bgImg.style.backgroundImage = `url('${imgUrl}')`;
+
+    // --- Cập nhật Màn hình khóa (Media Session) ---
+    if ('mediaSession' in navigator) {
+        navigator.mediaSession.metadata = new MediaMetadata({
+            title: w.english,
+            artist: w.vietnamese,
+            album: 'Hihi Vocabulary Passive',
+            artwork: [
+                { src: imgUrl, sizes: '512x512', type: 'image/jpeg' }
+            ]
+        });
+    }
+
+    try {
+        // A. Đọc từ gốc (Dùng processOnlineTTS để chạy được nền)
+        // --- SỬA LỖI TẠI ĐÂY ---
+        await processOnlineTTS(w.english, listenState.currentLangCode);
+        
+        // Nghỉ 1.5s
+        await waitPromise(1500);
+        
+        // B. Đọc nghĩa tiếng Việt
+        // --- SỬA LỖI TẠI ĐÂY ---
+        await processOnlineTTS(w.vietnamese, 'vi-VN'); 
+        
+        // Nghỉ 1s
+        await waitPromise(1000);
+        
+        // Next loop
+        if(listenState.isPlaying) {
+            listenState.index++;
+            if(listenState.index >= listenState.queue.length) listenState.index = 0;
+            playListenLoop();
+        }
+        
+    } catch (e) {
+        console.log("Audio interrupted or background throttled", e);
+        // Retry logic nếu bị ngắt quãng do mạng hoặc tắt màn hình quá lâu
+        if(listenState.isPlaying) {
+             setTimeout(playListenLoop, 1000);
+        }
+    }
+}
+
+// Hàm phụ trợ cho giọng máy Native
+function speakNativeFallback(text, langCode, onEnd) {
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    
+    // Cố gắng set giọng đúng ngôn ngữ
+    u.lang = langCode; 
+    
+    // Tìm giọng trong máy khớp với ngôn ngữ
+    const voices = window.speechSynthesis.getVoices();
+    const correctVoice = voices.find(v => v.lang.includes(langCode.replace('-','_')) || v.lang.startsWith(langCode.split('-')[0]));
+    if(correctVoice) u.voice = correctVoice;
+
+    u.rate = 0.9;
+    u.onend = onEnd;
+    u.onerror = onEnd; // Vẫn resolve dù lỗi để không treo app
+    window.speechSynthesis.speak(u);
+}
+
+function waitPromise(ms) {
+    return new Promise(resolve => {
+        listenState.timer = setTimeout(resolve, ms);
+    });
+}
+// Thêm animation xoay đĩa vào CSS động
+const styleSheet = document.createElement("style");
+styleSheet.innerText = `
+@keyframes spin { 100% { transform: rotate(360deg); } }
+`;
+document.head.appendChild(styleSheet);
+// --- KHỞI ĐỘNG ỨNG DỤNG AN TOÀN (BẮT BUỘC THÊM) ---
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(window.initApp, 100));
+} else {
+    setTimeout(window.initApp, 100);
+}
+
+/* ==========================================================================
+   HỆ THỐNG TTS ĐA TẦNG (WATERFALL TTS ENGINE) - FINAL VERSION
+   Quy trình: Edge Native (Trực tiếp) -> Cloudflare Worker (Azure) -> Google -> Native Machine
+   ========================================================================== */
+
+// Map ngôn ngữ sang mã chuẩn
+const TTS_LANG_MAP = {
+    'en': 'en-US',
+    'vi': 'vi-VN',
+    'id': 'id-ID'
+};
+
+// Hàm tìm giọng Edge Native (Sửa đổi để bắt dính hơn)
+function getNativeEdgeVoice(langCode) {
+    const voices = window.speechSynthesis.getVoices();
+    // Kiểm tra xem có phải trình duyệt Edge thật không
+    const isEdgeBrowser = /Edg\//.test(navigator.userAgent);
+    
+    if (!isEdgeBrowser) return null;
+
+    // Chỉ tìm giọng có chữ 'Online' hoặc 'Natural' đặc trưng của Edge
+    return voices.find(v => 
+        v.lang.startsWith(langCode) && 
+        (v.name.includes("Online") || v.name.includes("Natural"))
+    );
+}
+   window.speak = function(text, lang = 'en-US', onEnd) {
+    // 1. Dọn dẹp tất cả yêu cầu cũ đang treo (Cực kỳ quan trọng trên Firefox/Edge)
+    window.speechSynthesis.cancel();
+
+    // 2. Kiểm tra nếu trình duyệt đang bị "treo" TTS
+    if (window.speechSynthesis.speaking) {
+        console.warn("TTS đang bận, thử lại sau 100ms");
+        setTimeout(() => window.speak(text, lang, onEnd), 100);
+        return;
+    }
+
+    const langCode = lang.split('-')[0];
+
+    // 3. Kiểm tra giọng Edge Native (Chỉ chạy nếu là Edge thật)
+    const edgeNativeVoice = getNativeEdgeVoice(langCode);
+    if (edgeNativeVoice) {
+        window.speakFallback(text, edgeNativeVoice, onEnd);
+        return;
+    }
+
+    // 4. Nếu là Firefox hoặc trình duyệt khác, ưu tiên dùng API Online 
+    // trừ khi người dùng ép dùng Native
+    if (config.voiceEngine !== 'native') {
+        // Gọi API Worker của bạn ở đây (giả sử tên hàm là window.speakOnline)
+        if (typeof window.speakOnline === 'function') {
+            window.speakOnline(text, lang, onEnd);
+            return;
+        }
+    }
+
+    // 5. Cuối cùng mới dùng Fallback (Giọng máy mặc định)
+    window.speakFallback(text, null, onEnd);
+};
+
+// Hàm phát URL âm thanh (Dùng cho Worker và Google)
+function playAudioUrl(url) {
+    return new Promise((resolve, reject) => {
+        // ✅ CRITICAL: Cleanup cũ trước khi load mới
+        if (typeof ttsPlayer !== 'undefined') {
+            ttsPlayer.pause();
+            ttsPlayer.currentTime = 0;
+            ttsPlayer.onended = null;
+            ttsPlayer.onerror = null;
+            ttsPlayer.removeAttribute('src');
+            ttsPlayer.load(); // Force cleanup
+        }
+
+        ttsPlayer.src = url;
+        ttsPlayer.playbackRate = 1.0;
+        
+        // ✅ Timeout để tránh promise treo mãi
+        const timeout = setTimeout(() => {
+            reject(new Error("Audio timeout"));
+        }, 10000);
+        
+        ttsPlayer.onended = () => {
+            clearTimeout(timeout);
+            if (url.startsWith('blob:')) URL.revokeObjectURL(url);
+            ttsPlayer.onended = null; // ✅ Cleanup listener
+            resolve();
+        };
+        
+        ttsPlayer.onerror = (e) => {
+            clearTimeout(timeout);
+            console.warn("Audio Playback Error:", e);
+            ttsPlayer.onerror = null; // ✅ Cleanup listener
+            reject(new Error("Lỗi phát audio từ URL"));
+        };
+        
+        const playPromise = ttsPlayer.play();
+        if (playPromise !== undefined) {
+            playPromise.catch(e => {
+                clearTimeout(timeout);
+                reject(e);
+            });
+        }
+    });
+}
+
+// Hàm đọc giọng máy dự phòng (Level cuối cùng)
+window.speakFallback = function(text, voice, onEnd) {
+    const utterance = new SpeechSynthesisUtterance(text);
+    const voices = window.speechSynthesis.getVoices();
+
+    // Tự động tìm giọng tiếng Anh chất lượng tốt nhất có sẵn
+    if (!voice) {
+        utterance.voice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) || 
+                         voices.find(v => v.lang.startsWith('en') && v.name.includes('Natural')) ||
+                         voices.find(v => v.lang.startsWith('en')) || 
+                         voices[0];
+    } else {
+        utterance.voice = voice;
+    }
+
+    utterance.rate = config.speed || 1;
+    utterance.pitch = 1;
+    utterance.volume = 1;
+
+    utterance.onend = () => { if (onEnd) onEnd(); };
+    
+    utterance.onerror = (e) => {
+        // Chỉ log lỗi thực sự, bỏ qua lỗi bị hủy do chuyển câu nhanh
+        if (e.error !== 'interrupted' && e.error !== 'canceled') {
+            console.error("TTS Native Error:", e.error);
+        }
+        if (onEnd) onEnd();
+    };
+
+    window.speechSynthesis.speak(utterance);
+};
+// --- HÀM CHÍNH: QUẢN LÝ LUỒNG ĐỌC (MASTER FUNCTION) ---
+window.speakText = async function(text, onEnd) {
+    stopGlobalAudio();
+    
+    if (config.mute) {
+        if(onEnd) onEnd();
+        return;
+    }
+
+    const langCode = TTS_LANG_MAP[currentLang] || 'en-US';
+
+    try {
+        // --- LEVEL 1: ONLINE TTS (WORKER AZURE -> GOOGLE) ---
+        // Đã loại bỏ Edge Native theo yêu cầu
+        console.log("☁️ Starting Cloud TTS (Azure/Google)...");
+        await processOnlineTTS(text, langCode);
+        if(onEnd) onEnd();
+
+    } catch (e) {
+        console.warn("⚠️ Online TTS Failed. Falling back to Native Machine...", e);
+        // --- LEVEL 2: NATIVE MACHINE (LAST RESORT) ---
+        window.speakFallback(text, null, onEnd);
+    }
+};
+// Hàm xử lý luồng Online (Azure Worker -> Google)
+async function processOnlineTTS(text, langCode) {
+    const shortLang = langCode.split('-')[0];
+    
+    // Lấy giọng từ Config (User chọn) hoặc Mặc định
+    let selectedVoice = '';
+    if (config.edgeVoices && config.edgeVoices[shortLang]) {
+        selectedVoice = config.edgeVoices[shortLang];
+    } else {
+        // Fallback cứng nếu chưa có config
+        if (shortLang === 'vi') selectedVoice = 'vi-VN-NamMinhNeural';
+        else if (shortLang === 'id') selectedVoice = 'id-ID-ArdiNeural';
+        else selectedVoice = 'en-US-ChristopherNeural';
+    }
+
+    // Làm sạch tên giọng cho Worker
+    if (selectedVoice.includes('(')) {
+        const match = selectedVoice.match(/\((.*?)\)/);
+        if (match && match[1]) selectedVoice = match[1].replace(', ', '-');
+    }
+
+    // -----------------------------------------------------
+    // ƯU TIÊN 2: GỌI AZURE QUA CLOUDFLARE WORKER
+    // -----------------------------------------------------
+    try {
+        console.log(`☁️ Gọi Azure Worker: ${selectedVoice}`);
+        const workerUrl = "https://tts.ngxuanhai123.workers.dev";
+
+        const response = await fetch(workerUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                text: text,
+                voice: selectedVoice,
+                rate: "0%",
+                pitch: "0Hz"
+            })
+        });
+
+        if (!response.ok) throw new Error(`Azure Error: ${response.status}`);
+        
+        const blob = await response.blob();
+        const audioUrl = URL.createObjectURL(blob);
+        await playAudioUrl(audioUrl);
+        console.log("✅ Azure TTS thành công!");
+        return; // Thành công thì thoát luôn
+
+    } catch (errAzure) {
+        console.warn("⚠️ Azure Worker thất bại:", errAzure.message);
+        // Không return, để nó trôi xuống Bước 3
+    }
+
+    // -----------------------------------------------------
+    // ƯU TIÊN 3: GỌI GOOGLE TRANSLATE (DỰ PHÒNG)
+    // -----------------------------------------------------
+    try {
+        console.log("🔄 Đang chuyển sang Google TTS...");
+        let gLang = shortLang;
+        if (langCode === 'id-ID') gLang = 'id'; // Fix mã ngôn ngữ cho Google
+
+        const googleUrl = `https://translate.googleapis.com/translate_tts?client=gtx&ie=UTF-8&tl=${gLang}&dt=t&q=${encodeURIComponent(text)}`;
+        await playAudioUrl(googleUrl);
+        console.log("✅ Google TTS thành công!");
+        
+    } catch (errGoogle) {
+        console.error("❌ Google TTS cũng thất bại:", errGoogle);
+        throw new Error("All Online TTS Failed"); // Ném lỗi để kích hoạt Bước 4 (Native)
+    }
+}
+
+// Cập nhật lại hàm speakWord (vì có thể bạn đã xoá nhầm ở bước 1)
+window.speakWord = function(e, onEnd) {
+    if(e && e.stopPropagation) e.stopPropagation();
+    const w = sessionQueue[sessionIndex];
+    if(!w) {
+        if(onEnd) onEnd();
+        return;
+    }
+    // Ưu tiên đọc ví dụ nếu đang ở chế độ sắp xếp câu
+    const text = (currentMode === 'sentence' && w.example) ? w.example : w.english;
+    window.speakText(text, onEnd);
+}
+// ✅ WATCHDOG: Phát hiện app treo và tự động reset
+let lastActivityTime = Date.now();
+let watchdogTimer = null;
+
+function resetWatchdog() {
+    lastActivityTime = Date.now();
+}
+
+// Theo dõi mọi tương tác
+['click', 'touchstart', 'keydown'].forEach(event => {
+    document.addEventListener(event, resetWatchdog, { passive: true });
+});
+
+// Kiểm tra mỗi 10 giây
+watchdogTimer = setInterval(() => {
+    const idleTime = Date.now() - lastActivityTime;
+    
+    // Nếu không có hoạt động trong 2 phút VÀ đang trong game
+    if (idleTime > 120000 && document.getElementById('gameOverlay').style.display !== 'none') {
+        console.warn("⚠️ Watchdog: Phát hiện app có thể đang treo. Force cleanup...");
+        
+        // Force cleanup
+        stopGlobalAudio();
+        if (studyTimer) clearInterval(studyTimer);
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        
+        showToast("⚠️ Phát hiện lỗi. Đang khởi động lại...", "error");
+        setTimeout(() => {
+            window.closeGame();
+            window.navTo('view-home');
+        }, 1000);
+    }
+}, 10000);
 </script>
+
 <a href="https://ngxuanhai123.github.io/" class="floating-home-btn">
     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
